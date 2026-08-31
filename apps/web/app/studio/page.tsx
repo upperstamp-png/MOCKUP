@@ -160,18 +160,47 @@ function StudioContent() {
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [infoTab, setInfoTab] = useState<'customizer' | 'decals'>('customizer');
 
-  // Sincroniza Estampas adicionadas no Admin
+  // Sincroniza Estampas da pasta C:\Users\user\Documents\mockup\textures e do Admin
   useEffect(() => {
-    const custom = getCustomUniformPatterns();
-    const converted: Pattern[] = custom.map((p) => ({
-      id: p.id,
-      title: p.name,
-      category: 'Estampa',
-      thumbnail_url: p.thumbnailUrl || p.url,
-      svg_file_url: p.url,
-      created_at: p.createdAt,
-    }));
-    setPatterns([...DEFAULT_SVG_PATTERNS, ...converted]);
+    async function loadAllPatterns() {
+      let diskTextures: Pattern[] = [];
+      try {
+        const res = await fetch('/api/textures');
+        const data = await res.json();
+        if (data.success && Array.isArray(data.textures)) {
+          diskTextures = data.textures.map((t: any) => ({
+            id: t.id,
+            title: t.name,
+            category: 'Estampas',
+            thumbnail_url: t.thumbnail_url,
+            svg_file_url: t.svg_file_url,
+            created_at: t.created_at,
+          }));
+        }
+      } catch (err) {
+        console.warn('Não foi possível carregar /api/textures:', err);
+      }
+
+      const custom = getCustomUniformPatterns();
+      const customConverted: Pattern[] = custom.map((p) => ({
+        id: p.id,
+        title: p.name,
+        category: 'Estampa',
+        thumbnail_url: p.thumbnailUrl || p.url,
+        svg_file_url: p.url,
+        created_at: p.createdAt,
+      }));
+
+      // Combina disk textures (C:\Users\user\Documents\mockup\textures), defaults e customizadas
+      const map = new Map<string, Pattern>();
+      [...diskTextures, ...customConverted, ...DEFAULT_SVG_PATTERNS].forEach((item) => {
+        map.set(item.id, item);
+      });
+
+      setPatterns(Array.from(map.values()));
+    }
+
+    loadAllPatterns();
   }, []);
 
   // Inicialização de Sessão & Heartbeat
@@ -431,8 +460,12 @@ function StudioContent() {
                               : 'bg-wise-canvas/60 border-wise-border text-wise-body hover:border-wise-mute'
                           }`}
                         >
-                          <div className="w-full aspect-square rounded-lg bg-white border border-wise-border flex items-center justify-center mb-0.5">
-                            <Sparkles className={`w-3.5 h-3.5 ${isSelected ? 'text-wise-ink' : 'text-wise-mute'}`} />
+                          <div className="w-full aspect-square rounded-lg bg-white border border-wise-border flex items-center justify-center mb-0.5 overflow-hidden p-0.5">
+                            {p.thumbnail_url && (p.thumbnail_url.startsWith('http') || p.thumbnail_url.startsWith('/') || p.thumbnail_url.startsWith('data:image')) ? (
+                              <img src={p.thumbnail_url} alt={p.title} className="w-full h-full object-contain" />
+                            ) : (
+                              <Sparkles className={`w-3.5 h-3.5 ${isSelected ? 'text-wise-ink' : 'text-wise-mute'}`} />
+                            )}
                           </div>
                           <span className="text-[10px] font-bold text-center line-clamp-1 leading-tight">
                             {p.title}
