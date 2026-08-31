@@ -19,62 +19,58 @@ import {
 } from 'lucide-react';
 import { SellerProfile, ActiveSession } from '@mockup/types';
 import {
-  UniformTexture,
-  getCustomUniformTextures,
-  saveCustomUniformTexture,
-  deleteCustomUniformTexture,
+  UniformPattern,
+  getCustomUniformPatterns,
+  saveCustomUniformPattern,
+  deleteCustomUniformPattern,
 } from '@/lib/texture-manager';
 
 export default function AdminPage() {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'sellers' | 'models' | 'patterns' | 'sessions' | 'billing'>('dashboard');
 
-  // Textures State
-  const [textures, setTextures] = useState<UniformTexture[]>([]);
-  const [newTextureName, setNewTextureName] = useState('');
-  const [newTextureCategory, setNewTextureCategory] = useState<'fabric_texture' | 'mask_part' | 'pattern'>('fabric_texture');
-  const [newTextureTarget, setNewTextureTarget] = useState('all');
-  const [uploadedTextureFile, setUploadedTextureFile] = useState<File | null>(null);
-  const [uploadedTextureUrl, setUploadedTextureUrl] = useState<string>('');
+  // Patterns / Estampas State
+  const [patterns, setPatterns] = useState<UniformPattern[]>([]);
+  const [newPatternName, setNewPatternName] = useState('');
+  const [newPatternTarget, setNewPatternTarget] = useState('front');
+  const [uploadedPatternFile, setUploadedPatternFile] = useState<File | null>(null);
+  const [uploadedPatternUrl, setUploadedPatternUrl] = useState<string>('');
 
   React.useEffect(() => {
-    setTextures(getCustomUniformTextures());
+    setPatterns(getCustomUniformPatterns());
   }, []);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    setUploadedTextureFile(file);
+    setUploadedPatternFile(file);
     const reader = new FileReader();
     reader.onload = (event) => {
-      setUploadedTextureUrl(event.target?.result as string);
+      setUploadedPatternUrl(event.target?.result as string);
     };
     reader.readAsDataURL(file);
   };
 
-  const handleUploadTexture = () => {
-    if (!newTextureName.trim() || !uploadedTextureUrl) return;
+  const handleUploadPattern = () => {
+    if (!newPatternName.trim() || !uploadedPatternUrl) return;
 
-    const newTex: UniformTexture = {
-      id: `tex_${Date.now()}`,
-      name: newTextureName.trim(),
-      category: newTextureCategory,
-      targetPart: newTextureTarget,
-      url: uploadedTextureUrl,
-      blendMode: newTextureCategory === 'pattern' ? 'overlay' : 'multiply',
-      opacity: 0.8,
+    const newPat: UniformPattern = {
+      id: `pat_${Date.now()}`,
+      name: newPatternName.trim(),
+      targetPart: newPatternTarget,
+      url: uploadedPatternUrl,
       createdAt: new Date().toISOString(),
     };
 
-    const updated = saveCustomUniformTexture(newTex);
-    setTextures(updated);
-    setNewTextureName('');
-    setUploadedTextureFile(null);
-    setUploadedTextureUrl('');
+    const updated = saveCustomUniformPattern(newPat);
+    setPatterns(updated);
+    setNewPatternName('');
+    setUploadedPatternFile(null);
+    setUploadedPatternUrl('');
   };
 
-  const handleDeleteTexture = (id: string) => {
-    const updated = deleteCustomUniformTexture(id);
-    setTextures(updated);
+  const handleDeletePattern = (id: string) => {
+    const updated = deleteCustomUniformPattern(id);
+    setPatterns(updated);
   };
 
   // Sellers State
@@ -234,7 +230,7 @@ export default function AdminPage() {
           }`}
         >
           <Sparkles className="w-4 h-4" />
-          <span>Texturas & Máscaras ({textures.length})</span>
+          <span>Estampas ({patterns.length})</span>
         </button>
 
         <button
@@ -254,53 +250,83 @@ export default function AdminPage() {
         {activeTab === 'dashboard' && (
           <div className="space-y-6">
             {/* KPI Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="p-6 rounded-4xl bg-wise-canvas border border-wise-border space-y-1 shadow-wise">
-                <span className="text-[11px] font-black text-wise-mute uppercase">Mockups no Mês</span>
-                <p className="text-3xl font-black text-wise-ink">1.428</p>
-                <span className="text-xs text-wise-positive flex items-center gap-1 font-bold">
-                  <TrendingUp className="w-3.5 h-3.5" /> +18.4% vs anterior
-                </span>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="bg-wise-canvas border border-wise-border p-5 rounded-3xl space-y-2 shadow-wise">
+                <div className="flex items-center justify-between text-wise-mute">
+                  <span className="text-[11px] font-black uppercase tracking-wider">Vendedores Ativos</span>
+                  <Users className="w-4 h-4 text-wise-ink" />
+                </div>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-2xl font-black text-wise-ink">
+                    {sellers.filter((s) => s.status === 'active').length}
+                  </span>
+                  <span className="text-xs text-wise-positive font-bold flex items-center gap-0.5">
+                    <TrendingUp className="w-3 h-3" /> 100%
+                  </span>
+                </div>
               </div>
-              <div className="p-6 rounded-4xl bg-wise-canvas border border-wise-border space-y-1 shadow-wise">
-                <span className="text-[11px] font-black text-wise-mute uppercase">Mockups Hoje</span>
-                <p className="text-3xl font-black text-wise-ink">84</p>
-                <span className="text-xs text-wise-body">Média de 1.8 min por proposta</span>
+
+              <div className="bg-wise-canvas border border-wise-border p-5 rounded-3xl space-y-2 shadow-wise">
+                <div className="flex items-center justify-between text-wise-mute">
+                  <span className="text-[11px] font-black uppercase tracking-wider">Terminais Conectados</span>
+                  <Laptop className="w-4 h-4 text-wise-ink" />
+                </div>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-2xl font-black text-wise-ink">{sessions.length} / 3</span>
+                  <span className="text-xs text-wise-body font-bold">Dentro do Limite</span>
+                </div>
               </div>
-              <div className="p-6 rounded-4xl bg-wise-canvas border border-wise-border space-y-1 shadow-wise">
-                <span className="text-[11px] font-black text-wise-mute uppercase">Vendedores Ativos</span>
-                <p className="text-3xl font-black text-wise-ink">{sellers.length}</p>
-                <span className="text-xs text-wise-body">{sessions.length} terminais online</span>
+
+              <div className="bg-wise-canvas border border-wise-border p-5 rounded-3xl space-y-2 shadow-wise">
+                <div className="flex items-center justify-between text-wise-mute">
+                  <span className="text-[11px] font-black uppercase tracking-wider">Estampas Cadastradas</span>
+                  <Sparkles className="w-4 h-4 text-wise-ink" />
+                </div>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-2xl font-black text-wise-ink">{patterns.length}</span>
+                  <span className="text-xs text-wise-positive font-bold">Disponíveis</span>
+                </div>
               </div>
-              <div className="p-6 rounded-4xl bg-wise-canvas border border-wise-border space-y-1 shadow-wise">
-                <span className="text-[11px] font-black text-wise-mute uppercase">Plano B2B</span>
-                <p className="text-3xl font-black text-wise-ink">Confecção Pro</p>
-                <span className="text-xs text-wise-positive font-bold">Ativo • 285 dias</span>
+
+              <div className="bg-wise-canvas border border-wise-border p-5 rounded-3xl space-y-2 shadow-wise">
+                <div className="flex items-center justify-between text-wise-mute">
+                  <span className="text-[11px] font-black uppercase tracking-wider">Propostas Geradas</span>
+                  <BarChart3 className="w-4 h-4 text-wise-ink" />
+                </div>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-2xl font-black text-wise-ink">1.420</span>
+                  <span className="text-xs text-wise-positive font-bold">+18% esse mês</span>
+                </div>
               </div>
             </div>
 
-            {/* Ranking */}
+            {/* Top Vendedores */}
             <div className="bg-wise-canvas border border-wise-border rounded-4xl p-6 space-y-4 shadow-wise">
               <h3 className="text-xs font-black text-wise-ink uppercase tracking-wider">
-                Ranking de Vendedores por Propostas Enviadas
+                Desempenho da Equipe Comercial
               </h3>
-              <div className="space-y-2.5">
-                <div className="flex items-center justify-between p-4 rounded-2xl bg-wise-canvas-soft border border-wise-border-subtle">
+              <div className="divide-y divide-wise-border">
+                <div className="py-3 flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <span className="w-7 h-7 rounded-full bg-wise-primary text-wise-on-primary font-black text-xs flex items-center justify-center">1</span>
+                    <div className="w-8 h-8 rounded-full bg-wise-primary text-wise-on-primary font-black text-xs flex items-center justify-center">
+                      CA
+                    </div>
                     <div>
-                      <p className="text-xs font-black text-wise-ink">Carlos Alberto Silva</p>
-                      <p className="text-[11px] text-wise-body">carlos.vendas@imperialuniformes.com.br</p>
+                      <span className="text-xs font-black text-wise-ink">Carlos Alberto Silva</span>
+                      <span className="text-[11px] text-wise-mute block">Loja Centro</span>
                     </div>
                   </div>
-                  <span className="text-xs font-black text-wise-ink">842 propostas</span>
+                  <span className="text-xs font-black text-wise-ink">834 propostas</span>
                 </div>
-                <div className="flex items-center justify-between p-4 rounded-2xl bg-wise-canvas-soft border border-wise-border-subtle">
+
+                <div className="py-3 flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <span className="w-7 h-7 rounded-full bg-wise-canvas border border-wise-border text-wise-ink font-black text-xs flex items-center justify-center">2</span>
+                    <div className="w-8 h-8 rounded-full bg-wise-ink text-wise-canvas font-black text-xs flex items-center justify-center">
+                      MS
+                    </div>
                     <div>
-                      <p className="text-xs font-black text-wise-ink">Mariana Souza Santos</p>
-                      <p className="text-[11px] text-wise-body">mariana.souza@imperialuniformes.com.br</p>
+                      <span className="text-xs font-black text-wise-ink">Mariana Souza Santos</span>
+                      <span className="text-[11px] text-wise-mute block">Vendas Externas</span>
                     </div>
                   </div>
                   <span className="text-xs font-black text-wise-ink">586 propostas</span>
@@ -431,56 +457,42 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* TAB TEXTURAS & MÁSCARAS DO UNIFORME */}
+        {/* TAB ESTAMPAS SUBLIMADAS */}
         {activeTab === 'patterns' && (
           <div className="space-y-6">
-            {/* Form de Upload de Nova Textura */}
+            {/* Form de Upload de Nova Estampa */}
             <div className="bg-wise-canvas border border-wise-border rounded-4xl p-6 space-y-4 shadow-wise">
               <h3 className="text-xs font-black text-wise-ink uppercase tracking-wider flex items-center gap-2">
                 <Plus className="w-4 h-4 text-wise-ink" />
-                Cadastrar e Subir Nova Textura / Máscara do Uniforme
+                Cadastrar e Subir Nova Estampa
               </h3>
               <p className="text-xs text-wise-body">
-                Envie arquivos PNG com fundo transparente, texturas de trama de tecido (Dry-Fit, Piquet) ou estampas sublimadas. As novas texturas ficam disponíveis imediatamente no Studio para todos os vendedores.
+                Envie arquivos PNG, JPG, WebP ou SVG. As estampas ficam disponíveis instantaneamente no Studio para os vendedores aplicarem nos uniformes.
               </p>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[10px] font-black text-wise-mute uppercase mb-1">Nome da Textura</label>
+                  <label className="block text-[10px] font-black text-wise-mute uppercase mb-1">Nome da Estampa</label>
                   <input
                     type="text"
-                    placeholder="Ex: Dry-Fit Furadinho 2026"
-                    value={newTextureName}
-                    onChange={(e) => setNewTextureName(e.target.value)}
+                    placeholder="Ex: Listras Esportivas 2026"
+                    value={newPatternName}
+                    onChange={(e) => setNewPatternName(e.target.value)}
                     className="w-full bg-wise-canvas-soft border border-wise-border focus:border-wise-ink rounded-2xl px-4 py-3 text-xs text-wise-ink font-bold outline-none"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-black text-wise-mute uppercase mb-1">Categoria / Tipo</label>
-                  <select
-                    value={newTextureCategory}
-                    onChange={(e) => setNewTextureCategory(e.target.value as any)}
-                    className="w-full bg-wise-canvas-soft border border-wise-border focus:border-wise-ink rounded-2xl px-4 py-3 text-xs text-wise-ink font-bold outline-none"
-                  >
-                    <option value="fabric_texture">🧵 Trama de Tecido (Dry-Fit / Piquet)</option>
-                    <option value="mask_part">✂️ Nova Máscara / Recorte de Peça</option>
-                    <option value="pattern">🎨 Estampa Sublimada (Pattern)</option>
-                  </select>
-                </div>
-
-                <div>
                   <label className="block text-[10px] font-black text-wise-mute uppercase mb-1">Parte de Aplicação</label>
                   <select
-                    value={newTextureTarget}
-                    onChange={(e) => setNewTextureTarget(e.target.value)}
+                    value={newPatternTarget}
+                    onChange={(e) => setNewPatternTarget(e.target.value)}
                     className="w-full bg-wise-canvas-soft border border-wise-border focus:border-wise-ink rounded-2xl px-4 py-3 text-xs text-wise-ink font-bold outline-none"
                   >
-                    <option value="all">Uniforme Completo (Todas as partes)</option>
                     <option value="front">Frente da Camisa</option>
                     <option value="back">Costas da Camisa</option>
-                    <option value="sleeves">Mangas (Esquerda + Direita)</option>
-                    <option value="collar">Gola</option>
+                    <option value="sleeves">Mangas</option>
+                    <option value="all">Uniforme Completo (Frente + Costas + Mangas)</option>
                   </select>
                 </div>
               </div>
@@ -490,9 +502,9 @@ export default function AdminPage() {
                   <Sparkles className="w-5 h-5" />
                 </div>
                 <span className="text-xs font-black text-wise-ink">
-                  {uploadedTextureFile ? `Arquivo selecionado: ${uploadedTextureFile.name}` : 'Clique para selecionar o arquivo da Textura / Máscara (PNG, SVG ou JPG)'}
+                  {uploadedPatternFile ? `Arquivo selecionado: ${uploadedPatternFile.name}` : 'Clique para selecionar a imagem da Estampa (PNG, JPG, WebP ou SVG)'}
                 </span>
-                <span className="text-[11px] text-wise-mute mt-0.5">Suporta PNG transparente com alta resolução</span>
+                <span className="text-[11px] text-wise-mute mt-0.5">Suporta imagens em alta resolução</span>
                 <input
                   type="file"
                   accept="image/png,image/svg+xml,image/jpeg,image/webp"
@@ -503,45 +515,47 @@ export default function AdminPage() {
 
               <button
                 type="button"
-                onClick={handleUploadTexture}
-                disabled={!uploadedTextureFile || !newTextureName.trim()}
+                onClick={handleUploadPattern}
+                disabled={!uploadedPatternFile || !newPatternName.trim()}
                 className="bg-wise-primary hover:bg-wise-primary-active disabled:opacity-50 text-wise-on-primary font-black px-6 py-3 rounded-full text-xs transition-all shadow-sm flex items-center gap-2"
               >
                 <Plus className="w-4 h-4 stroke-[3]" />
-                <span>Salvar e Publicar Textura no Studio</span>
+                <span>Salvar e Publicar Estampa no Studio</span>
               </button>
             </div>
 
-            {/* Lista de Texturas Ativas */}
+            {/* Lista de Estampas Ativas */}
             <div className="bg-wise-canvas border border-wise-border rounded-4xl p-6 space-y-4 shadow-wise">
               <div className="flex items-center justify-between">
                 <h3 className="text-xs font-black text-wise-ink uppercase tracking-wider">
-                  Texturas e Máscaras Disponíveis no Sistema ({textures.length})
+                  Estampas Disponíveis no Sistema ({patterns.length})
                 </h3>
-                <span className="text-[11px] font-bold text-wise-mute">Sincronização em tempo real</span>
+                <span className="text-[11px] font-bold text-wise-mute">Sincronização em tempo real com o Studio</span>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                {textures.map((tex) => (
+                {patterns.map((pat) => (
                   <div
-                    key={tex.id}
+                    key={pat.id}
                     className="p-4 rounded-3xl bg-wise-canvas-soft border border-wise-border flex flex-col justify-between space-y-3"
                   >
                     <div className="flex items-start justify-between gap-2">
-                      <div className="space-y-1">
-                        <span className="text-xs font-black text-wise-ink block leading-tight">{tex.name}</span>
+                      <div className="space-y-0.5">
+                        <span className="text-xs font-black text-wise-ink block leading-tight">{pat.name}</span>
                         <span className="text-[10px] px-2 py-0.5 rounded-full font-bold uppercase bg-wise-primary-pale text-wise-ink-deep inline-block">
-                          {tex.category === 'fabric_texture'
-                            ? 'Tecido / Relevo'
-                            : tex.category === 'mask_part'
-                            ? 'Máscara'
-                            : 'Estampa'}
+                          {pat.targetPart === 'front'
+                            ? 'Frente'
+                            : pat.targetPart === 'back'
+                            ? 'Costas'
+                            : pat.targetPart === 'sleeves'
+                            ? 'Mangas'
+                            : 'Uniforme Todo'}
                         </span>
                       </div>
                       <button
-                        onClick={() => handleDeleteTexture(tex.id)}
+                        onClick={() => handleDeletePattern(pat.id)}
                         className="text-wise-mute hover:text-wise-negative p-1.5 rounded-full hover:bg-white transition-colors"
-                        title="Excluir textura"
+                        title="Excluir estampa"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -549,14 +563,14 @@ export default function AdminPage() {
 
                     <div className="w-full h-24 rounded-2xl bg-white border border-wise-border flex items-center justify-center p-2 overflow-hidden">
                       <img
-                        src={tex.url}
-                        alt={tex.name}
+                        src={pat.url}
+                        alt={pat.name}
                         className="w-full h-full object-contain"
                       />
                     </div>
 
                     <div className="flex items-center justify-between text-[10px] font-bold text-wise-mute pt-2 border-t border-wise-border/50">
-                      <span>Aplicação: {tex.targetPart === 'all' ? 'Uniforme Todo' : tex.targetPart}</span>
+                      <span>Formato Suportado</span>
                       <span className="text-wise-success font-black">● Ativa</span>
                     </div>
                   </div>
