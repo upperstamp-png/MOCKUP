@@ -228,7 +228,7 @@ export const MockupCanvas: React.FC<MockupCanvasProps> = ({
     };
   }, [model]);
 
-  // 2. Processamento Duotone da Estampa SVG (com Cor 1 e Cor 2 das Texturas)
+  // 2. Processamento de Estampas e Texturas (SVG Duotone ou Imagens PNG/JPG/WebP)
   useEffect(() => {
     let isMounted = true;
 
@@ -239,20 +239,22 @@ export const MockupCanvas: React.FC<MockupCanvasProps> = ({
       }
 
       try {
-        let svgRaw = '';
-        if (pattern.svg_file_url.startsWith('<svg')) {
-          svgRaw = pattern.svg_file_url;
+        const url = pattern.svg_file_url;
+        if (url.startsWith('<svg')) {
+          const resultBitmap = await applyDuotoneToSVG(url, colorA, colorB);
+          if (isMounted) setPatternBitmap(resultBitmap);
+        } else if (url.startsWith('data:image/svg') || url.endsWith('.svg')) {
+          const res = await fetch(url);
+          const svgRaw = await res.text();
+          const resultBitmap = await applyDuotoneToSVG(svgRaw, colorA, colorB);
+          if (isMounted) setPatternBitmap(resultBitmap);
         } else {
-          const res = await fetch(pattern.svg_file_url);
-          svgRaw = await res.text();
-        }
-
-        const resultBitmap = await applyDuotoneToSVG(svgRaw, colorA, colorB);
-        if (isMounted) {
-          setPatternBitmap(resultBitmap);
+          // Carrega imagem raster (PNG, JPG, WebP)
+          const loadedImg = await assetCache.loadImage(url);
+          if (isMounted) setPatternBitmap(loadedImg);
         }
       } catch (err) {
-        console.error('Erro ao processar estampa duotone:', err);
+        console.error('Erro ao processar estampa/textura:', err);
       }
     };
 

@@ -16,6 +16,7 @@ import { ExportModal } from '@/components/ExportModal';
 import { useMockupStore, GarmentPart } from '@/features/studio/store/mockupStore';
 import { useHistoryStore } from '@/features/studio/store/historyStore';
 import { useSessionStore } from '@/features/studio/store/sessionStore';
+import { getCustomUniformTextures } from '@/lib/texture-manager';
 import {
   AlertCircle,
   Shirt,
@@ -155,9 +156,23 @@ function StudioContent() {
   const { isSessionLimitReached, startHeartbeat, stopHeartbeat } = useSessionStore();
 
   const [models] = useState<ApparelModel[]>(DEFAULT_MODELS);
-  const [patterns] = useState<Pattern[]>(DEFAULT_SVG_PATTERNS);
+  const [patterns, setPatterns] = useState<Pattern[]>(DEFAULT_SVG_PATTERNS);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [infoTab, setInfoTab] = useState<'customizer' | 'decals'>('customizer');
+
+  // Sincroniza Texturas e Estampas adicionadas no Admin
+  useEffect(() => {
+    const custom = getCustomUniformTextures();
+    const converted: Pattern[] = custom.map((t) => ({
+      id: t.id,
+      title: t.name,
+      category: t.category === 'fabric_texture' ? 'Tecido' : t.category === 'mask_part' ? 'Máscara' : 'Estampa',
+      thumbnail_url: t.thumbnailUrl || t.url,
+      svg_file_url: t.url,
+      created_at: t.createdAt,
+    }));
+    setPatterns([...DEFAULT_SVG_PATTERNS, ...converted]);
+  }, []);
 
   // Inicialização de Sessão & Heartbeat
   useEffect(() => {

@@ -18,9 +18,64 @@ import {
   TrendingUp,
 } from 'lucide-react';
 import { SellerProfile, ActiveSession } from '@mockup/types';
+import {
+  UniformTexture,
+  getCustomUniformTextures,
+  saveCustomUniformTexture,
+  deleteCustomUniformTexture,
+} from '@/lib/texture-manager';
 
 export default function AdminPage() {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'sellers' | 'models' | 'patterns' | 'sessions' | 'billing'>('dashboard');
+
+  // Textures State
+  const [textures, setTextures] = useState<UniformTexture[]>([]);
+  const [newTextureName, setNewTextureName] = useState('');
+  const [newTextureCategory, setNewTextureCategory] = useState<'fabric_texture' | 'mask_part' | 'pattern'>('fabric_texture');
+  const [newTextureTarget, setNewTextureTarget] = useState('all');
+  const [uploadedTextureFile, setUploadedTextureFile] = useState<File | null>(null);
+  const [uploadedTextureUrl, setUploadedTextureUrl] = useState<string>('');
+
+  React.useEffect(() => {
+    setTextures(getCustomUniformTextures());
+  }, []);
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadedTextureFile(file);
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      setUploadedTextureUrl(event.target?.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleUploadTexture = () => {
+    if (!newTextureName.trim() || !uploadedTextureUrl) return;
+
+    const newTex: UniformTexture = {
+      id: `tex_${Date.now()}`,
+      name: newTextureName.trim(),
+      category: newTextureCategory,
+      targetPart: newTextureTarget,
+      url: uploadedTextureUrl,
+      blendMode: newTextureCategory === 'pattern' ? 'overlay' : 'multiply',
+      opacity: 0.8,
+      createdAt: new Date().toISOString(),
+    };
+
+    const updated = saveCustomUniformTexture(newTex);
+    setTextures(updated);
+    setNewTextureName('');
+    setUploadedTextureFile(null);
+    setUploadedTextureUrl('');
+  };
+
+  const handleDeleteTexture = (id: string) => {
+    const updated = deleteCustomUniformTexture(id);
+    setTextures(updated);
+  };
 
   // Sellers State
   const [sellers, setSellers] = useState<SellerProfile[]>([
@@ -179,7 +234,7 @@ export default function AdminPage() {
           }`}
         >
           <Sparkles className="w-4 h-4" />
-          <span>Estampas SVG</span>
+          <span>Texturas & Máscaras ({textures.length})</span>
         </button>
 
         <button
@@ -376,23 +431,138 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* TAB ESTAMPAS */}
+        {/* TAB TEXTURAS & MÁSCARAS DO UNIFORME */}
         {activeTab === 'patterns' && (
-          <div className="bg-wise-canvas border border-wise-border rounded-4xl p-6 space-y-4 shadow-wise">
-            <h3 className="text-xs font-black text-wise-ink uppercase tracking-wider">
-              Upload de Estampas Vetoriais SVG Privadas
-            </h3>
-            <p className="text-xs text-wise-body">
-              Envie arquivos SVG com elementos em preto (#000000) e branco (#ffffff) para compatibilidade instantânea com a engine duotone de renderização em tempo real.
-            </p>
-            <label className="flex flex-col items-center justify-center border-2 border-dashed border-wise-border hover:border-wise-ink bg-wise-canvas-soft rounded-3xl p-8 cursor-pointer transition-all">
-              <div className="w-12 h-12 rounded-full bg-wise-primary flex items-center justify-center text-wise-on-primary mb-3 shadow-xs">
-                <Sparkles className="w-6 h-6" />
+          <div className="space-y-6">
+            {/* Form de Upload de Nova Textura */}
+            <div className="bg-wise-canvas border border-wise-border rounded-4xl p-6 space-y-4 shadow-wise">
+              <h3 className="text-xs font-black text-wise-ink uppercase tracking-wider flex items-center gap-2">
+                <Plus className="w-4 h-4 text-wise-ink" />
+                Cadastrar e Subir Nova Textura / Máscara do Uniforme
+              </h3>
+              <p className="text-xs text-wise-body">
+                Envie arquivos PNG com fundo transparente, texturas de trama de tecido (Dry-Fit, Piquet) ou estampas sublimadas. As novas texturas ficam disponíveis imediatamente no Studio para todos os vendedores.
+              </p>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-[10px] font-black text-wise-mute uppercase mb-1">Nome da Textura</label>
+                  <input
+                    type="text"
+                    placeholder="Ex: Dry-Fit Furadinho 2026"
+                    value={newTextureName}
+                    onChange={(e) => setNewTextureName(e.target.value)}
+                    className="w-full bg-wise-canvas-soft border border-wise-border focus:border-wise-ink rounded-2xl px-4 py-3 text-xs text-wise-ink font-bold outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-black text-wise-mute uppercase mb-1">Categoria / Tipo</label>
+                  <select
+                    value={newTextureCategory}
+                    onChange={(e) => setNewTextureCategory(e.target.value as any)}
+                    className="w-full bg-wise-canvas-soft border border-wise-border focus:border-wise-ink rounded-2xl px-4 py-3 text-xs text-wise-ink font-bold outline-none"
+                  >
+                    <option value="fabric_texture">🧵 Trama de Tecido (Dry-Fit / Piquet)</option>
+                    <option value="mask_part">✂️ Nova Máscara / Recorte de Peça</option>
+                    <option value="pattern">🎨 Estampa Sublimada (Pattern)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-black text-wise-mute uppercase mb-1">Parte de Aplicação</label>
+                  <select
+                    value={newTextureTarget}
+                    onChange={(e) => setNewTextureTarget(e.target.value)}
+                    className="w-full bg-wise-canvas-soft border border-wise-border focus:border-wise-ink rounded-2xl px-4 py-3 text-xs text-wise-ink font-bold outline-none"
+                  >
+                    <option value="all">Uniforme Completo (Todas as partes)</option>
+                    <option value="front">Frente da Camisa</option>
+                    <option value="back">Costas da Camisa</option>
+                    <option value="sleeves">Mangas (Esquerda + Direita)</option>
+                    <option value="collar">Gola</option>
+                  </select>
+                </div>
               </div>
-              <span className="text-xs font-black text-wise-ink">Clique para enviar arquivo SVG da Estampa</span>
-              <span className="text-[11px] text-wise-mute mt-1">Armazenamento isolado no bucket do seu tenant</span>
-              <input type="file" accept=".svg" className="hidden" />
-            </label>
+
+              <label className="flex flex-col items-center justify-center border-2 border-dashed border-wise-border hover:border-wise-ink bg-wise-canvas-soft rounded-3xl p-6 cursor-pointer transition-all">
+                <div className="w-10 h-10 rounded-full bg-wise-primary flex items-center justify-center text-wise-on-primary mb-2 shadow-xs">
+                  <Sparkles className="w-5 h-5" />
+                </div>
+                <span className="text-xs font-black text-wise-ink">
+                  {uploadedTextureFile ? `Arquivo selecionado: ${uploadedTextureFile.name}` : 'Clique para selecionar o arquivo da Textura / Máscara (PNG, SVG ou JPG)'}
+                </span>
+                <span className="text-[11px] text-wise-mute mt-0.5">Suporta PNG transparente com alta resolução</span>
+                <input
+                  type="file"
+                  accept="image/png,image/svg+xml,image/jpeg,image/webp"
+                  onChange={handleFileSelect}
+                  className="hidden"
+                />
+              </label>
+
+              <button
+                type="button"
+                onClick={handleUploadTexture}
+                disabled={!uploadedTextureFile || !newTextureName.trim()}
+                className="bg-wise-primary hover:bg-wise-primary-active disabled:opacity-50 text-wise-on-primary font-black px-6 py-3 rounded-full text-xs transition-all shadow-sm flex items-center gap-2"
+              >
+                <Plus className="w-4 h-4 stroke-[3]" />
+                <span>Salvar e Publicar Textura no Studio</span>
+              </button>
+            </div>
+
+            {/* Lista de Texturas Ativas */}
+            <div className="bg-wise-canvas border border-wise-border rounded-4xl p-6 space-y-4 shadow-wise">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xs font-black text-wise-ink uppercase tracking-wider">
+                  Texturas e Máscaras Disponíveis no Sistema ({textures.length})
+                </h3>
+                <span className="text-[11px] font-bold text-wise-mute">Sincronização em tempo real</span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                {textures.map((tex) => (
+                  <div
+                    key={tex.id}
+                    className="p-4 rounded-3xl bg-wise-canvas-soft border border-wise-border flex flex-col justify-between space-y-3"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="space-y-1">
+                        <span className="text-xs font-black text-wise-ink block leading-tight">{tex.name}</span>
+                        <span className="text-[10px] px-2 py-0.5 rounded-full font-bold uppercase bg-wise-primary-pale text-wise-ink-deep inline-block">
+                          {tex.category === 'fabric_texture'
+                            ? 'Tecido / Relevo'
+                            : tex.category === 'mask_part'
+                            ? 'Máscara'
+                            : 'Estampa'}
+                        </span>
+                      </div>
+                      <button
+                        onClick={() => handleDeleteTexture(tex.id)}
+                        className="text-wise-mute hover:text-wise-negative p-1.5 rounded-full hover:bg-white transition-colors"
+                        title="Excluir textura"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+
+                    <div className="w-full h-24 rounded-2xl bg-white border border-wise-border flex items-center justify-center p-2 overflow-hidden">
+                      <img
+                        src={tex.url}
+                        alt={tex.name}
+                        className="w-full h-full object-contain"
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between text-[10px] font-bold text-wise-mute pt-2 border-t border-wise-border/50">
+                      <span>Aplicação: {tex.targetPart === 'all' ? 'Uniforme Todo' : tex.targetPart}</span>
+                      <span className="text-wise-success font-black">● Ativa</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         )}
 
