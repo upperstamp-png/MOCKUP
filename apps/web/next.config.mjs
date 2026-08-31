@@ -2,6 +2,9 @@
 const nextConfig = {
   reactStrictMode: true,
   transpilePackages: ['@mockup/canvas-engine', '@mockup/types', '@mockup/validation'],
+  experimental: {
+    serverComponentsExternalPackages: ['potrace'],
+  },
   images: {
     remotePatterns: [
       {
