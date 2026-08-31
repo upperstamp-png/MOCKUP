@@ -1,0 +1,46 @@
+name: CI/CD Pipeline - TexCraft QuickMockup B2B SaaS
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  validate:
+    name: Lint, Typecheck, Test & Build
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [20.x, 22.x]
+
+    steps:
+      - name: Checkout Repositório
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+
+      - name: Instalar Dependências
+        run: npm ci
+
+      - name: Typecheck & Compilação de Pacotes
+        run: |
+          npm run build --workspace=@mockup/types
+          npm run build --workspace=@mockup/validation
+          npm run build --workspace=@mockup/canvas-engine
+          npm run build --workspace=@mockup/api
+
+      - name: Executar Testes Unitários (Canvas Engine & Fastify API)
+        run: |
+          node --test packages/canvas-engine/tests/canvas.test.ts
+          node --test apps/api/tests/api.test.ts
+
+      - name: Build da Aplicação Web Next.js 14
+        run: npm run build --workspace=@mockup/web
+        env:
+          NEXT_PUBLIC_API_URL: http://localhost:4000/api/v1

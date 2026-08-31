@@ -1,0 +1,96 @@
+version: '3.8'
+
+services:
+  # 1. FASTIFY API SERVICE
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: api-runner
+    container_name: mockup_api
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=production
+      - PORT=4000
+      - HOST=0.0.0.0
+    expose:
+      - "4000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4000/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    networks:
+      - mockup_net
+
+  # 2. NEXT.JS FRONTEND SERVICE
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: web-runner
+    container_name: mockup_web
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+    expose:
+      - "3000"
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    networks:
+      - mockup_net
+
+  # 3. NGINX REVERSE PROXY & SSL
+  nginx:
+    image: nginx:alpine
+    container_name: mockup_nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - certbot_etc:/etc/letsencrypt
+      - certbot_var:/var/lib/letsencrypt
+      - certbot_challenge:/var/www/certbot
+    depends_on:
+      web:
+        condition: service_healthy
+      api:
+        condition: service_healthy
+    networks:
+      - mockup_net
+
+  # 4. CERTBOT (SSL AUTO RENEW)
+  certbot:
+    image: certbot/certbot
+    container_name: mockup_certbot
+    volumes:
+      - certbot_etc:/etc/letsencrypt
+      - certbot_var:/var/lib/letsencrypt
+      - certbot_challenge:/var/www/certbot
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
+    networks:
+      - mockup_net
+
+networks:
+  mockup_net:
+    driver: bridge
+
+volumes:
+  certbot_etc:
+  certbot_var:
+  certbot_challenge:

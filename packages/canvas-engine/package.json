@@ -1,0 +1,19 @@
+{
+  "name": "@mockup/canvas-engine",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "test": "node --test tests/canvas.test.ts"
+  },
+  "dependencies": {
+    "@mockup/types": "*"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.5"
+  }
+}
