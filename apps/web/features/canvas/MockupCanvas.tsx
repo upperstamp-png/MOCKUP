@@ -243,11 +243,19 @@ export const MockupCanvas: React.FC<MockupCanvasProps> = ({
         if (url.startsWith('<svg')) {
           const resultBitmap = await applyDuotoneToSVG(url, colorA, colorB);
           if (isMounted) setPatternBitmap(resultBitmap);
-        } else if (url.startsWith('data:image/svg') || url.endsWith('.svg')) {
+        } else if (url.startsWith('data:image/svg') || url.endsWith('.svg') || url.includes('.svg')) {
           const res = await fetch(url);
+          if (!res.ok) {
+            throw new Error(`Falha HTTP ${res.status} ao carregar ${url}`);
+          }
           const svgRaw = await res.text();
-          const resultBitmap = await applyDuotoneToSVG(svgRaw, colorA, colorB);
-          if (isMounted) setPatternBitmap(resultBitmap);
+          if (svgRaw && svgRaw.includes('<svg')) {
+            const resultBitmap = await applyDuotoneToSVG(svgRaw, colorA, colorB);
+            if (isMounted) setPatternBitmap(resultBitmap);
+          } else {
+            const fallbackImg = await assetCache.loadImage(url);
+            if (isMounted) setPatternBitmap(fallbackImg);
+          }
         } else {
           // Carrega imagem raster (PNG, JPG, WebP)
           const loadedImg = await assetCache.loadImage(url);

@@ -43,6 +43,10 @@ export async function applyDuotoneToSVG(
   colorA: string,
   colorB: string
 ): Promise<HTMLImageElement | ImageBitmap> {
+  if (!svgRaw || typeof svgRaw !== 'string' || !svgRaw.includes('<svg')) {
+    throw new Error('Conteúdo SVG inválido ou corrompido');
+  }
+
   const normA = normalizeHexColor(colorA);
   const normB = normalizeHexColor(colorB);
 
@@ -54,20 +58,23 @@ export async function applyDuotoneToSVG(
       const parser = new DOMParser();
       const doc = parser.parseFromString(svgRaw, 'image/svg+xml');
 
-      // Verifica se houve erro no parse do XML
       const parserError = doc.querySelector('parsererror');
       if (!parserError) {
-        // Itera sobre todos os elementos do SVG
         const allElements = doc.querySelectorAll('*');
         allElements.forEach((el) => {
+          const tag = el.tagName.toLowerCase();
+
           // Processa atributo 'fill'
           const fill = el.getAttribute('fill');
           if (fill) {
-            if (BLACK_COLOR_REGEX.test(fill.trim())) {
+            if (BLACK_COLOR_REGEX.test(fill.trim()) || fill.trim().toLowerCase() === '#000000') {
               el.setAttribute('fill', normA);
-            } else if (WHITE_COLOR_REGEX.test(fill.trim())) {
+            } else if (WHITE_COLOR_REGEX.test(fill.trim()) || fill.trim().toLowerCase() === '#ffffff') {
               el.setAttribute('fill', normB);
             }
+          } else if (['path', 'polygon', 'rect', 'circle', 'ellipse', 'text'].includes(tag)) {
+            // Em SVG o fill padrão é preto, então atribui Cor A
+            el.setAttribute('fill', normA);
           }
 
           // Processa atributo 'stroke'
@@ -80,7 +87,7 @@ export async function applyDuotoneToSVG(
             }
           }
 
-          // Processa atributo 'stop-color' (em gradientes)
+          // Processa atributo 'stop-color' (gradientes)
           const stopColor = el.getAttribute('stop-color');
           if (stopColor) {
             if (BLACK_COLOR_REGEX.test(stopColor.trim())) {
@@ -90,7 +97,7 @@ export async function applyDuotoneToSVG(
             }
           }
 
-          // Processa estilos inline (style="fill: #000; stroke: #fff;")
+          // Processa estilos inline
           const style = el.getAttribute('style');
           if (style) {
             let newStyle = style
@@ -108,18 +115,16 @@ export async function applyDuotoneToSVG(
         processedSvg = serializer.serializeToString(doc);
       }
     } catch {
-      // Fallback para substituição regex caso DOMParser falhe
+      // Fallback
     }
   }
 
-  // 2. Substituição via Regex (Fallback ou complemento)
+  // 2. Substituição via Regex (Fallback adicional)
   processedSvg = processedSvg
     .replace(/fill="(#000000|#000|black|rgb\(0,\s*0,\s*0\))"/gi, `fill="${normA}"`)
     .replace(/fill="(#ffffff|#fff|white|rgb\(255,\s*255,\s*255\))"/gi, `fill="${normB}"`)
     .replace(/stroke="(#000000|#000|black|rgb\(0,\s*0,\s*0\))"/gi, `stroke="${normA}"`)
-    .replace(/stroke="(#ffffff|#fff|white|rgb\(255,\s*255,\s*255\))"/gi, `stroke="${normB}"`)
-    .replace(/stop-color="(#000000|#000|black|rgb\(0,\s*0,\s*0\))"/gi, `stop-color="${normA}"`)
-    .replace(/stop-color="(#ffffff|#fff|white|rgb\(255,\s*255,\s*255\))"/gi, `stop-color="${normB}"`);
+    .replace(/stroke="(#ffffff|#fff|white|rgb\(255,\s*255,\s*255\))"/gi, `stroke="${normB}"`);
 
   // 3. Conversão para Blob e Carregamento como Imagem
   const blob = new Blob([processedSvg], { type: 'image/svg+xml;charset=utf-8' });
@@ -127,7 +132,6 @@ export async function applyDuotoneToSVG(
 
   try {
     const img = await assetCache.loadImage(objectUrl, false);
-    // Libera o object URL após o carregamento
     URL.revokeObjectURL(objectUrl);
     return img;
   } catch (err) {
