@@ -2,6 +2,7 @@
 
 const express = require('express');
 const { validateBody } = require('../middleware/validate');
+const { ValidationError } = require('../utils/errors');
 const {
   campaignCreateSchema,
   campaignMetricSchema,
@@ -13,6 +14,25 @@ const {
 const { requireCsrf } = require('../middleware/csrfMiddleware');
 const { getEventCatalog } = require('../tracking/eventCatalog');
 const { getQueueMetrics } = require('../jobs/queues');
+
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const VALID_INTEGRATION_TARGETS = new Set([
+  'supabase',
+  'redis',
+  'meta_capi',
+  'ga4_mp',
+  'meta_marketing_api',
+  'ga4_data_api',
+  'google_ads_api'
+]);
+
+function assertUuidParam(value, label = 'Identificador') {
+  const clean = String(value || '').trim();
+  if (!UUID_REGEX.test(clean)) {
+    throw new ValidationError(`${label} inválido.`);
+  }
+  return clean;
+}
 
 function createAdminMarketingRoutes({
   campaignsRepo,
@@ -77,7 +97,8 @@ function createAdminMarketingRoutes({
     validateBody(campaignMetricSchema),
     async (req, res, next) => {
       try {
-        const metric = await campaignsRepo.upsertCampaignMetrics(req.params.id, req.validatedBody);
+        const campaignId = assertUuidParam(req.params.id, 'ID da campanha');
+        const metric = await campaignsRepo.upsertCampaignMetrics(campaignId, req.validatedBody);
         res.status(201).json({ metric });
       } catch (err) {
         next(err);
@@ -162,13 +183,14 @@ function createAdminMarketingRoutes({
     validateBody(automationRuleUpdateSchema),
     async (req, res, next) => {
       try {
-        const updated = await automationsRepo.updateRule(req.params.id, req.validatedBody);
+        const ruleId = assertUuidParam(req.params.id, 'ID da regra');
+        const updated = await automationsRepo.updateRule(ruleId, req.validatedBody);
         await settingsRepo.recordAuditLog({
           actor_admin_id: req.adminUser.id,
           actor_email: req.adminUser.email,
           action: 'automation_rule.updated',
           entity_type: 'automation_rule',
-          entity_id: req.params.id,
+          entity_id: ruleId,
           changes: req.validatedBody
         });
         res.json({ rule: updated });
@@ -183,7 +205,8 @@ function createAdminMarketingRoutes({
     requireRole(['super_admin', 'expansion_director', 'marketing_analyst']),
     async (req, res, next) => {
       try {
-        const jobRecord = await automationsRepo.getJobById(req.params.id);
+        const jobId = assertUuidParam(req.params.id, 'ID do job');
+        const jobRecord = await automationsRepo.getJobById(jobId);
         const queueKey = jobRecord.queue_name === 'tracking-events' ? 'tracking' : 'automations';
         const resEnqueue = await enqueueJob({
           queueKey,
@@ -253,7 +276,8 @@ function createAdminMarketingRoutes({
     validateBody(blogPostSchema),
     async (req, res, next) => {
       try {
-        const post = await blogService.updatePostAdmin(req.params.id, req.validatedBody, req.adminUser);
+        const postId = assertUuidParam(req.params.id, 'ID do artigo');
+        const post = await blogService.updatePostAdmin(postId, req.validatedBody, req.adminUser);
         res.json({ post });
       } catch (err) {
         next(err);
@@ -266,13 +290,14 @@ function createAdminMarketingRoutes({
     requireRole(['super_admin', 'expansion_director']),
     async (req, res, next) => {
       try {
-        const result = await blogRepo.deletePost(req.params.id);
+        const postId = assertUuidParam(req.params.id, 'ID do artigo');
+        const result = await blogRepo.deletePost(postId);
         await settingsRepo.recordAuditLog({
           actor_admin_id: req.adminUser.id,
           actor_email: req.adminUser.email,
           action: 'blog.post_deleted',
           entity_type: 'blog_post',
-          entity_id: req.params.id
+          entity_id: postId
         });
         res.json(result);
       } catch (err) {
@@ -324,13 +349,17 @@ function createAdminMarketingRoutes({
     requireRole(['super_admin', 'expansion_director', 'marketing_analyst']),
     async (req, res, next) => {
       try {
-        const result = await integrationTestService.testIntegration(req.params.target);
+        const target = String(req.params.target || '').trim();
+        if (!VALID_INTEGRATION_TARGETS.has(target)) {
+          throw new ValidationError('Integração solicitada não reconhecida.');
+        }
+        const result = await integrationTestService.testIntegration(target);
         await settingsRepo.recordAuditLog({
           actor_admin_id: req.adminUser.id,
           actor_email: req.adminUser.email,
           action: 'integration.tested',
           entity_type: 'integration',
-          entity_id: req.params.target,
+          entity_id: target,
           changes: { ok: result.ok, status: result.status }
         });
         res.json(result);

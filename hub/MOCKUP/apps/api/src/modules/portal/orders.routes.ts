@@ -11,6 +11,8 @@ import {
 import { evaluateOrderProductionReleaseGate } from '../../services/businessEngine.js';
 import { notifyUnitRoles, recordAuditLog } from '../../services/auditAndNotify.js';
 
+const uuidSchema = z.string().uuid();
+
 const orderItemInputSchema = z.object({
   productId: z.string().uuid().optional().nullable(),
   productSku: z.string().min(1),
@@ -119,6 +121,9 @@ export async function portalOrdersRoutes(fastify: FastifyInstance): Promise<void
     { preHandler: [requirePortalAuth, requirePermission('orders:read')] },
     async (request, reply) => {
       const { id } = request.params as { id: string };
+      if (!uuidSchema.safeParse(id).success) {
+        return reply.status(400).send({ statusCode: 400, code: 'VALIDATION_ERROR', message: 'ID do pedido inválido.' });
+      }
       const orderRes = await dbQuery(
         `SELECT o.*, c.name AS customer_name, u.name AS unit_name, u.code AS unit_code,
                 ap.title AS art_project_title, ap.status AS art_project_status,
@@ -189,6 +194,24 @@ export async function portalOrdersRoutes(fastify: FastifyInstance): Promise<void
       ]);
       if (!custRes.rows[0] || custRes.rows[0].unit_id !== ctx.activeUnitId) {
         return reply.status(403).send({ statusCode: 403, code: 'CUSTOMER_UNIT_MISMATCH', message: 'Cliente inválido para esta unidade.' });
+      }
+      if (d.opportunityId) {
+        const oppRes = await dbQuery<{ unit_id: string }>(`SELECT unit_id FROM portal.opportunities WHERE id = $1`, [d.opportunityId]);
+        if (!oppRes.rows[0] || oppRes.rows[0].unit_id !== ctx.activeUnitId) {
+          return reply.status(403).send({ statusCode: 403, code: 'OPPORTUNITY_UNIT_MISMATCH', message: 'Oportunidade inválida para esta unidade.' });
+        }
+      }
+      if (d.quoteId) {
+        const qRes = await dbQuery<{ unit_id: string }>(`SELECT unit_id FROM portal.quotes WHERE id = $1`, [d.quoteId]);
+        if (!qRes.rows[0] || qRes.rows[0].unit_id !== ctx.activeUnitId) {
+          return reply.status(403).send({ statusCode: 403, code: 'QUOTE_UNIT_MISMATCH', message: 'Orçamento inválido para esta unidade.' });
+        }
+      }
+      if (d.artProjectId) {
+        const apCheck = await dbQuery<{ unit_id: string }>(`SELECT unit_id FROM portal.art_projects WHERE id = $1`, [d.artProjectId]);
+        if (!apCheck.rows[0] || apCheck.rows[0].unit_id !== ctx.activeUnitId) {
+          return reply.status(403).send({ statusCode: 403, code: 'ART_UNIT_MISMATCH', message: 'Projeto de arte inválido para esta unidade.' });
+        }
       }
 
       // Bloqueia criação de pedido para SKU/produto sob revisão jurídica de marca (P03)
@@ -367,6 +390,9 @@ export async function portalOrdersRoutes(fastify: FastifyInstance): Promise<void
     { preHandler: [requirePortalAuth, requirePermission('orders:create')] },
     async (request, reply) => {
       const { id } = request.params as { id: string };
+      if (!uuidSchema.safeParse(id).success) {
+        return reply.status(400).send({ statusCode: 400, code: 'VALIDATION_ERROR', message: 'ID do pedido inválido.' });
+      }
       const existing = await dbQuery<{
         unit_id: string;
         production_status: string;
@@ -468,6 +494,9 @@ export async function portalOrdersRoutes(fastify: FastifyInstance): Promise<void
     { preHandler: [requirePortalAuth, requirePermission('orders:create')] },
     async (request, reply) => {
       const { id } = request.params as { id: string };
+      if (!uuidSchema.safeParse(id).success) {
+        return reply.status(400).send({ statusCode: 400, code: 'VALIDATION_ERROR', message: 'ID do pedido inválido.' });
+      }
       const existing = await dbQuery<{ unit_id: string; production_status: string }>(
         `SELECT unit_id, production_status FROM portal.orders WHERE id = $1`,
         [id]
@@ -531,6 +560,9 @@ export async function portalOrdersRoutes(fastify: FastifyInstance): Promise<void
     { preHandler: [requirePortalAuth, requireAnyPermission(['arts:approve', 'orders:create'])] },
     async (request, reply) => {
       const { id } = request.params as { id: string };
+      if (!uuidSchema.safeParse(id).success) {
+        return reply.status(400).send({ statusCode: 400, code: 'VALIDATION_ERROR', message: 'ID do pedido inválido.' });
+      }
       const existing = await dbQuery<{ unit_id: string; approved_art_version_id: string | null }>(
         `SELECT unit_id, approved_art_version_id FROM portal.orders WHERE id = $1`,
         [id]
@@ -612,6 +644,9 @@ export async function portalOrdersRoutes(fastify: FastifyInstance): Promise<void
     },
     async (request, reply) => {
       const { id } = request.params as { id: string };
+      if (!uuidSchema.safeParse(id).success) {
+        return reply.status(400).send({ statusCode: 400, code: 'VALIDATION_ERROR', message: 'ID do pedido inválido.' });
+      }
       const schema = z.object({
         capacityOk: z.boolean().default(true),
         estimatedDeliveryDate: z.string().optional().nullable(),
@@ -658,6 +693,9 @@ export async function portalOrdersRoutes(fastify: FastifyInstance): Promise<void
     { preHandler: [requirePortalAuth, requireAnyPermission(['orders:create', 'orders:override_release'])] },
     async (request, reply) => {
       const { id } = request.params as { id: string };
+      if (!uuidSchema.safeParse(id).success) {
+        return reply.status(400).send({ statusCode: 400, code: 'VALIDATION_ERROR', message: 'ID do pedido inválido.' });
+      }
       const schema = z.object({
         override: z.boolean().optional().default(false),
         overrideReason: z.string().optional().nullable(),
@@ -816,6 +854,9 @@ export async function portalOrdersRoutes(fastify: FastifyInstance): Promise<void
     },
     async (request, reply) => {
       const { id } = request.params as { id: string };
+      if (!uuidSchema.safeParse(id).success) {
+        return reply.status(400).send({ statusCode: 400, code: 'VALIDATION_ERROR', message: 'ID do pedido inválido.' });
+      }
       const schema = z.object({
         stageCode: z.enum([
           'queued_pcp',
@@ -927,6 +968,9 @@ export async function portalOrdersRoutes(fastify: FastifyInstance): Promise<void
     },
     async (request, reply) => {
       const { id } = request.params as { id: string };
+      if (!uuidSchema.safeParse(id).success) {
+        return reply.status(400).send({ statusCode: 400, code: 'VALIDATION_ERROR', message: 'ID do pedido inválido.' });
+      }
       const schema = z.object({
         status: z.enum(['preparing', 'dispatched', 'in_transit', 'delivered', 'delayed']),
         carrierName: z.string().optional().nullable(),
@@ -991,6 +1035,13 @@ export async function portalOrdersRoutes(fastify: FastifyInstance): Promise<void
           delivered: 'delivered',
           delayed: 'issue_reported',
         };
+        const shipmentStatusLabels: Record<string, string> = {
+          preparing: 'Em preparação',
+          dispatched: 'Despachado',
+          in_transit: 'Em trânsito',
+          delivered: 'Entregue',
+          delayed: 'Atraso registrado',
+        };
 
         await client.query(
           `UPDATE portal.orders SET
@@ -1013,7 +1064,7 @@ export async function portalOrdersRoutes(fastify: FastifyInstance): Promise<void
             body:
               d.status === 'delivered'
                 ? `Recebido por ${d.receiverName}.`
-                : `Status: ${d.status}${d.trackingCode ? ` · Rastreio: ${d.trackingCode}` : ''}.`,
+                : `Status: ${shipmentStatusLabels[d.status] || d.status}${d.trackingCode ? ` · Rastreio: ${d.trackingCode}` : ''}.`,
             actionUrl: '/?tab=orders',
             entityType: 'order',
             entityId: id,
@@ -1034,6 +1085,9 @@ export async function portalOrdersRoutes(fastify: FastifyInstance): Promise<void
     { preHandler: [requirePortalAuth, requirePermission('orders:create')] },
     async (request, reply) => {
       const { id } = request.params as { id: string };
+      if (!uuidSchema.safeParse(id).success) {
+        return reply.status(400).send({ statusCode: 400, code: 'VALIDATION_ERROR', message: 'ID do pedido inválido.' });
+      }
       const schema = z.object({ reason: z.string().min(4, 'Motivo de cancelamento obrigatório') });
       const parsed = schema.safeParse(request.body);
       if (!parsed.success) {

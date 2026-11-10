@@ -44,25 +44,75 @@
   }
   </script>
 </head>
-<body>
+<body style="min-height:100vh;display:flex;flex-direction:column;">
   <header class="ks-header">
     <div class="ks-container ks-header-inner">
       <a href="/" class="ks-logo-link" aria-label="King Sports Franchising">
         <img src="/assets/images/logo-king-dark-bg.png" alt="King Sports Franchising" width="136" height="34" />
       </a>
-      <a href="/" class="ks-btn ks-btn-secondary ks-btn-sm">Voltar ao site</a>
+      <nav class="ks-nav" aria-label="Navegação principal">
+        <a href="/">Início</a>
+        <a href="/blog">Blog</a>
+        <a href="/privacidade.html">Privacidade</a>
+        <a href="/termos.html" class="active">Termos</a>
+      </nav>
+      <a href="/" class="ks-btn ks-btn-secondary ks-btn-sm ks-header-cta">Voltar ao site</a>
+      <button type="button" class="ks-hamburger" id="ks-hamburger-btn" aria-label="Abrir menu" aria-expanded="false">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4">
+          <path d="M4 6h16M4 12h16M4 18h16" stroke-linecap="round" />
+        </svg>
+      </button>
     </div>
+    <nav class="ks-mobile-drawer" id="ks-mobile-drawer" aria-label="Menu Mobile">
+      <a href="/">Página Inicial</a>
+      <a href="/blog">Blog Técnico</a>
+      <a href="/privacidade.html">Política de Privacidade (LGPD)</a>
+      <a href="/termos.html">Termos &amp; Lei nº 13.966/2019</a>
+      <a href="/#candidatura" class="ks-btn ks-btn-primary ks-btn-sm">Quero Conhecer a Franquia</a>
+    </nav>
   </header>
-  <main class="ks-container" style="max-width:860px;padding:56px 24px 80px;">
+  <main class="ks-container ks-legal-main" style="flex:1;">
     <span class="ks-tag">COMPLIANCE LEI Nº 13.966/2019</span>
-    <h1 style="font-family:var(--ks-font-display);font-size:clamp(2rem,4vw,2.8rem);text-transform:uppercase;line-height:1;margin:16px 0 22px;">Termos de Uso e Aviso Legal de Franquias</h1>
+    <h1 class="ks-legal-title">Termos de Uso e Aviso Legal de Franquias</h1>
     <div style="display:flex;flex-direction:column;gap:18px;color:var(--ks-text-light);line-height:1.72;">
       <p>As informações apresentadas nesta plataforma têm caráter informativo e comercial preliminar para apresentação do projeto de expansão de unidades home based da <strong>King Sports</strong>.</p>
       <p><strong>Investimento de referência:</strong> O valor de referência de R$ 20.000,00 está sujeito à confirmação do modelo comercial, fiscal e jurídico definitivo no ato de entrega da Circular de Oferta de Franquia (COF).</p>
       <p><strong>Prazo Legal da COF:</strong> Em estrito cumprimento ao Art. 2º, § 1º da Lei Federal nº 13.966/2019, nenhum pré-contrato, contrato de franquia ou cobrança de taxa de adesão é realizado sem a entrega prévia da COF completa com antecedência mínima de 10 (dez) dias corridos.</p>
       <p><strong>Ausência de Garantia de Resultados:</strong> O sucesso de qualquer unidade franqueada depende da dedicação comercial do operador, características do mercado local, gestão empresarial da ME/SLU e condições econômicas regionais.</p>
+      <p><strong>Privacidade e Preferências de Cookies:</strong> Para consultar o tratamento de dados pessoais acesse a <a href="/privacidade.html" style="color:var(--ks-sky);text-decoration:underline;">Política de Privacidade</a> ou ajuste seu consentimento abaixo:</p>
+      <div>
+        <button type="button" class="ks-btn ks-btn-primary ks-btn-sm" id="ks-open-consent-prefs">Alterar Preferências de Cookies</button>
+      </div>
     </div>
   </main>
+  <footer class="ks-footer">
+    <div class="ks-container ks-footer-grid">
+      <div>
+        <img src="/assets/images/logo-king-dark-bg.png" alt="King Sports Franchising" width="144" height="36" />
+        <p class="ks-footer-note">Expansão Nacional de Franquias Home Based • Indústria homologada King Sports LTDA (São Paulo/SP).</p>
+      </div>
+      <div>
+        <h4>Navegação</h4>
+        <ul>
+          <li><a href="/">Landing Page da Franquia</a></li>
+          <li><a href="/blog">Blog Técnico</a></li>
+          <li><a href="/#candidatura">Formulário de Candidatura</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Transparência &amp; LGPD</h4>
+        <ul>
+          <li><a href="/privacidade.html">Política de Privacidade</a></li>
+          <li><a href="/termos.html">Termos &amp; Lei nº 13.966/2019</a></li>
+          <li><button type="button" class="ks-link-btn" data-open-consent-prefs="1">Alterar Preferências de Cookies</button></li>
+        </ul>
+      </div>
+    </div>
+    <div class="ks-container ks-footer-bottom">
+      <span>&copy; 2026 King Sports Franchising. Todos os direitos reservados.</span>
+      <span>Conformidade LGPD (Lei nº 13.709/2018) &amp; Lei nº 13.966/2019.</span>
+    </div>
+  </footer>
   <script src="/assets/js/tracking.js" defer></script>
 </body>
 </html>

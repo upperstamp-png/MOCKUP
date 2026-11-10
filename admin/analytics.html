@@ -12,7 +12,262 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/admin/assets/css/admin.css" />
+  <link rel="stylesheet" href="/assets/css/admin.css" />
+  <style>
+    html, body {
+      max-width: 100%;
+      overflow-x: hidden;
+    }
+
+    .ad-shell,
+    .ad-main,
+    .ad-card,
+    .ad-kpi-card {
+      min-width: 0;
+    }
+
+    .ad-table-wrap {
+      width: 100%;
+      max-width: 100%;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .ad-section-gap {
+      margin-bottom: 18px;
+    }
+
+    .ad-card-title {
+      flex-wrap: wrap;
+    }
+
+    .ad-filter-select {
+      width: auto;
+      min-width: 180px;
+      max-width: 100%;
+    }
+
+    .ad-int-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .ad-int-card {
+      background: var(--ad-bg);
+      border: 1px solid var(--ad-border);
+      border-radius: 12px;
+      padding: 14px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      min-width: 0;
+    }
+
+    .ad-int-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .ad-int-title {
+      font-weight: 700;
+      font-size: 0.92rem;
+      color: #FFFFFF;
+    }
+
+    .ad-int-desc {
+      font-size: 0.82rem;
+      color: var(--ad-text-muted);
+      line-height: 1.45;
+    }
+
+    .ad-int-foot {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid rgba(158, 201, 255, 0.14);
+      font-size: 0.8rem;
+      color: var(--ad-text-muted);
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .ad-state-box {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 18px;
+      border-radius: 10px;
+      border: 1px dashed var(--ad-border);
+      background: rgba(2, 6, 14, 0.55);
+      color: var(--ad-text-muted);
+      font-size: 0.88rem;
+    }
+
+    .ad-state-title {
+      font-weight: 700;
+      color: #FFFFFF;
+      font-size: 0.94rem;
+    }
+
+    .ad-loading-box {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 16px 4px;
+      color: var(--ad-text-muted);
+      font-size: 0.88rem;
+    }
+
+    .ad-spinner {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      border: 2px solid rgba(104, 216, 255, 0.25);
+      border-top-color: var(--ad-sky);
+      animation: adSpin 0.75s linear infinite;
+      flex-shrink: 0;
+    }
+
+    @keyframes adSpin {
+      to { transform: rotate(360deg); }
+    }
+
+    .ad-error-inline {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .ad-summary-bar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 12px;
+      font-size: 0.82rem;
+      color: var(--ad-text-muted);
+    }
+
+    .ad-code-pill {
+      display: inline-block;
+      max-width: 210px;
+      word-break: break-all;
+      font-size: 0.76rem;
+      color: #BAE6FD;
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid rgba(158, 201, 255, 0.16);
+      padding: 2px 6px;
+      border-radius: 6px;
+    }
+
+    .ad-sub-meta {
+      font-size: 0.77rem;
+      color: var(--ad-text-muted);
+      margin-top: 3px;
+      line-height: 1.4;
+    }
+
+    .ad-detail-list {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      font-size: 0.8rem;
+      color: #D6E2F1;
+      min-width: 180px;
+      max-width: 300px;
+      word-break: break-word;
+    }
+
+    .ad-link-inline {
+      color: var(--ad-sky);
+      font-weight: 600;
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
+
+    .ad-consent-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+    }
+
+    .ad-url-text {
+      max-width: 240px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: 0.78rem;
+      color: var(--ad-text-muted);
+    }
+
+    .ad-stage-bar-wrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .ad-stage-bar {
+      flex: 1;
+      min-width: 60px;
+      height: 7px;
+      border-radius: 999px;
+      background: rgba(148, 163, 184, 0.16);
+      overflow: hidden;
+    }
+
+    .ad-stage-bar-fill {
+      height: 100%;
+      border-radius: 999px;
+      background: var(--ad-blue);
+    }
+
+    .ad-notice-foot {
+      font-size: 0.78rem;
+      color: var(--ad-text-muted);
+      margin-top: 14px;
+      line-height: 1.45;
+    }
+
+    @media (max-width: 960px) {
+      .ad-int-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .ad-topbar .ad-actions-row,
+      .ad-card-title .ad-actions-row {
+        width: 100%;
+      }
+
+      .ad-filter-select,
+      .ad-topbar .ad-actions-row .ad-btn,
+      .ad-card-title .ad-actions-row .ad-btn {
+        width: 100%;
+        min-width: 0;
+      }
+
+      .ad-card {
+        padding: 16px 14px;
+      }
+
+      .ad-table th,
+      .ad-table td {
+        padding: 9px 10px;
+        font-size: 0.81rem;
+      }
+    }
+  </style>
 </head>
 <body>
   <div class="ad-shell">
@@ -22,177 +277,1025 @@
       <div class="ad-topbar">
         <div>
           <h1>Analytics, Atribuição &amp; Tracking Server-Side</h1>
-          <p class="ad-topbar-sub">Funil regional por UF, logs de deduplicação, envios Meta CAPI / GA4 MP e catálogo LGPD.</p>
+          <p class="ad-topbar-sub">Funil regional por UF, diagnóstico das credenciais Meta CAPI / GA4 / Google Ads, auditoria de conversões e catálogo LGPD.</p>
         </div>
         <div class="ad-actions-row">
-          <select id="period-days" class="ad-select" style="width:auto;">
-            <option value="7">7 dias</option>
-            <option value="30" selected>30 dias</option>
-            <option value="90">90 dias</option>
-            <option value="360">360 dias</option>
+          <select id="period-days" class="ad-select ad-filter-select" aria-label="Selecionar período de análise">
+            <option value="7">Últimos 7 dias</option>
+            <option value="30" selected>Últimos 30 dias</option>
+            <option value="90">Últimos 90 dias</option>
+            <option value="360">Últimos 360 dias</option>
           </select>
           <button type="button" id="refresh-all" class="ad-btn ad-btn-primary">Atualizar</button>
         </div>
       </div>
 
       <div id="ad-global-alert"></div>
+      <div id="analytics-kpis" class="ad-kpi-grid"></div>
 
-      <div class="ad-grid-2" style="margin-bottom:18px;">
+      <section class="ad-card ad-section-gap">
+        <div class="ad-card-title">
+          <span>Status das Credenciais de Tracking Server-Side</span>
+          <a id="cfg-tracking-link" href="#" class="ad-btn ad-btn-secondary ad-btn-sm">Configurar credenciais →</a>
+        </div>
+        <div id="integrations-honest-banner"></div>
+        <div id="integrations-status-grid" class="ad-int-grid">
+          <div class="ad-loading-box"><span class="ad-spinner" aria-hidden="true"></span><span>Verificando credenciais configuradas...</span></div>
+        </div>
+        <div id="integrations-infra-foot" class="ad-int-foot" style="display:none;"></div>
+      </section>
+
+      <div class="ad-grid-2 ad-section-gap">
         <section class="ad-card">
           <div class="ad-card-title"><span>Conversão por Estado (UF)</span></div>
-          <div class="ad-table-wrap" id="uf-table-wrap">Carregando...</div>
+          <div class="ad-table-wrap" id="uf-table-wrap">
+            <div class="ad-loading-box"><span class="ad-spinner" aria-hidden="true"></span><span>Carregando desempenho regional...</span></div>
+          </div>
         </section>
 
         <section class="ad-card">
           <div class="ad-card-title"><span>Distribuição por Estágio do Funil</span></div>
-          <div class="ad-table-wrap" id="stage-table-wrap">Carregando...</div>
+          <div class="ad-table-wrap" id="stage-table-wrap">
+            <div class="ad-loading-box"><span class="ad-spinner" aria-hidden="true"></span><span>Carregando estágios do funil...</span></div>
+          </div>
         </section>
       </div>
 
-      <section class="ad-card" style="margin-bottom:18px;">
+      <section class="ad-card ad-section-gap">
         <div class="ad-card-title">
-          <span>Fila &amp; Auditoria de Conversões Server-Side (`conversion_events`)</span>
+          <span>Fila &amp; Auditoria de Conversões Server-Side</span>
           <div class="ad-actions-row">
-            <select id="filter-platform" class="ad-select" style="width:auto;">
-              <option value="">Todas plataformas</option>
-              <option value="meta_capi">Meta CAPI</option>
+            <select id="filter-platform" class="ad-select ad-filter-select" aria-label="Filtrar conversões por plataforma">
+              <option value="">Todas as plataformas</option>
+              <option value="meta_capi">Meta CAPI (Conversions API)</option>
               <option value="ga4_mp">GA4 Measurement Protocol</option>
               <option value="google_ads_offline">Google Ads Offline</option>
               <option value="internal">CRM Interno</option>
             </select>
-            <select id="filter-status" class="ad-select" style="width:auto;">
-              <option value="">Todos status</option>
+            <select id="filter-status" class="ad-select ad-filter-select" aria-label="Filtrar conversões por status">
+              <option value="">Todos os status</option>
               <option value="sent">Enviado</option>
               <option value="queued">Na fila</option>
               <option value="pending">Pendente</option>
               <option value="skipped_no_consent">Bloqueado (LGPD)</option>
               <option value="skipped_no_credentials">Não configurado</option>
-              <option value="failed">Falhou</option>
-              <option value="dlq">DLQ</option>
+              <option value="failed">Falha no envio</option>
+              <option value="dlq">Falha definitiva</option>
+            </select>
+            <button type="button" id="clear-conv-filters" class="ad-btn ad-btn-secondary ad-btn-sm" style="display:none;">Limpar filtros</button>
+          </div>
+        </div>
+        <div id="conv-summary-bar" class="ad-summary-bar"></div>
+        <div class="ad-table-wrap" id="conv-table-wrap">
+          <div class="ad-loading-box"><span class="ad-spinner" aria-hidden="true"></span><span>Carregando eventos de conversão...</span></div>
+        </div>
+      </section>
+
+      <section class="ad-card ad-section-gap">
+        <div class="ad-card-title">
+          <span>Eventos de Navegação &amp; Microconversões</span>
+          <div class="ad-actions-row">
+            <select id="filter-mkt-event" class="ad-select ad-filter-select" aria-label="Filtrar microconversões por tipo de evento">
+              <option value="">Todos os eventos</option>
+              <option value="page_view">Visualização de página</option>
+              <option value="view_content">Visualização de conteúdo</option>
+              <option value="cta_click">Clique em botão (CTA)</option>
+              <option value="form_start">Início de formulário</option>
+              <option value="form_step_complete">Etapa de formulário</option>
+              <option value="lead_submit">Envio de candidatura</option>
             </select>
           </div>
         </div>
-        <div class="ad-table-wrap" id="conv-table-wrap">Carregando...</div>
-      </section>
-
-      <section class="ad-card" style="margin-bottom:18px;">
-        <div class="ad-card-title"><span>Eventos de Navegação &amp; Microconversões (`marketing_events`)</span></div>
-        <div class="ad-table-wrap" id="mkt-table-wrap">Carregando...</div>
+        <div id="mkt-summary-bar" class="ad-summary-bar"></div>
+        <div class="ad-table-wrap" id="mkt-table-wrap">
+          <div class="ad-loading-box"><span class="ad-spinner" aria-hidden="true"></span><span>Carregando eventos de navegação...</span></div>
+        </div>
       </section>
 
       <section class="ad-card">
         <div class="ad-card-title"><span>Documentação Oficial de Eventos &amp; Regras LGPD</span></div>
-        <div class="ad-table-wrap" id="catalog-table-wrap">Carregando...</div>
+        <div class="ad-table-wrap" id="catalog-table-wrap">
+          <div class="ad-loading-box"><span class="ad-spinner" aria-hidden="true"></span><span>Carregando catálogo de eventos...</span></div>
+        </div>
       </section>
+
+      <p id="analytics-revenue-notice" class="ad-notice-foot"></p>
     </main>
   </div>
 
-  <script src="/admin/assets/js/admin-core.js"></script>
+  <script src="/assets/js/admin-core.js"></script>
   <script>
     (function () {
-      function statusBadge(st) {
-        if (st === 'sent') return '<span class="ad-badge ad-badge-green">Enviado</span>';
-        if (st === 'queued' || st === 'pending') return '<span class="ad-badge ad-badge-blue">' + (st === 'queued' ? 'Na fila' : 'Pendente') + '</span>';
-        if (st === 'skipped_no_consent') return '<span class="ad-badge ad-badge-orange">Bloqueado LGPD</span>';
-        if (st === 'skipped_no_credentials') return '<span class="ad-badge ad-badge-gray">Não configurado</span>';
-        if (st === 'failed' || st === 'dlq') return '<span class="ad-badge ad-badge-red">' + KingAdmin.esc(st.toUpperCase()) + '</span>';
-        return '<span class="ad-badge ad-badge-gray">' + KingAdmin.esc(st) + '</span>';
+      'use strict';
+
+      var PLATFORM_LABELS = {
+        meta_capi: 'Meta CAPI (Conversions API)',
+        ga4_mp: 'GA4 Measurement Protocol',
+        google_ads_offline: 'Google Ads Offline',
+        internal: 'CRM Interno'
+      };
+
+      var STATUS_META = {
+        sent: { label: 'Enviado', badge: 'ad-badge-green' },
+        queued: { label: 'Na fila', badge: 'ad-badge-blue' },
+        pending: { label: 'Pendente', badge: 'ad-badge-blue' },
+        skipped_no_consent: { label: 'Bloqueado (LGPD)', badge: 'ad-badge-orange' },
+        skipped_no_credentials: { label: 'Não configurado', badge: 'ad-badge-gray' },
+        failed: { label: 'Falha no envio', badge: 'ad-badge-red' },
+        dlq: { label: 'Falha definitiva', badge: 'ad-badge-red' }
+      };
+
+      var EVENT_LABELS = {
+        page_view: 'Visualização de página',
+        view_content: 'Visualização de conteúdo',
+        cta_click: 'Clique em botão (CTA)',
+        form_start: 'Início de formulário',
+        form_step_complete: 'Etapa de formulário concluída',
+        lead_submit: 'Envio de candidatura',
+        generate_lead: 'Lead gerado (GA4)',
+        Lead: 'Lead captado (Meta)',
+        lead_qualified: 'Lead qualificado',
+        qualify_lead: 'Lead qualificado (GA4)',
+        Contact: 'Lead qualificado (Meta)',
+        meeting_scheduled: 'Reunião agendada',
+        schedule_meeting: 'Reunião agendada (GA4)',
+        Schedule: 'Reunião agendada (Meta)',
+        franchise_sold: 'Franquia vendida',
+        purchase: 'Venda de franquia (GA4)',
+        Purchase: 'Venda de franquia (Meta)'
+      };
+
+      var SOURCE_LABELS = {
+        client: 'Navegador',
+        server: 'Servidor'
+      };
+
+      var CATALOG_ORIGIN_LABELS = {
+        client: 'Navegador (Client-side)',
+        server: 'Servidor (Server-side)',
+        hybrid_client_and_server: 'Híbrido (Navegador + Servidor)'
+      };
+
+      var CATALOG_CONSENT_LABELS = {
+        analytics: 'Consentimento de Analytics',
+        marketing_for_ads_or_analytics_for_ga4: 'Marketing (Meta/Ads) ou Analytics (GA4)',
+        marketing_for_ads_with_recorded_consent: 'Marketing com consentimento LGPD registrado'
+      };
+
+      var REASON_LABELS = {
+        analytics_consent_not_granted: 'Consentimento de analytics não concedido pelo visitante (LGPD).',
+        marketing_consent_not_granted: 'Consentimento de marketing não concedido pelo visitante (LGPD).',
+        unknown_platform: 'Plataforma de destino não reconhecida.'
+      };
+
+      var PAYLOAD_KEY_LABELS = {
+        cta_id: 'Botão',
+        cta_text: 'Texto do botão',
+        section: 'Seção',
+        slug: 'Artigo',
+        content_type: 'Conteúdo',
+        form_name: 'Formulário',
+        step: 'Etapa',
+        step_name: 'Etapa',
+        track: 'Trilha',
+        state: 'UF'
+      };
+
+      var activeRequestId = 0;
+      var activeTrackingReqId = 0;
+      var cachedDash = null;
+      var cachedConversions = [];
+      var cachedMarketingEvents = [];
+      var cachedCatalog = [];
+      var cachedStatuses = null;
+
+      var cfgLink = document.getElementById('cfg-tracking-link');
+      if (cfgLink) {
+        cfgLink.setAttribute('href', KingAdmin.crmUrl('configuracoes.html'));
+      }
+
+      function platformLabel(platform) {
+        if (!platform) return 'Não informado';
+        return PLATFORM_LABELS[platform] || 'Outra plataforma';
+      }
+
+      function statusInfo(status) {
+        if (!status) return { label: 'Sem status', badge: 'ad-badge-gray' };
+        return STATUS_META[status] || { label: 'Outro status', badge: 'ad-badge-gray' };
+      }
+
+      function statusBadge(status) {
+        var info = statusInfo(status);
+        return '<span class="ad-badge ' + KingAdmin.esc(info.badge) + '">' + KingAdmin.esc(info.label) + '</span>';
+      }
+
+      function eventLabel(eventName) {
+        if (!eventName) return 'Evento sem nome';
+        return EVENT_LABELS[eventName] || String(eventName).replace(/_/g, ' ');
+      }
+
+      function sourceLabel(source) {
+        if (!source) return 'Não informada';
+        return SOURCE_LABELS[source] || 'Outra origem';
+      }
+
+      function formatErrorMessage(msg) {
+        if (!msg) return '';
+        if (REASON_LABELS[msg]) return REASON_LABELS[msg];
+        return String(msg);
+      }
+
+      function loadingHtml(text) {
+        return (
+          '<div class="ad-loading-box">' +
+          '  <span class="ad-spinner" aria-hidden="true"></span>' +
+          '  <span>' + KingAdmin.esc(text || 'Carregando...') + '</span>' +
+          '</div>'
+        );
+      }
+
+      function emptyStateHtml(title, description, actionHtml) {
+        return (
+          '<div class="ad-state-box">' +
+          '  <div class="ad-state-title">' + KingAdmin.esc(title) + '</div>' +
+          '  <p>' + KingAdmin.esc(description) + '</p>' +
+          (actionHtml || '') +
+          '</div>'
+        );
+      }
+
+      function errorStateHtml(title, err, retryTargetAttr) {
+        var msg = (err && err.message) ? err.message : 'Erro de conexão com o servidor.';
+        return (
+          '<div class="ad-alert ad-alert-error ad-error-inline">' +
+          '  <div><strong>' + KingAdmin.esc(title) + ':</strong> ' + KingAdmin.esc(msg) + '</div>' +
+          '  <button type="button" class="ad-btn ad-btn-secondary ad-btn-sm" ' + retryTargetAttr + '>Tentar novamente</button>' +
+          '</div>'
+        );
+      }
+
+      function setLoadingContainers(isFullReload) {
+        var refreshBtn = document.getElementById('refresh-all');
+        if (refreshBtn) {
+          refreshBtn.disabled = true;
+          refreshBtn.textContent = 'Atualizando...';
+        }
+        document.getElementById('ad-global-alert').innerHTML = '';
+
+        if (isFullReload) {
+          document.getElementById('integrations-honest-banner').innerHTML = '';
+          document.getElementById('integrations-status-grid').innerHTML = loadingHtml('Verificando credenciais de tracking...');
+          document.getElementById('integrations-infra-foot').style.display = 'none';
+          document.getElementById('uf-table-wrap').innerHTML = loadingHtml('Carregando desempenho por UF...');
+          document.getElementById('stage-table-wrap').innerHTML = loadingHtml('Carregando distribuição do funil...');
+          document.getElementById('catalog-table-wrap').innerHTML = loadingHtml('Carregando catálogo oficial LGPD...');
+        }
+
+        document.getElementById('conv-table-wrap').innerHTML = loadingHtml('Carregando auditoria de conversões server-side...');
+        if (isFullReload) {
+          document.getElementById('mkt-table-wrap').innerHTML = loadingHtml('Carregando eventos de navegação...');
+        }
+      }
+
+      function restoreRefreshButton() {
+        var refreshBtn = document.getElementById('refresh-all');
+        if (refreshBtn) {
+          refreshBtn.disabled = false;
+          refreshBtn.textContent = 'Atualizar';
+        }
+      }
+
+      function renderKpis(dash, conversions, marketingEvents) {
+        var k = (dash && dash.kpis) || {};
+        var fmtInt = function (v) {
+          return v == null || isNaN(Number(v)) ? '—' : Number(v).toLocaleString('pt-BR');
+        };
+
+        var sentCount = conversions.filter(function (c) { return c.status === 'sent'; }).length;
+        var queuedCount = conversions.filter(function (c) { return c.status === 'queued' || c.status === 'pending'; }).length;
+        var consentBlocked = conversions.filter(function (c) { return c.status === 'skipped_no_consent'; }).length;
+        var noCreds = conversions.filter(function (c) { return c.status === 'skipped_no_credentials'; }).length;
+        var failedCount = conversions.filter(function (c) { return c.status === 'failed' || c.status === 'dlq'; }).length;
+
+        var cards = [
+          {
+            label: 'Leads no Período',
+            val: fmtInt(k.leads_count),
+            sub: 'Qualificados: ' + fmtInt(k.qualified_leads_count) + ' (' + (k.qualification_rate_pct || 0) + '%)'
+          },
+          {
+            label: 'Vendas Contratadas',
+            val: fmtInt(k.sales_count),
+            sub: 'Reuniões: ' + fmtInt(k.meetings_scheduled_count) + ' • Fechamento: ' + (k.close_rate_pct || 0) + '%'
+          },
+          {
+            label: 'Conversões Auditadas',
+            val: fmtInt(conversions.length),
+            sub: 'Enviadas: ' + fmtInt(sentCount) + ' • Fila/Pend.: ' + fmtInt(queuedCount)
+          },
+          {
+            label: 'Bloqueios & Falhas',
+            val: fmtInt(consentBlocked + noCreds + failedCount),
+            sub: 'LGPD: ' + fmtInt(consentBlocked) + ' • Sem cred.: ' + fmtInt(noCreds) + ' • Erros: ' + fmtInt(failedCount)
+          },
+          {
+            label: 'Eventos de Navegação',
+            val: fmtInt(marketingEvents.length),
+            sub: 'Microconversões recentes capturadas'
+          }
+        ];
+
+        document.getElementById('analytics-kpis').innerHTML = cards.map(function (c) {
+          return (
+            '<div class="ad-kpi-card">' +
+            '  <div class="ad-kpi-label">' + KingAdmin.esc(c.label) + '</div>' +
+            '  <div class="ad-kpi-value">' + KingAdmin.esc(c.val) + '</div>' +
+            '  <div class="ad-kpi-sub">' + KingAdmin.esc(c.sub) + '</div>' +
+            '</div>'
+          );
+        }).join('');
+      }
+
+      function credentialCardState(key, rawInfo) {
+        var info = rawInfo || {};
+        var st = info.status || (info.configured ? 'configured' : 'not_configured');
+
+        if (key === 'meta_capi') {
+          if (st === 'configured') {
+            return {
+              title: 'Meta CAPI (Conversions API)',
+              badgeText: 'Configurado',
+              badgeClass: 'ad-badge-green',
+              isConfigured: true,
+              desc: 'Pixel ID e Access Token da Conversions API configurados. Eventos com consentimento de marketing são disparados via servidor com deduplicação por event_id.'
+            };
+          }
+          if (st === 'partial_missing_token' || info.pixel_only_configured) {
+            return {
+              title: 'Meta CAPI (Conversions API)',
+              badgeText: 'Parcial (falta token CAPI)',
+              badgeClass: 'ad-badge-orange',
+              isConfigured: false,
+              desc: 'Apenas o Meta Pixel do navegador está preenchido. Sem o Token da Conversions API, os envios server-side permanecem pausados com status "Não configurado".'
+            };
+          }
+          return {
+            title: 'Meta CAPI (Conversions API)',
+            badgeText: 'Não configurado',
+            badgeClass: 'ad-badge-gray',
+            isConfigured: false,
+            desc: 'Credenciais da Meta CAPI ausentes no servidor. Nenhum evento server-side está sendo enviado à Meta; registros permanecem apenas em auditoria local até a configuração.'
+          };
+        }
+
+        if (key === 'ga4_measurement') {
+          if (st === 'configured') {
+            return {
+              title: 'GA4 Measurement Protocol',
+              badgeText: 'Configurado',
+              badgeClass: 'ad-badge-green',
+              isConfigured: true,
+              desc: 'Measurement ID e API Secret configurados. Conversões de servidor respeitam o consentimento de analytics (LGPD) e deduplicam com o GA4 do navegador.'
+            };
+          }
+          if (st === 'partial_missing_secret' || info.client_only_configured) {
+            return {
+              title: 'GA4 Measurement Protocol',
+              badgeText: 'Parcial (falta API Secret)',
+              badgeClass: 'ad-badge-orange',
+              isConfigured: false,
+              desc: 'Apenas o Measurement ID (navegador) está preenchido. Sem o API Secret, eventos server-side para o GA4 Measurement Protocol ficam retidos como "Não configurado".'
+            };
+          }
+          return {
+            title: 'GA4 Measurement Protocol',
+            badgeText: 'Não configurado',
+            badgeClass: 'ad-badge-gray',
+            isConfigured: false,
+            desc: 'Measurement ID e API Secret do GA4 ausentes no servidor. Nenhum evento server-side está sendo transmitido ao Google Analytics 4.'
+          };
+        }
+
+        // google_ads_api
+        if (st === 'configured') {
+          return {
+            title: 'Google Ads Offline',
+            badgeText: 'Configurado',
+            badgeClass: 'ad-badge-green',
+            isConfigured: true,
+            desc: 'Credenciais OAuth2, Developer Token e Customer ID ativos no servidor. Conversões offline com GCLID/GBRAID/WBRAID ou dados com hash SHA-256 estão habilitadas.'
+          };
+        }
+        if (info.tag_only_configured) {
+          return {
+            title: 'Google Ads Offline',
+            badgeText: 'Parcial (apenas tag web)',
+            badgeClass: 'ad-badge-orange',
+            isConfigured: false,
+            desc: 'Apenas o Conversion ID da tag web foi informado. O envio de conversões offline requer Developer Token, OAuth2 e Customer ID configurados no servidor.'
+          };
+        }
+        return {
+          title: 'Google Ads Offline',
+          badgeText: 'Não configurado',
+          badgeClass: 'ad-badge-gray',
+          isConfigured: false,
+          desc: 'Credenciais completas da Google Ads API (Developer Token, OAuth2 e Customer ID) ausentes no servidor. Conversões offline não são enviadas ao Google Ads.'
+        };
+      }
+
+      function renderIntegrationsStatus(statusResult, conversions) {
+        var bannerEl = document.getElementById('integrations-honest-banner');
+        var gridEl = document.getElementById('integrations-status-grid');
+        var footEl = document.getElementById('integrations-infra-foot');
+
+        if (!statusResult || !statusResult.ok) {
+          var noCredEvents = conversions.filter(function (c) { return c.status === 'skipped_no_credentials'; }).length;
+          bannerEl.innerHTML =
+            '<div class="ad-alert ad-alert-warn">' +
+            '  <strong>Não foi possível verificar as credenciais agora:</strong> ' +
+            KingAdmin.esc((statusResult && statusResult.error && statusResult.error.message) || 'Falha ao consultar integrações.') +
+            (noCredEvents > 0
+              ? ' Há ' + noCredEvents + ' evento(s) marcado(s) como "Não configurado" na auditoria abaixo.'
+              : '') +
+            '</div>';
+          gridEl.innerHTML = '';
+          footEl.style.display = 'none';
+          return;
+        }
+
+        var s = statusResult.statuses || {};
+        var cards = [
+          credentialCardState('meta_capi', s.meta_capi),
+          credentialCardState('ga4_measurement', s.ga4_measurement),
+          credentialCardState('google_ads_api', s.google_ads_api)
+        ];
+
+        var missingNames = cards
+          .filter(function (c) { return !c.isConfigured; })
+          .map(function (c) { return c.title; });
+
+        if (missingNames.length > 0) {
+          bannerEl.innerHTML =
+            '<div class="ad-alert ad-alert-warn">' +
+            '  <strong>Credenciais pendentes (' + KingAdmin.esc(missingNames.join(', ')) + '):</strong> ' +
+            'As plataformas sem credenciais completas não transmitem conversões externamente. Os disparos ficam registrados de forma transparente como <strong>Não configurado</strong> até você cadastrar as chaves reais em Configurações (nenhum envio é simulado).' +
+            '</div>';
+        } else {
+          bannerEl.innerHTML =
+            '<div class="ad-alert ad-alert-info">' +
+            '  <strong>Tracking server-side habilitado:</strong> Meta CAPI, GA4 Measurement Protocol e Google Ads Offline possuem credenciais configuradas no servidor e respeitam o consentimento LGPD de cada visitante.' +
+            '</div>';
+        }
+
+        gridEl.innerHTML = cards.map(function (c) {
+          return (
+            '<article class="ad-int-card">' +
+            '  <div class="ad-int-head">' +
+            '    <span class="ad-int-title">' + KingAdmin.esc(c.title) + '</span>' +
+            '    <span class="ad-badge ' + KingAdmin.esc(c.badgeClass) + '">' + KingAdmin.esc(c.badgeText) + '</span>' +
+            '  </div>' +
+            '  <p class="ad-int-desc">' + KingAdmin.esc(c.desc) + '</p>' +
+            '</article>'
+          );
+        }).join('');
+
+        var gtm = s.gtm || {};
+        var redis = s.redis || {};
+        var gtmText = gtm.configured
+          ? 'Google Tag Manager: Configurado (' + (gtm.id || 'ID ativo') + ')'
+          : 'Google Tag Manager: Não configurado no servidor';
+        var redisOk = redis.connected || redis.status === 'connected' || redis.status === 'ready';
+        var redisText = redisOk
+          ? 'Fila de disparo assíncrono (Redis/BullMQ): Conectada'
+          : 'Fila de disparo assíncrono (Redis/BullMQ): Não configurada ou offline (conversões ficam pendentes na fila)';
+
+        footEl.innerHTML =
+          '<span>' + KingAdmin.esc(gtmText) + '</span>' +
+          '<span>' + KingAdmin.esc(redisText) + '</span>';
+        footEl.style.display = 'flex';
+      }
+
+      function renderRegionalAndStages(dash) {
+        var ufs = (dash && dash.regional_performance) || [];
+        var ufWrap = document.getElementById('uf-table-wrap');
+        if (!ufs.length) {
+          ufWrap.innerHTML = emptyStateHtml(
+            'Sem dados regionais no período',
+            'Quando novos leads forem captados no período selecionado, o desempenho por Estado (UF) aparecerá aqui.'
+          );
+        } else {
+          ufWrap.innerHTML =
+            '<table class="ad-table"><thead><tr><th>UF</th><th>Leads</th><th>Qualificados</th><th>Taxa Qualif.</th><th>Vendas</th></tr></thead><tbody>' +
+            ufs.map(function (r) {
+              var leadsCount = Number(r.leads || 0);
+              var qualCount = Number(r.qualified || 0);
+              var salesCount = Number(r.sales || 0);
+              var qualPct = leadsCount > 0 ? Math.round((qualCount / leadsCount) * 100) + '%' : '0%';
+              return (
+                '<tr>' +
+                '  <td><strong>' + KingAdmin.esc(r.state || 'N/A') + '</strong></td>' +
+                '  <td>' + KingAdmin.esc(leadsCount.toLocaleString('pt-BR')) + '</td>' +
+                '  <td>' + KingAdmin.esc(qualCount.toLocaleString('pt-BR')) + '</td>' +
+                '  <td>' + KingAdmin.esc(qualPct) + '</td>' +
+                '  <td>' + KingAdmin.esc(salesCount.toLocaleString('pt-BR')) + '</td>' +
+                '</tr>'
+              );
+            }).join('') + '</tbody></table>';
+        }
+
+        var stages = (dash && dash.stage_breakdown) || [];
+        var stageWrap = document.getElementById('stage-table-wrap');
+        if (!stages.length) {
+          stageWrap.innerHTML = emptyStateHtml(
+            'Sem estágios de funil carregados',
+            'Nenhum estágio ou oportunidade registrada no período selecionado.'
+          );
+        } else {
+          var totalOpps = stages.reduce(function (sum, st) { return sum + Number(st.count || 0); }, 0);
+          stageWrap.innerHTML =
+            '<table class="ad-table"><thead><tr><th>Estágio</th><th>Oportunidades</th><th>Participação</th></tr></thead><tbody>' +
+            stages.map(function (s) {
+              var count = Number(s.count || 0);
+              var pct = totalOpps > 0 ? Math.round((count / totalOpps) * 100) : 0;
+              return (
+                '<tr>' +
+                '  <td>' + KingAdmin.esc(s.name || 'Sem nome') + '</td>' +
+                '  <td><strong>' + KingAdmin.esc(count.toLocaleString('pt-BR')) + '</strong></td>' +
+                '  <td>' +
+                '    <div class="ad-stage-bar-wrap">' +
+                '      <div class="ad-stage-bar"><div class="ad-stage-bar-fill" style="width:' + pct + '%;"></div></div>' +
+                '      <span style="font-size:0.78rem;color:#AEBBD0;min-width:34px;">' + KingAdmin.esc(pct + '%') + '</span>' +
+                '    </div>' +
+                '  </td>' +
+                '</tr>'
+              );
+            }).join('') + '</tbody></table>';
+        }
+
+        var noticeEl = document.getElementById('analytics-revenue-notice');
+        if (noticeEl) {
+          noticeEl.textContent = (dash && dash.revenue_notice) || '';
+        }
+      }
+
+      function formatConversionDetails(c) {
+        var lines = [];
+
+        if (c.error_message) {
+          lines.push('<span style="color:#FDE68A;">' + KingAdmin.esc(formatErrorMessage(c.error_message)) + '</span>');
+        }
+
+        if (c.response_status != null) {
+          var isOk = Number(c.response_status) >= 200 && Number(c.response_status) < 300;
+          var httpLabel = isOk
+            ? 'Resposta HTTP ' + c.response_status + ' (Aceito)'
+            : 'Resposta HTTP ' + c.response_status;
+          lines.push('<span>' + KingAdmin.esc(httpLabel) + '</span>');
+        }
+
+        var rb = c.response_body;
+        if (rb && typeof rb === 'object' && !Array.isArray(rb)) {
+          if (rb.events_received != null) {
+            lines.push('<span class="ad-sub-meta">Eventos confirmados pela Meta: ' + KingAdmin.esc(String(rb.events_received)) + '</span>');
+          } else if (rb.internal === true) {
+            lines.push('<span class="ad-sub-meta">Registro interno concluído no CRM</span>');
+          } else if (Array.isArray(rb.validationMessages) && rb.validationMessages.length > 0) {
+            var firstMsg = rb.validationMessages[0] && rb.validationMessages[0].description;
+            if (firstMsg) {
+              lines.push('<span class="ad-sub-meta">Validação GA4: ' + KingAdmin.esc(String(firstMsg)) + '</span>');
+            }
+          } else if (rb.error && typeof rb.error === 'object' && rb.error.message) {
+            lines.push('<span class="ad-sub-meta">Retorno API: ' + KingAdmin.esc(String(rb.error.message)) + '</span>');
+          }
+        }
+
+        var attr = c.payload && typeof c.payload === 'object' ? c.payload.attribution : null;
+        if (attr && typeof attr === 'object') {
+          var utmParts = [attr.utm_source, attr.utm_medium, attr.utm_campaign].filter(Boolean);
+          if (utmParts.length) {
+            lines.push('<span class="ad-sub-meta">UTM: ' + KingAdmin.esc(utmParts.join(' / ')) + '</span>');
+          }
+          var clickTokens = [];
+          if (attr.gclid || attr.gbraid || attr.wbraid) clickTokens.push('ID de clique Google');
+          if (attr.fbp || attr.fbc || attr.fbclid) clickTokens.push('Identificador Meta');
+          if (clickTokens.length) {
+            lines.push('<span class="ad-sub-meta">' + KingAdmin.esc(clickTokens.join(' • ')) + '</span>');
+          }
+        }
+
+        if (c.sent_at) {
+          lines.push('<span class="ad-sub-meta">Enviado em: ' + KingAdmin.esc(KingAdmin.formatDate(c.sent_at)) + '</span>');
+        }
+
+        if (!lines.length) {
+          if (c.status === 'pending' || c.status === 'queued') {
+            return '<span class="ad-sub-meta">Aguardando processamento pelo worker</span>';
+          }
+          return '<span class="ad-sub-meta">—</span>';
+        }
+
+        return '<div class="ad-detail-list">' + lines.join('') + '</div>';
+      }
+
+      function renderConversionsTable(convs) {
+        var platformFilter = document.getElementById('filter-platform').value;
+        var statusFilter = document.getElementById('filter-status').value;
+        var hasFilters = Boolean(platformFilter || statusFilter);
+
+        var clearBtn = document.getElementById('clear-conv-filters');
+        if (clearBtn) {
+          clearBtn.style.display = hasFilters ? 'inline-flex' : 'none';
+        }
+
+        var summaryBar = document.getElementById('conv-summary-bar');
+        var activeFilterLabels = [];
+        if (platformFilter) activeFilterLabels.push('Plataforma: ' + platformLabel(platformFilter));
+        if (statusFilter) activeFilterLabels.push('Status: ' + statusInfo(statusFilter).label);
+
+        summaryBar.innerHTML =
+          '<span>Exibindo <strong>' + KingAdmin.esc(convs.length.toLocaleString('pt-BR')) + '</strong> registro(s) de conversão</span>' +
+          (activeFilterLabels.length
+            ? '<span>Filtros ativos: ' + KingAdmin.esc(activeFilterLabels.join(' • ')) + '</span>'
+            : '<span>Deduplicação ativa por event_id entre navegador e servidor</span>');
+
+        var wrap = document.getElementById('conv-table-wrap');
+        if (!convs.length) {
+          if (hasFilters) {
+            wrap.innerHTML = emptyStateHtml(
+              'Nenhuma conversão encontrada para os filtros selecionados',
+              'Ajuste a plataforma ou o status acima, ou limpe os filtros para visualizar todas as conversões registradas.',
+              '<button type="button" class="ad-btn ad-btn-secondary ad-btn-sm" data-clear-conv="1">Limpar filtros</button>'
+            );
+          } else {
+            wrap.innerHTML = emptyStateHtml(
+              'Nenhuma conversão server-side registrada ainda',
+              'As conversões aparecem aqui automaticamente quando um candidato envia o formulário da Landing Page ou avança no funil (Lead Qualificado, Reunião Agendada ou Venda).'
+            );
+          }
+          return;
+        }
+
+        wrap.innerHTML =
+          '<table class="ad-table"><thead><tr>' +
+          '<th>Data</th><th>Evento</th><th>Plataforma</th><th>Deduplicação (event_id)</th><th>Lead</th><th>Status</th><th>Tentativas</th><th>Resumo / Diagnóstico</th>' +
+          '</tr></thead><tbody>' +
+          convs.map(function (c) {
+            var valueHtml = c.event_value_cents != null
+              ? '<div class="ad-sub-meta">Valor: ' + KingAdmin.esc(KingAdmin.formatBrl(Number(c.event_value_cents) / 100)) + '</div>'
+              : '';
+
+            var leadCell = '<span style="color:#AEBBD0;">—</span>';
+            if (c.lead && c.lead.full_name) {
+              var leadLocation = [c.lead.city, c.lead.state].filter(Boolean).join('/');
+              var leadDisplay = leadLocation ? c.lead.full_name + ' (' + leadLocation + ')' : c.lead.full_name;
+              if (c.lead.id) {
+                var leadHref = KingAdmin.crmUrl('lead-detalhes.html?id=' + encodeURIComponent(c.lead.id));
+                leadCell = '<a href="' + KingAdmin.esc(leadHref) + '" class="ad-link-inline">' + KingAdmin.esc(leadDisplay) + '</a>';
+              } else {
+                leadCell = KingAdmin.esc(leadDisplay);
+              }
+            }
+
+            return (
+              '<tr>' +
+              '  <td style="white-space:nowrap;">' + KingAdmin.esc(KingAdmin.formatDate(c.created_at)) + '</td>' +
+              '  <td><strong>' + KingAdmin.esc(eventLabel(c.event_name)) + '</strong>' + valueHtml + '</td>' +
+              '  <td>' + KingAdmin.esc(platformLabel(c.platform)) + '</td>' +
+              '  <td><code class="ad-code-pill">' + KingAdmin.esc(c.event_id || '—') + '</code></td>' +
+              '  <td>' + leadCell + '</td>' +
+              '  <td>' + statusBadge(c.status) + '</td>' +
+              '  <td>' + KingAdmin.esc(String(c.attempts || 0)) + '</td>' +
+              '  <td>' + formatConversionDetails(c) + '</td>' +
+              '</tr>'
+            );
+          }).join('') +
+          '</tbody></table>';
+      }
+
+      function formatConsentSummary(snapshot) {
+        if (!snapshot || typeof snapshot !== 'object' || Object.keys(snapshot).length === 0) {
+          return '<span class="ad-sub-meta">Sem registro</span>';
+        }
+        var analytics = Boolean(snapshot.analytics ?? snapshot.analytics_consent);
+        var marketing = Boolean(snapshot.marketing ?? snapshot.marketing_consent);
+        return (
+          '<div class="ad-consent-chips">' +
+          '  <span class="ad-badge ' + (analytics ? 'ad-badge-green' : 'ad-badge-gray') + '">Analytics: ' + (analytics ? 'Sim' : 'Não') + '</span>' +
+          '  <span class="ad-badge ' + (marketing ? 'ad-badge-green' : 'ad-badge-gray') + '">Marketing: ' + (marketing ? 'Sim' : 'Não') + '</span>' +
+          '</div>'
+        );
+      }
+
+      function formatMarketingPayloadSummary(payload) {
+        if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+          return '<span class="ad-sub-meta">Sem detalhes</span>';
+        }
+        var keys = Object.keys(payload);
+        if (!keys.length) {
+          return '<span class="ad-sub-meta">Sem parâmetros adicionais</span>';
+        }
+
+        var parts = [];
+        for (var i = 0; i < keys.length && parts.length < 4; i++) {
+          var k = keys[i];
+          var val = payload[k];
+          if (val == null || val === '' || typeof val === 'object') continue;
+          var label = PAYLOAD_KEY_LABELS[k] || k.replace(/_/g, ' ');
+          var formattedVal = String(val);
+          if (k === 'content_type' && formattedVal === 'blog_article') formattedVal = 'Artigo do Blog';
+          if (k === 'form_name' && formattedVal === 'candidatura_franquia') formattedVal = 'Candidatura à Franquia';
+          parts.push(label + ': ' + formattedVal.slice(0, 60));
+        }
+
+        if (!parts.length) {
+          return '<span class="ad-sub-meta">Metadados internos registrados</span>';
+        }
+
+        return '<div class="ad-detail-list">' + parts.map(function (p) {
+          return '<span>' + KingAdmin.esc(p) + '</span>';
+        }).join('') + '</div>';
+      }
+
+      function formatDisplayUrl(rawUrl) {
+        if (!rawUrl) return '—';
+        try {
+          var parsed = new URL(rawUrl);
+          return parsed.pathname + (parsed.search ? parsed.search.slice(0, 40) : '');
+        } catch (e) {
+          return String(rawUrl);
+        }
+      }
+
+      function renderMarketingEventsTable() {
+        var selectedEvent = document.getElementById('filter-mkt-event').value;
+        var filtered = selectedEvent
+          ? cachedMarketingEvents.filter(function (m) { return m.event_name === selectedEvent; })
+          : cachedMarketingEvents;
+
+        var shown = filtered.slice(0, 35);
+        var summaryEl = document.getElementById('mkt-summary-bar');
+        summaryEl.innerHTML =
+          '<span>Exibindo <strong>' + KingAdmin.esc(shown.length.toLocaleString('pt-BR')) + '</strong> de <strong>' + KingAdmin.esc(filtered.length.toLocaleString('pt-BR')) + '</strong> evento(s) de navegação</span>' +
+          (selectedEvent ? '<span>Filtro: ' + KingAdmin.esc(eventLabel(selectedEvent)) + '</span>' : '');
+
+        var wrap = document.getElementById('mkt-table-wrap');
+        if (!shown.length) {
+          if (selectedEvent) {
+            wrap.innerHTML = emptyStateHtml(
+              'Nenhum evento desse tipo encontrado',
+              'Não há registros recentes de "' + eventLabel(selectedEvent) + '". Selecione "Todos os eventos" para visualizar o histórico completo.',
+              '<button type="button" class="ad-btn ad-btn-secondary ad-btn-sm" data-clear-mkt="1">Mostrar todos os eventos</button>'
+            );
+          } else {
+            wrap.innerHTML = emptyStateHtml(
+              'Nenhum evento de navegação ou microconversão registrado',
+              'Os eventos são capturados quando visitantes interagem com a Landing Page ou Blog após aceitar cookies de analytics ou marketing.'
+            );
+          }
+          return;
+        }
+
+        wrap.innerHTML =
+          '<table class="ad-table"><thead><tr>' +
+          '<th>Data</th><th>Evento</th><th>Origem</th><th>Sessão / ID</th><th>Consentimento LGPD</th><th>Resumo da Interação</th><th>Página</th>' +
+          '</tr></thead><tbody>' +
+          shown.map(function (m) {
+            var sessShort = m.session_id ? String(m.session_id).slice(0, 12) : '—';
+            var pageDisplay = formatDisplayUrl(m.page_url);
+            return (
+              '<tr>' +
+              '  <td style="white-space:nowrap;">' + KingAdmin.esc(KingAdmin.formatDate(m.created_at)) + '</td>' +
+              '  <td><strong>' + KingAdmin.esc(eventLabel(m.event_name)) + '</strong></td>' +
+              '  <td>' + KingAdmin.esc(sourceLabel(m.source)) + '</td>' +
+              '  <td>' +
+              '    <div><code class="ad-code-pill">' + KingAdmin.esc(sessShort) + '</code></div>' +
+              '    <div class="ad-sub-meta">ID: ' + KingAdmin.esc(m.event_id ? String(m.event_id).slice(0, 18) : '—') + '</div>' +
+              '  </td>' +
+              '  <td>' + formatConsentSummary(m.consent_snapshot) + '</td>' +
+              '  <td>' + formatMarketingPayloadSummary(m.payload) + '</td>' +
+              '  <td><div class="ad-url-text" title="' + KingAdmin.esc(m.page_url || '') + '">' + KingAdmin.esc(pageDisplay) + '</div></td>' +
+              '</tr>'
+            );
+          }).join('') +
+          '</tbody></table>';
+      }
+
+      function renderCatalogTable(catalog) {
+        var wrap = document.getElementById('catalog-table-wrap');
+        if (!catalog || !catalog.length) {
+          wrap.innerHTML = emptyStateHtml(
+            'Catálogo de eventos indisponível',
+            'Nenhum evento documentado foi retornado pela API.'
+          );
+          return;
+        }
+
+        wrap.innerHTML =
+          '<table class="ad-table"><thead><tr>' +
+          '<th>Evento</th><th>GA4 / Meta</th><th>Origem</th><th>Destinos</th><th>Regra LGPD</th><th>Deduplicação</th><th>Finalidade</th>' +
+          '</tr></thead><tbody>' +
+          catalog.map(function (row) {
+            var originPt = CATALOG_ORIGIN_LABELS[row.origin] || sourceLabel(row.origin);
+            var consentPt = CATALOG_CONSENT_LABELS[row.consent_required] || 'Consentimento LGPD aplicável';
+            return (
+              '<tr>' +
+              '  <td><strong>' + KingAdmin.esc(eventLabel(row.event_name)) + '</strong><div class="ad-sub-meta"><code class="ad-code-pill">' + KingAdmin.esc(row.event_name) + '</code></div></td>' +
+              '  <td style="font-size:0.8rem;">GA4: <code class="ad-code-pill">' + KingAdmin.esc(row.ga4_name || '—') + '</code><br/><span style="display:inline-block;margin-top:4px;">Meta: <code class="ad-code-pill">' + KingAdmin.esc(row.meta_name || '—') + '</code></span></td>' +
+              '  <td>' + KingAdmin.esc(originPt) + '</td>' +
+              '  <td>' + KingAdmin.esc((row.destinations || []).join(', ') || '—') + '</td>' +
+              '  <td style="font-size:0.8rem;">' + KingAdmin.esc(consentPt) + '</td>' +
+              '  <td style="font-size:0.8rem;color:#CBD5E1;">' + KingAdmin.esc(row.deduplication_rule || '—') + '</td>' +
+              '  <td style="font-size:0.8rem;color:#AEBBD0;">' + KingAdmin.esc(row.purpose || '—') + '</td>' +
+              '</tr>'
+            );
+          }).join('') +
+          '</tbody></table>';
+      }
+
+      function renderAnalyticsError(err, trackingOnly) {
+        document.getElementById('ad-global-alert').innerHTML = errorStateHtml(
+          'Não foi possível carregar os dados de analytics',
+          err,
+          trackingOnly ? 'data-retry-tracking="1"' : 'data-retry-analytics="1"'
+        );
+
+        if (trackingOnly) {
+          document.getElementById('conv-table-wrap').innerHTML = errorStateHtml(
+            'Erro ao consultar conversões',
+            err,
+            'data-retry-tracking="1"'
+          );
+          return;
+        }
+
+        document.getElementById('integrations-status-grid').innerHTML = errorStateHtml(
+          'Erro ao carregar status',
+          err,
+          'data-retry-analytics="1"'
+        );
+        document.getElementById('uf-table-wrap').innerHTML = errorStateHtml(
+          'Erro ao carregar dados regionais',
+          err,
+          'data-retry-analytics="1"'
+        );
+        document.getElementById('stage-table-wrap').innerHTML = errorStateHtml(
+          'Erro ao carregar estágios do funil',
+          err,
+          'data-retry-analytics="1"'
+        );
+        document.getElementById('conv-table-wrap').innerHTML = errorStateHtml(
+          'Erro ao carregar conversões',
+          err,
+          'data-retry-analytics="1"'
+        );
+        document.getElementById('mkt-table-wrap').innerHTML = errorStateHtml(
+          'Erro ao carregar eventos de navegação',
+          err,
+          'data-retry-analytics="1"'
+        );
+        document.getElementById('catalog-table-wrap').innerHTML = errorStateHtml(
+          'Erro ao carregar catálogo LGPD',
+          err,
+          'data-retry-analytics="1"'
+        );
+      }
+
+      async function loadTrackingOnly() {
+        var reqId = ++activeTrackingReqId;
+        var platform = document.getElementById('filter-platform').value;
+        var status = document.getElementById('filter-status').value;
+
+        setLoadingContainers(false);
+
+        try {
+          var trk = await KingAdmin.apiFetch(
+            '/api/admin/tracking/events?platform=' + encodeURIComponent(platform) + '&status=' + encodeURIComponent(status)
+          );
+          if (reqId !== activeTrackingReqId) return;
+
+          cachedConversions = trk.conversions || [];
+          cachedMarketingEvents = trk.marketing_events || [];
+          cachedCatalog = trk.catalog || cachedCatalog;
+
+          renderKpis(cachedDash, cachedConversions, cachedMarketingEvents);
+          renderConversionsTable(cachedConversions);
+          renderMarketingEventsTable();
+          renderCatalogTable(cachedCatalog);
+        } catch (err) {
+          if (reqId !== activeTrackingReqId) return;
+          renderAnalyticsError(err, true);
+        } finally {
+          if (reqId === activeTrackingReqId) {
+            restoreRefreshButton();
+          }
+        }
       }
 
       async function loadAnalytics() {
+        var reqId = ++activeRequestId;
+        activeTrackingReqId++;
+
         var days = document.getElementById('period-days').value;
         var platform = document.getElementById('filter-platform').value;
         var status = document.getElementById('filter-status').value;
 
+        setLoadingContainers(true);
+
+        var statusesPromise = KingAdmin.apiFetch('/api/admin/integrations/status')
+          .then(function (res) { return { ok: true, statuses: res.statuses || {} }; })
+          .catch(function (err) { return { ok: false, error: err }; });
+
         try {
           var results = await Promise.all([
             KingAdmin.apiFetch('/api/admin/dashboard?days=' + encodeURIComponent(days)),
-            KingAdmin.apiFetch('/api/admin/tracking/events?platform=' + encodeURIComponent(platform) + '&status=' + encodeURIComponent(status))
+            KingAdmin.apiFetch(
+              '/api/admin/tracking/events?platform=' + encodeURIComponent(platform) + '&status=' + encodeURIComponent(status)
+            ),
+            statusesPromise
           ]);
-          var dash = results[0];
+          if (reqId !== activeRequestId) return;
+
+          cachedDash = results[0];
           var trk = results[1];
+          cachedStatuses = results[2];
 
-          var ufs = dash.regional_performance || [];
-          document.getElementById('uf-table-wrap').innerHTML = ufs.length
-            ? '<table class="ad-table"><thead><tr><th>UF</th><th>Leads</th><th>Qualificados</th><th>Vendas</th></tr></thead><tbody>' +
-              ufs.map(function (r) {
-                return '<tr><td><strong>' + KingAdmin.esc(r.state) + '</strong></td><td>' + r.leads + '</td><td>' + r.qualified + '</td><td>' + r.sales + '</td></tr>';
-              }).join('') + '</tbody></table>'
-            : '<p style="color:#94A3B8;">Sem dados regionais no período.</p>';
+          cachedConversions = trk.conversions || [];
+          cachedMarketingEvents = trk.marketing_events || [];
+          cachedCatalog = trk.catalog || [];
 
-          var stages = dash.stage_breakdown || [];
-          document.getElementById('stage-table-wrap').innerHTML = stages.length
-            ? '<table class="ad-table"><thead><tr><th>Estágio</th><th>Oportunidades</th></tr></thead><tbody>' +
-              stages.map(function (s) {
-                return '<tr><td>' + KingAdmin.esc(s.name) + '</td><td><strong>' + s.count + '</strong></td></tr>';
-              }).join('') + '</tbody></table>'
-            : '<p style="color:#94A3B8;">Sem estágios carregados.</p>';
-
-          var convs = trk.conversions || [];
-          document.getElementById('conv-table-wrap').innerHTML = convs.length
-            ? '<table class="ad-table"><thead><tr><th>Data</th><th>Evento</th><th>Plataforma</th><th>event_id (Dedup.)</th><th>Lead</th><th>Status</th><th>Tentativas</th><th>Detalhe</th></tr></thead><tbody>' +
-              convs.map(function (c) {
-                return (
-                  '<tr>' +
-                  '  <td>' + KingAdmin.esc(KingAdmin.formatDate(c.created_at)) + '</td>' +
-                  '  <td><strong>' + KingAdmin.esc(c.event_name) + '</strong></td>' +
-                  '  <td>' + KingAdmin.esc(c.platform) + '</td>' +
-                  '  <td><code>' + KingAdmin.esc(c.event_id) + '</code></td>' +
-                  '  <td>' + KingAdmin.esc(c.lead ? c.lead.full_name + ' (' + c.lead.state + ')' : '—') + '</td>' +
-                  '  <td>' + statusBadge(c.status) + '</td>' +
-                  '  <td>' + (c.attempts || 0) + '</td>' +
-                  '  <td style="font-size:0.78rem;color:#94A3B8;">' + KingAdmin.esc(c.error_message || (c.response_status ? 'HTTP ' + c.response_status : '—')) + '</td>' +
-                  '</tr>'
-                );
-              }).join('') + '</tbody></table>'
-            : '<p style="color:#94A3B8;">Nenhuma conversão server-side registrada ainda.</p>';
-
-          var mkt = trk.marketing_events || [];
-          document.getElementById('mkt-table-wrap').innerHTML = mkt.length
-            ? '<table class="ad-table"><thead><tr><th>Data</th><th>Evento</th><th>Origem</th><th>Sessão</th><th>event_id</th><th>URL</th></tr></thead><tbody>' +
-              mkt.slice(0, 35).map(function (m) {
-                return (
-                  '<tr>' +
-                  '  <td>' + KingAdmin.esc(KingAdmin.formatDate(m.created_at)) + '</td>' +
-                  '  <td><strong>' + KingAdmin.esc(m.event_name) + '</strong></td>' +
-                  '  <td>' + KingAdmin.esc(m.source) + '</td>' +
-                  '  <td><code>' + KingAdmin.esc((m.session_id || '').slice(0, 14)) + '</code></td>' +
-                  '  <td><code>' + KingAdmin.esc(m.event_id) + '</code></td>' +
-                  '  <td style="font-size:0.78rem;color:#94A3B8;max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + KingAdmin.esc(m.page_url || '—') + '</td>' +
-                  '</tr>'
-                );
-              }).join('') + '</tbody></table>'
-            : '<p style="color:#94A3B8;">Nenhum evento de página registrado.</p>';
-
-          var catalog = trk.catalog || [];
-          document.getElementById('catalog-table-wrap').innerHTML =
-            '<table class="ad-table"><thead><tr><th>Evento</th><th>GA4 / Meta</th><th>Origem</th><th>Destinos</th><th>Regra LGPD</th><th>Deduplicação</th><th>Finalidade</th></tr></thead><tbody>' +
-            catalog.map(function (row) {
-              return (
-                '<tr>' +
-                '  <td><code>' + KingAdmin.esc(row.event_name) + '</code></td>' +
-                '  <td style="font-size:0.8rem;">GA4: <code>' + KingAdmin.esc(row.ga4_name || '—') + '</code><br/>Meta: <code>' + KingAdmin.esc(row.meta_name || '—') + '</code></td>' +
-                '  <td>' + KingAdmin.esc(row.origin) + '</td>' +
-                '  <td>' + KingAdmin.esc((row.destinations || []).join(', ')) + '</td>' +
-                '  <td style="font-size:0.8rem;">' + KingAdmin.esc(row.consent_required) + '</td>' +
-                '  <td style="font-size:0.8rem;color:#CBD5E1;">' + KingAdmin.esc(row.deduplication_rule) + '</td>' +
-                '  <td style="font-size:0.8rem;color:#94A3B8;">' + KingAdmin.esc(row.purpose) + '</td>' +
-                '</tr>'
-              );
-            }).join('') + '</tbody></table>';
+          renderKpis(cachedDash, cachedConversions, cachedMarketingEvents);
+          renderIntegrationsStatus(cachedStatuses, cachedConversions);
+          renderRegionalAndStages(cachedDash);
+          renderConversionsTable(cachedConversions);
+          renderMarketingEventsTable();
+          renderCatalogTable(cachedCatalog);
         } catch (err) {
-          KingAdmin.renderErrorState('ad-global-alert', err);
+          if (reqId !== activeRequestId) return;
+          renderAnalyticsError(err, false);
+        } finally {
+          if (reqId === activeRequestId) {
+            restoreRefreshButton();
+          }
+        }
+      }
+
+      function renderAuthFailureState() {
+        var authErr = new Error('Sessão administrativa indisponível ou falha ao validar autenticação.');
+        document.getElementById('ad-global-alert').innerHTML = errorStateHtml(
+          'Não foi possível autenticar a página',
+          authErr,
+          'data-retry-init="1"'
+        );
+        document.getElementById('integrations-status-grid').innerHTML = '';
+        document.getElementById('uf-table-wrap').innerHTML = '';
+        document.getElementById('stage-table-wrap').innerHTML = '';
+        document.getElementById('conv-table-wrap').innerHTML = '';
+        document.getElementById('mkt-table-wrap').innerHTML = '';
+        document.getElementById('catalog-table-wrap').innerHTML = '';
+      }
+
+      async function bootPage() {
+        var user = await KingAdmin.initProtectedPage('analytics');
+        if (user) {
+          await loadAnalytics();
+        } else {
+          renderAuthFailureState();
         }
       }
 
       document.getElementById('refresh-all').addEventListener('click', loadAnalytics);
       document.getElementById('period-days').addEventListener('change', loadAnalytics);
-      document.getElementById('filter-platform').addEventListener('change', loadAnalytics);
-      document.getElementById('filter-status').addEventListener('change', loadAnalytics);
+      document.getElementById('filter-platform').addEventListener('change', loadTrackingOnly);
+      document.getElementById('filter-status').addEventListener('change', loadTrackingOnly);
+      document.getElementById('filter-mkt-event').addEventListener('change', renderMarketingEventsTable);
 
-      document.addEventListener('DOMContentLoaded', async function () {
-        if (await KingAdmin.initProtectedPage('analytics')) loadAnalytics();
+      document.getElementById('clear-conv-filters').addEventListener('click', function () {
+        document.getElementById('filter-platform').value = '';
+        document.getElementById('filter-status').value = '';
+        loadTrackingOnly();
       });
+
+      document.addEventListener('click', function (e) {
+        var target = e.target;
+        if (!target || !target.closest) return;
+        if (target.closest('[data-retry-analytics]')) {
+          loadAnalytics();
+        } else if (target.closest('[data-retry-tracking]')) {
+          loadTrackingOnly();
+        } else if (target.closest('[data-retry-init]')) {
+          bootPage();
+        } else if (target.closest('[data-clear-conv]')) {
+          document.getElementById('filter-platform').value = '';
+          document.getElementById('filter-status').value = '';
+          loadTrackingOnly();
+        } else if (target.closest('[data-clear-mkt]')) {
+          document.getElementById('filter-mkt-event').value = '';
+          renderMarketingEventsTable();
+        }
+      });
+
+      document.addEventListener('DOMContentLoaded', bootPage);
     })();
   </script>
 </body>

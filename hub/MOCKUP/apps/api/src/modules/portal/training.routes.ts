@@ -76,6 +76,9 @@ export async function portalTrainingRoutes(fastify: FastifyInstance): Promise<vo
     { preHandler: [requirePortalAuth, requirePermission('training:write')] },
     async (request, reply) => {
       const { lessonId } = request.params as { lessonId: string };
+      if (!z.string().uuid().safeParse(lessonId).success) {
+        return reply.status(400).send({ statusCode: 400, code: 'VALIDATION_ERROR', message: 'ID de aula inválido.' });
+      }
       const schema = z.object({
         resumePositionSeconds: z.number().int().nonnegative().default(0),
         status: z.enum(['in_progress', 'completed']).default('in_progress'),

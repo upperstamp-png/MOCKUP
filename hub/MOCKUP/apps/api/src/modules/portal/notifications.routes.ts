@@ -44,6 +44,9 @@ export async function portalNotificationsRoutes(fastify: FastifyInstance): Promi
   // POST /api/v1/notifications/:id/read
   fastify.post('/:id/read', { preHandler: [requirePortalAuth] }, async (request, reply) => {
     const { id } = request.params as { id: string };
+    if (!z.string().uuid().safeParse(id).success) {
+      return reply.status(400).send({ statusCode: 400, code: 'VALIDATION_ERROR', message: 'ID de notificação inválido.' });
+    }
     const ctx = request.portal!;
     await dbQuery(
       `UPDATE portal.notifications

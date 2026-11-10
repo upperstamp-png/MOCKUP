@@ -58,6 +58,18 @@ const TICKET_CATEGORIES = [
   'Documentação',
 ] as const;
 
+const ROLE_LABELS: Record<string, string> = {
+  admin: 'Admin',
+  franqueado: 'Franqueado',
+};
+
+const CLASSIFICATION_LABELS: Record<string, string> = {
+  modelo: 'Modelo de referência',
+  minuta: 'Minuta',
+  aprovado: 'Aprovado',
+  assinado: 'Assinado',
+};
+
 export function SupportTab({
   me,
   initialEntityId,
@@ -85,9 +97,11 @@ export function SupportTab({
   const [description, setDescription] = useState('');
   const [attachmentFile, setAttachmentFile] = useState<File | null>(null);
   const [savingTicket, setSavingTicket] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
 
   // Detail modal
   const [detail, setDetail] = useState<{ ticket: SupportTicketItem; messages: SupportMessage[] } | null>(null);
+  const [detailError, setDetailError] = useState<string | null>(null);
   const [replyBody, setReplyBody] = useState('');
   const [replyInternal, setReplyInternal] = useState(false);
   const [replyFile, setReplyFile] = useState<File | null>(null);
@@ -126,6 +140,7 @@ export function SupportTab({
 
   const openDetail = useCallback(async (id: string) => {
     setError(null);
+    setDetailError(null);
     try {
       const res = await portalFetch<{ ticket: SupportTicketItem; messages: SupportMessage[] }>(
         `/support/tickets/${id}`
@@ -144,7 +159,7 @@ export function SupportTab({
 
   useEffect(() => {
     loadTickets();
-  }, [loadTickets]);
+  }, [loadTickets, me.activeUnit.id]);
 
   useEffect(() => {
     if (initialEntityId) {
@@ -155,6 +170,15 @@ export function SupportTab({
   const handleCreateTicket = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!canWrite) return;
+    setCreateError(null);
+    if (subject.trim().length < 4) {
+      setCreateError('Informe um assunto claro (mínimo 4 caracteres).');
+      return;
+    }
+    if (description.trim().length < 6) {
+      setCreateError('Descreva a ocorrência com mais detalhes (mínimo 6 caracteres).');
+      return;
+    }
     setSavingTicket(true);
     setError(null);
     try {
@@ -168,19 +192,20 @@ export function SupportTab({
           customerId: customerId || null,
           category,
           priority,
-          subject,
-          description,
+          subject: subject.trim(),
+          description: description.trim(),
           attachment,
         }),
       });
       setCreateOpen(false);
+      setCreateError(null);
       setSubject('');
       setDescription('');
       setAttachmentFile(null);
       setFeedback('Chamado aberto com SLA registrado.');
       await loadTickets();
     } catch (err) {
-      setError(err instanceof PortalApiError ? err.message : 'Erro ao abrir chamado.');
+      setCreateError(err instanceof PortalApiError ? err.message : 'Erro ao abrir chamado.');
     } finally {
       setSavingTicket(false);
     }
@@ -188,9 +213,13 @@ export function SupportTab({
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!detail || !replyBody.trim()) return;
+    if (!detail) return;
+    if (replyBody.trim().length < 2) {
+      setDetailError('Escreva uma mensagem com pelo menos 2 caracteres antes de enviar.');
+      return;
+    }
     setBusyAction(true);
-    setError(null);
+    setDetailError(null);
     try {
       const attachment = replyFile
         ? { fileName: replyFile.name, dataUrl: await fileToDataUrl(replyFile) }
@@ -198,7 +227,7 @@ export function SupportTab({
       await portalFetch(`/support/tickets/${detail.ticket.id}/messages`, {
         method: 'POST',
         body: JSON.stringify({
-          body: replyBody,
+          body: replyBody.trim(),
           isInternal: canInternalNotes ? replyInternal : false,
           attachment,
         }),
@@ -207,7 +236,7 @@ export function SupportTab({
       await loadTickets();
       setFeedback('Resposta registrada no chamado.');
     } catch (err) {
-      setError(err instanceof PortalApiError ? err.message : 'Erro ao enviar mensagem.');
+      setDetailError(err instanceof PortalApiError ? err.message : 'Erro ao enviar mensagem.');
     } finally {
       setBusyAction(false);
     }
@@ -215,18 +244,20 @@ export function SupportTab({
 
   const handleUpdateTicket = async () => {
     if (!detail) return;
+    setDetailError(null);
+    const parsedRework = Number(reworkReais.replace(',', '.'));
+    if (reworkReais.trim() !== '' && (!Number.isFinite(parsedRework) || parsedRework < 0)) {
+      setDetailError('Informe um valor numérico válido e não negativo para o custo de retrabalho.');
+      return;
+    }
     setBusyAction(true);
-    setError(null);
     try {
-      const reworkCostCents = Math.max(
-        0,
-        Math.round((Number(reworkReais.replace(',', '.')) || 0) * 100)
-      );
+      const reworkCostCents = Math.max(0, Math.round((parsedRework || 0) * 100));
       await portalFetch(`/support/tickets/${detail.ticket.id}`, {
         method: 'PATCH',
         body: JSON.stringify({
           status: nextStatus,
-          resolutionSummary: resolutionSummary || null,
+          resolutionSummary: resolutionSummary.trim() || null,
           reworkCostCents,
         }),
       });
@@ -234,7 +265,7 @@ export function SupportTab({
       await loadTickets();
       setFeedback('Status e resumo do chamado atualizados.');
     } catch (err) {
-      setError(err instanceof PortalApiError ? err.message : 'Erro ao atualizar chamado.');
+      setDetailError(err instanceof PortalApiError ? err.message : 'Erro ao atualizar chamado.');
     } finally {
       setBusyAction(false);
     }
@@ -282,7 +313,10 @@ export function SupportTab({
           {canWrite && (
             <button
               type="button"
-              onClick={() => setCreateOpen(true)}
+              onClick={() => {
+                setCreateError(null);
+                setCreateOpen(true);
+              }}
               className="apple-glass-cta text-white text-xs font-semibold px-4 py-2.5 rounded-full inline-flex items-center gap-1.5"
             >
               <Plus className="w-4 h-4" />
@@ -340,7 +374,10 @@ export function SupportTab({
             canWrite ? (
               <button
                 type="button"
-                onClick={() => setCreateOpen(true)}
+                onClick={() => {
+                  setCreateError(null);
+                  setCreateOpen(true);
+                }}
                 className="apple-glass-cta text-white text-xs font-semibold px-4 py-2 rounded-full"
               >
                 Abrir primeiro chamado
@@ -406,9 +443,13 @@ export function SupportTab({
         open={createOpen}
         title="Abrir Chamado / Ocorrência SAC"
         subtitle={`Unidade emissora: ${me.activeUnit.name} (${me.activeUnit.code})`}
-        onClose={() => setCreateOpen(false)}
+        onClose={() => {
+          setCreateOpen(false);
+          setCreateError(null);
+        }}
       >
         <form onSubmit={handleCreateTicket} className="space-y-4">
+          {createError ? <ErrorBanner message={createError} /> : null}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-semibold text-wise-ink mb-1">Categoria</label>
@@ -418,7 +459,7 @@ export function SupportTab({
                 className="w-full apple-glass-well rounded-xl px-3 py-2 text-xs text-wise-ink outline-none"
               >
                 {TICKET_CATEGORIES.map((c) => (
-                  <option key={c} value={c}>
+                  <option key={c} value={c} className="bg-[#181818]">
                     {c}
                   </option>
                 ))}
@@ -431,10 +472,10 @@ export function SupportTab({
                 onChange={(e) => setPriority(e.target.value as 'low' | 'normal' | 'high' | 'urgent')}
                 className="w-full apple-glass-well rounded-xl px-3 py-2 text-xs text-wise-ink outline-none"
               >
-                <option value="low">Baixa (48h)</option>
-                <option value="normal">Normal (48h)</option>
-                <option value="high">Alta (12h)</option>
-                <option value="urgent">Urgente (4h)</option>
+                <option value="low" className="bg-[#181818]">Baixa (48h)</option>
+                <option value="normal" className="bg-[#181818]">Normal (48h)</option>
+                <option value="high" className="bg-[#181818]">Alta (12h)</option>
+                <option value="urgent" className="bg-[#181818]">Urgente (4h)</option>
               </select>
             </div>
           </div>
@@ -447,9 +488,9 @@ export function SupportTab({
                 onChange={(e) => setOrderId(e.target.value)}
                 className="w-full apple-glass-well rounded-xl px-3 py-2 text-xs text-wise-ink outline-none"
               >
-                <option value="">Sem pedido vinculado</option>
+                <option value="" className="bg-[#181818]">Sem pedido vinculado</option>
                 {orders.map((o) => (
-                  <option key={o.id} value={o.id}>
+                  <option key={o.id} value={o.id} className="bg-[#181818]">
                     {o.order_number} · {o.customer_name}
                   </option>
                 ))}
@@ -462,9 +503,9 @@ export function SupportTab({
                 onChange={(e) => setCustomerId(e.target.value)}
                 className="w-full apple-glass-well rounded-xl px-3 py-2 text-xs text-wise-ink outline-none"
               >
-                <option value="">Sem cliente específico</option>
+                <option value="" className="bg-[#181818]">Sem cliente específico</option>
                 {customers.map((c) => (
-                  <option key={c.id} value={c.id}>
+                  <option key={c.id} value={c.id} className="bg-[#181818]">
                     {c.name}
                   </option>
                 ))}
@@ -513,7 +554,10 @@ export function SupportTab({
           <div className="flex justify-end gap-2">
             <button
               type="button"
-              onClick={() => setCreateOpen(false)}
+              onClick={() => {
+                setCreateOpen(false);
+                setCreateError(null);
+              }}
               className="px-4 py-2 rounded-full bg-white/8 text-xs font-semibold text-wise-body"
             >
               Cancelar
@@ -538,11 +582,15 @@ export function SupportTab({
             ? `${detail.ticket.category} · Unidade ${detail.ticket.unit_name} · SLA ${formatDateBr(detail.ticket.sla_due_at, { withTime: true })}`
             : undefined
         }
-        onClose={() => setDetail(null)}
+        onClose={() => {
+          setDetail(null);
+          setDetailError(null);
+        }}
         maxWidthClass="max-w-3xl"
       >
         {detail && (
           <div className="space-y-4 max-h-[75vh] overflow-y-auto pr-1">
+            {detailError ? <ErrorBanner message={detailError} /> : null}
             <div className="flex flex-wrap items-center justify-between gap-2 apple-glass-well rounded-2xl p-3">
               <div className="flex flex-wrap items-center gap-2">
                 <StatusPill value={detail.ticket.status} />
@@ -575,7 +623,9 @@ export function SupportTab({
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <div className="flex items-center gap-2">
                       <span className="font-bold">{msg.sender_name}</span>
-                      <span className="text-[11px] text-wise-mute">({msg.sender_role})</span>
+                      <span className="text-[11px] text-wise-mute">
+                        ({ROLE_LABELS[msg.sender_role] || msg.sender_role})
+                      </span>
                       {msg.is_internal && (
                         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/20 border border-amber-400/40 text-[10px] font-bold text-amber-200">
                           <Lock className="w-3 h-3" />
@@ -759,12 +809,15 @@ export function DocumentsTab({ me }: { me: PortalMeResponse }) {
   const [evidenceNotes, setEvidenceNotes] = useState('');
   const [file, setFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
+  const [busyDocId, setBusyDocId] = useState<string | null>(null);
 
   // New version modal
   const [verTargetDoc, setVerTargetDoc] = useState<DocumentItem | null>(null);
   const [verClass, setVerClass] = useState<'modelo' | 'minuta' | 'aprovado' | 'assinado'>('minuta');
   const [verNotes, setVerNotes] = useState('');
   const [verFile, setVerFile] = useState<File | null>(null);
+  const [verError, setVerError] = useState<string | null>(null);
 
   const canWrite = me.activeRole.permissions.includes('documents:write');
   const canApprove = me.activeRole.permissions.includes('documents:approve');
@@ -787,12 +840,16 @@ export function DocumentsTab({ me }: { me: PortalMeResponse }) {
 
   useEffect(() => {
     loadDocs();
-  }, [loadDocs]);
+  }, [loadDocs, me.activeUnit.id]);
 
   const handleCreateDoc = async (e: React.FormEvent) => {
     e.preventDefault();
+    setCreateError(null);
+    if (title.trim().length < 3) {
+      setCreateError('Informe um título para o documento (mínimo 3 caracteres).');
+      return;
+    }
     setSaving(true);
-    setError(null);
     try {
       const uploaded = file ? { fileName: file.name, dataUrl: await fileToDataUrl(file) } : null;
       await portalFetch('/documents', {
@@ -800,14 +857,15 @@ export function DocumentsTab({ me }: { me: PortalMeResponse }) {
         body: JSON.stringify({
           docCategory,
           requirementLevel,
-          title,
-          description: description || null,
+          title: title.trim(),
+          description: description.trim() || null,
           classification,
-          evidenceNotes: evidenceNotes || null,
+          evidenceNotes: evidenceNotes.trim() || null,
           file: uploaded,
         }),
       });
       setCreateOpen(false);
+      setCreateError(null);
       setTitle('');
       setDescription('');
       setEvidenceNotes('');
@@ -815,7 +873,7 @@ export function DocumentsTab({ me }: { me: PortalMeResponse }) {
       setFeedback('Documento registrado no cofre privado da unidade.');
       await loadDocs();
     } catch (err) {
-      setError(err instanceof PortalApiError ? err.message : 'Erro ao salvar documento.');
+      setCreateError(err instanceof PortalApiError ? err.message : 'Erro ao salvar documento.');
     } finally {
       setSaving(false);
     }
@@ -825,30 +883,33 @@ export function DocumentsTab({ me }: { me: PortalMeResponse }) {
     e.preventDefault();
     if (!verTargetDoc) return;
     setSaving(true);
-    setError(null);
+    setVerError(null);
     try {
       const uploaded = verFile ? { fileName: verFile.name, dataUrl: await fileToDataUrl(verFile) } : null;
       await portalFetch(`/documents/${verTargetDoc.id}/versions`, {
         method: 'POST',
         body: JSON.stringify({
           classification: verClass,
-          evidenceNotes: verNotes || null,
+          evidenceNotes: verNotes.trim() || null,
           file: uploaded,
         }),
       });
       setVerTargetDoc(null);
+      setVerError(null);
       setVerNotes('');
       setVerFile(null);
       setFeedback('Nova versão documental adicionada.');
       await loadDocs();
     } catch (err) {
-      setError(err instanceof PortalApiError ? err.message : 'Erro ao enviar versão.');
+      setVerError(err instanceof PortalApiError ? err.message : 'Erro ao enviar versão.');
     } finally {
       setSaving(false);
     }
   };
 
   const handleStatusChange = async (docId: string, status: 'approved' | 'signed' | 'rejected') => {
+    setBusyDocId(docId);
+    setError(null);
     try {
       await portalFetch(`/documents/${docId}/status`, {
         method: 'POST',
@@ -861,6 +922,8 @@ export function DocumentsTab({ me }: { me: PortalMeResponse }) {
       await loadDocs();
     } catch (err) {
       setError(err instanceof PortalApiError ? err.message : 'Erro ao atualizar status documental.');
+    } finally {
+      setBusyDocId(null);
     }
   };
 
@@ -893,7 +956,10 @@ export function DocumentsTab({ me }: { me: PortalMeResponse }) {
         {canWrite && (
           <button
             type="button"
-            onClick={() => setCreateOpen(true)}
+            onClick={() => {
+              setCreateError(null);
+              setCreateOpen(true);
+            }}
             className="apple-glass-cta text-white text-xs font-semibold px-4 py-2.5 rounded-full inline-flex items-center gap-1.5"
           >
             <Plus className="w-4 h-4" />
@@ -962,8 +1028,8 @@ export function DocumentsTab({ me }: { me: PortalMeResponse }) {
                       {DOC_CATEGORY_LABELS[doc.doc_category] || doc.doc_category}
                     </span>
                     <StatusPill value={doc.status} />
-                    <span className="px-2 py-0.5 rounded-full bg-blue-500/15 border border-blue-400/30 text-[11px] font-semibold text-blue-200 uppercase">
-                      {doc.current_classification}
+                    <span className="px-2 py-0.5 rounded-full bg-blue-500/15 border border-blue-400/30 text-[11px] font-semibold text-blue-200">
+                      {CLASSIFICATION_LABELS[doc.current_classification] || doc.current_classification}
                     </span>
                     {doc.requirement_level === 'mandatory_onboarding' && (
                       <span className="px-2 py-0.5 rounded-full bg-amber-500/15 border border-amber-400/30 text-[10px] font-semibold text-amber-200">
@@ -1007,6 +1073,7 @@ export function DocumentsTab({ me }: { me: PortalMeResponse }) {
                       onClick={() => {
                         setVerTargetDoc(doc);
                         setVerClass(doc.current_classification);
+                        setVerError(null);
                       }}
                       className="px-3 py-1.5 rounded-full bg-white/8 hover:bg-white/14 border border-white/15 text-xs font-semibold text-wise-ink inline-flex items-center gap-1.5"
                     >
@@ -1018,11 +1085,12 @@ export function DocumentsTab({ me }: { me: PortalMeResponse }) {
                   {canApprove && doc.status !== 'signed' && (
                     <button
                       type="button"
+                      disabled={busyDocId === doc.id}
                       onClick={() => handleStatusChange(doc.id, 'signed')}
-                      className="px-3 py-1.5 rounded-full bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-400/35 text-xs font-semibold text-emerald-100 inline-flex items-center gap-1.5"
+                      className="px-3 py-1.5 rounded-full bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-400/35 text-xs font-semibold text-emerald-100 inline-flex items-center gap-1.5 disabled:opacity-50"
                     >
                       <ShieldCheck className="w-3.5 h-3.5" />
-                      Validar / Assinado
+                      {busyDocId === doc.id ? 'Validando...' : 'Validar / Assinado'}
                     </button>
                   )}
                 </div>
@@ -1037,9 +1105,13 @@ export function DocumentsTab({ me }: { me: PortalMeResponse }) {
         open={createOpen}
         title="Enviar Documento ao Cofre Privado"
         subtitle="Anexos são gravados no bucket privado Supabase com acesso auditado por unidade."
-        onClose={() => setCreateOpen(false)}
+        onClose={() => {
+          setCreateOpen(false);
+          setCreateError(null);
+        }}
       >
         <form onSubmit={handleCreateDoc} className="space-y-4">
+          {createError ? <ErrorBanner message={createError} /> : null}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-semibold text-wise-ink mb-1">Categoria</label>
@@ -1135,7 +1207,10 @@ export function DocumentsTab({ me }: { me: PortalMeResponse }) {
           <div className="flex justify-end gap-2">
             <button
               type="button"
-              onClick={() => setCreateOpen(false)}
+              onClick={() => {
+                setCreateOpen(false);
+                setCreateError(null);
+              }}
               className="px-4 py-2 rounded-full bg-white/8 text-xs font-semibold text-wise-body"
             >
               Cancelar
@@ -1155,9 +1230,13 @@ export function DocumentsTab({ me }: { me: PortalMeResponse }) {
       <GlassModal
         open={Boolean(verTargetDoc)}
         title={verTargetDoc ? `Nova versão · ${verTargetDoc.title}` : ''}
-        onClose={() => setVerTargetDoc(null)}
+        onClose={() => {
+          setVerTargetDoc(null);
+          setVerError(null);
+        }}
       >
         <form onSubmit={handleUploadVersion} className="space-y-4">
+          {verError ? <ErrorBanner message={verError} /> : null}
           <div>
             <label className="block text-xs font-semibold text-wise-ink mb-1">Classificação desta versão</label>
             <select
@@ -1165,9 +1244,9 @@ export function DocumentsTab({ me }: { me: PortalMeResponse }) {
               onChange={(e) => setVerClass(e.target.value as 'modelo' | 'minuta' | 'aprovado' | 'assinado')}
               className="w-full apple-glass-well rounded-xl px-3 py-2 text-xs text-wise-ink outline-none"
             >
-              <option value="minuta">Minuta</option>
-              <option value="aprovado">Aprovado</option>
-              <option value="assinado">Assinado</option>
+              <option value="minuta" className="bg-[#181818]">Minuta</option>
+              <option value="aprovado" className="bg-[#181818]">Aprovado</option>
+              <option value="assinado" className="bg-[#181818]">Assinado</option>
             </select>
           </div>
           <div>
@@ -1191,7 +1270,10 @@ export function DocumentsTab({ me }: { me: PortalMeResponse }) {
           <div className="flex justify-end gap-2">
             <button
               type="button"
-              onClick={() => setVerTargetDoc(null)}
+              onClick={() => {
+                setVerTargetDoc(null);
+                setVerError(null);
+              }}
               className="px-4 py-2 rounded-full bg-white/8 text-xs font-semibold text-wise-body"
             >
               Cancelar

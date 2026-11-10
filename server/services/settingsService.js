@@ -4,6 +4,29 @@ const { env, isSupabaseConfigured } = require('../config/env');
 const { getSupabaseAdmin } = require('../database/supabase');
 const { ConflictError } = require('../utils/errors');
 
+function isPlainObject(value) {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
+
+function stripSensitiveKeys(obj) {
+  if (!isPlainObject(obj)) return {};
+  const out = {};
+  for (const [k, v] of Object.entries(obj)) {
+    if (!/(secret|token|password|api_key|private_key|service_role|encryption_key)/i.test(k)) {
+      out[k] = v;
+    }
+  }
+  return out;
+}
+
+function getDefaultPublicUrls() {
+  return {
+    lp_url: String(env.LP_URL || env.APP_URL || '').trim().replace(/\/+$/, ''),
+    crm_url: String(env.CRM_URL || '').trim().replace(/\/+$/, ''),
+    hub_url: String(env.HUB_URL || '').trim().replace(/\/+$/, '')
+  };
+}
+
 function getDefaultPublicConfig() {
   return {
     tracking: {
@@ -35,6 +58,7 @@ function getDefaultPublicConfig() {
       sticky_cta_text: 'QUERO CONHECER A FRANQUIA',
       final_cta_text: 'ENVIAR CANDIDATURA'
     },
+    urls: getDefaultPublicUrls(),
     storage_ready: isSupabaseConfigured()
   };
 }
@@ -48,6 +72,8 @@ function createSettingsService({ settingsRepo, isStorageConfigured = isSupabaseC
       }
       try {
         const dbMap = await settingsRepo.getSettingsMap({ publicOnly: true });
+        const publicFranchise = stripSensitiveKeys(dbMap['franchise.public_info']);
+        const publicLanding = stripSensitiveKeys(dbMap['landing.content']);
         return {
           tracking: {
             gtm_id: dbMap['tracking.gtm_id'] || defaults.tracking.gtm_id,
@@ -60,12 +86,13 @@ function createSettingsService({ settingsRepo, isStorageConfigured = isSupabaseC
           },
           franchise: {
             ...defaults.franchise,
-            ...(typeof dbMap['franchise.public_info'] === 'object' ? dbMap['franchise.public_info'] : {})
+            ...publicFranchise
           },
           landing_content: {
             ...defaults.landing_content,
-            ...(typeof dbMap['landing.content'] === 'object' ? dbMap['landing.content'] : {})
+            ...publicLanding
           },
+          urls: { ...defaults.urls },
           storage_ready: true
         };
       } catch {

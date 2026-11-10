@@ -184,6 +184,20 @@ export async function portalScheduleRoutes(fastify: FastifyInstance): Promise<vo
         }
       }
 
+      if (d.assignedTo) {
+        const memberRes = await dbQuery<{ user_id: string }>(
+          `SELECT user_id FROM portal.unit_memberships WHERE unit_id = $1 AND user_id = $2 AND status = 'active'`,
+          [ctx.activeUnitId, d.assignedTo]
+        );
+        if (!memberRes.rows[0]) {
+          return reply.status(403).send({
+            statusCode: 403,
+            code: 'ASSIGNEE_UNIT_MISMATCH',
+            message: 'Responsável inválido ou não vinculado a esta unidade.',
+          });
+        }
+      }
+
       const event = await withTransaction(async (client) => {
         const insRes = await client.query<{ id: string }>(
           `INSERT INTO portal.schedule_events (
@@ -312,6 +326,21 @@ export async function portalScheduleRoutes(fastify: FastifyInstance): Promise<vo
             statusCode: 403,
             code: 'ORDER_UNIT_MISMATCH',
             message: 'Pedido inválido ou pertencente a outra unidade.',
+          });
+        }
+      }
+
+      if (d.assignedTo) {
+        const memRes = await dbQuery<{ user_id: string }>(
+          `SELECT user_id FROM portal.unit_memberships
+           WHERE unit_id = $1 AND user_id = $2 AND status = 'active'`,
+          [existing.unit_id, d.assignedTo]
+        );
+        if (!memRes.rows[0]) {
+          return reply.status(400).send({
+            statusCode: 400,
+            code: 'INVALID_ASSIGNEE',
+            message: 'Responsável informado não pertence como membro ativo desta unidade.',
           });
         }
       }

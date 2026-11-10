@@ -103,6 +103,18 @@ export async function portalDocumentsRoutes(fastify: FastifyInstance): Promise<v
 
       const ctx = request.portal!;
       const d = parsed.data;
+      if (d.customerId) {
+        const custRes = await dbQuery<{ unit_id: string }>(`SELECT unit_id FROM portal.customers WHERE id = $1`, [d.customerId]);
+        if (!custRes.rows[0] || custRes.rows[0].unit_id !== ctx.activeUnitId) {
+          return reply.status(403).send({ statusCode: 403, code: 'CUSTOMER_UNIT_MISMATCH', message: 'Cliente inválido ou pertencente a outra unidade.' });
+        }
+      }
+      if (d.orderId) {
+        const ordRes = await dbQuery<{ unit_id: string }>(`SELECT unit_id FROM portal.orders WHERE id = $1`, [d.orderId]);
+        if (!ordRes.rows[0] || ordRes.rows[0].unit_id !== ctx.activeUnitId) {
+          return reply.status(403).send({ statusCode: 403, code: 'ORDER_UNIT_MISMATCH', message: 'Pedido inválido ou pertencente a outra unidade.' });
+        }
+      }
       const statusFromClassification =
         d.classification === 'assinado'
           ? 'signed'
@@ -279,6 +291,24 @@ export async function portalDocumentsRoutes(fastify: FastifyInstance): Promise<v
     { preHandler: [requirePortalAuth, requirePermission('documents:approve')] },
     async (request, reply) => {
       const { id } = request.params as { id: string };
+      if (!z.string().uuid().safeParse(id).success) {
+        return reply.status(400).send({ statusCode: 400, code: 'VALIDATION_ERROR', message: 'ID de documento inválido.' });
+      }
+      const existing = await dbQuery<{ id: string; unit_id: string | null }>(
+        `SELECT id, unit_id FROM portal.documents WHERE id = $1`,
+        [id]
+      );
+      if (!existing.rows[0]) {
+        return reply.status(404).send({ statusCode: 404, code: 'NOT_FOUND', message: 'Documento não encontrado.' });
+      }
+      if (existing.rows[0].unit_id && !assertUnitOwnership(request, reply, existing.rows[0].unit_id)) return;
+      if (!existing.rows[0].unit_id && request.portal!.activeScope !== 'network') {
+        return reply.status(403).send({
+          statusCode: 403,
+          code: 'SHARED_DOC_LOCKED',
+          message: 'Modelos globais da rede só podem ser alterados pela administração.',
+        });
+      }
       const schema = z.object({
         status: z.enum(['approved', 'signed', 'rejected', 'in_review']),
         classification: z.enum(['modelo', 'minuta', 'aprovado', 'assinado']).optional(),
@@ -295,9 +325,6 @@ export async function portalDocumentsRoutes(fastify: FastifyInstance): Promise<v
          WHERE id = $3 RETURNING *`,
         [parsed.data.status, parsed.data.classification ?? null, id]
       );
-      if (!updated.rows[0]) {
-        return reply.status(404).send({ statusCode: 404, code: 'NOT_FOUND', message: 'Documento não encontrado.' });
-      }
       await recordAuditLog({
         unitId: updated.rows[0].unit_id,
         action: 'document.status_changed',

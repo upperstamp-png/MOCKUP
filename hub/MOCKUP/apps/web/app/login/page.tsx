@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ShieldCheck, Mail, Lock, AlertCircle, Loader2 } from 'lucide-react';
-import { hubAsset, portalFetch, PortalApiError } from '@/lib/api-client';
+import { hubAsset, hubHomePath, portalFetch, PortalApiError } from '@/lib/api-client';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -30,7 +30,7 @@ export default function LoginPage() {
           password,
         }),
       });
-      router.replace('/');
+      router.replace(hubHomePath());
     } catch (err) {
       setErrorMessage(
         err instanceof PortalApiError

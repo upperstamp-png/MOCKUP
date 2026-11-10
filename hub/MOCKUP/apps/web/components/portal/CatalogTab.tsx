@@ -188,6 +188,12 @@ export function CatalogTab({
                     <img
                       src={hubAsset(p.image_url || `/king-sports/${p.slug}.webp`)}
                       alt={p.name}
+                      onError={(e) => {
+                        if (!e.currentTarget.dataset.fallbackApplied) {
+                          e.currentTarget.dataset.fallbackApplied = '1';
+                          e.currentTarget.src = hubAsset('/assets/MOCKUP_MULTIPLAY.png');
+                        }
+                      }}
                       className="w-full h-full object-cover"
                     />
                   </div>
@@ -282,9 +288,16 @@ export function CatalogTab({
                   {(selectedProduct.personalizations_supported || []).join(', ') || 'Sublimação total'}
                 </p>
                 {selectedProduct.additional_costs && Object.keys(selectedProduct.additional_costs).length > 0 ? (
-                  <p className="text-amber-200">
-                    Adicionais configurados: {JSON.stringify(selectedProduct.additional_costs)}
-                  </p>
+                  <div className="pt-1 flex flex-wrap gap-1.5">
+                    {Object.entries(selectedProduct.additional_costs).map(([k, v]) => (
+                      <span
+                        key={k}
+                        className="px-2 py-0.5 rounded-lg bg-amber-500/15 border border-amber-400/30 text-[11px] text-amber-100"
+                      >
+                        {k.replace(/_/g, ' ')}: {typeof v === 'number' && k.includes('cents') ? formatBrl(v) : String(v)}
+                      </span>
+                    ))}
+                  </div>
                 ) : null}
               </div>
             </div>

@@ -12,8 +12,160 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/admin/assets/css/admin.css" />
+  <link rel="stylesheet" href="/assets/css/admin.css" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js" defer></script>
+  <style>
+    .ad-card { min-width: 0; }
+    .ad-card-title { flex-wrap: wrap; }
+    .ad-health-item-head { flex-wrap: wrap; gap: 4px 10px; }
+    .ad-kpi-card { min-width: 0; }
+    .ad-kpi-value { overflow-wrap: anywhere; }
+    .ad-sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+    .ad-date-group {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+    }
+    .ad-date-group[hidden] { display: none; }
+    .ad-filter-select,
+    .ad-filter-date {
+      width: auto;
+      min-width: 150px;
+    }
+    .ad-alert-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .ad-period-meta {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px 16px;
+      font-size: 0.82rem;
+      color: var(--ad-text-muted);
+      margin-bottom: 14px;
+    }
+    .ad-loading-bar {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--ad-sky);
+      font-weight: 600;
+    }
+    .ad-loading-bar[hidden] { display: none; }
+    .ad-loading-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--ad-sky);
+      animation: adDashPulse 1s ease-in-out infinite;
+    }
+    @keyframes adDashPulse {
+      0%, 100% { opacity: 0.35; }
+      50% { opacity: 1; }
+    }
+    .ad-chart-box {
+      position: relative;
+      width: 100%;
+      height: 240px;
+      min-width: 0;
+    }
+    .ad-chart-box[hidden] { display: none; }
+    .ad-empty-state {
+      padding: 18px 14px;
+      border: 1px dashed rgba(158, 201, 255, 0.24);
+      border-radius: 10px;
+      background: rgba(2, 6, 14, 0.45);
+      color: var(--ad-text-muted);
+      font-size: 0.88rem;
+      text-align: center;
+    }
+    .ad-empty-state p { margin-bottom: 10px; }
+    .ad-empty-state p:last-child { margin-bottom: 0; }
+    .ad-funnel-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 14px;
+      padding-top: 14px;
+      border-top: 1px solid rgba(148, 163, 184, 0.14);
+    }
+    .ad-funnel-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      font-size: 0.83rem;
+    }
+    .ad-funnel-name {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+      color: var(--ad-text);
+    }
+    .ad-funnel-swatch {
+      width: 10px;
+      height: 10px;
+      border-radius: 3px;
+      flex-shrink: 0;
+    }
+    .ad-int-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 10px;
+    }
+    .ad-int-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: rgba(2, 6, 14, 0.55);
+      border: 1px solid rgba(158, 201, 255, 0.18);
+      font-size: 0.78rem;
+      color: var(--ad-text);
+    }
+    .ad-diag-head {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+      margin-bottom: 4px;
+    }
+    .ad-section-stack { margin-bottom: 18px; }
+    @media (max-width: 640px) {
+      .ad-topbar { align-items: stretch; }
+      .ad-actions-row { width: 100%; }
+      .ad-date-group { width: 100%; }
+      .ad-filter-select,
+      .ad-filter-date {
+        width: 100%;
+        min-width: 0;
+      }
+      .ad-actions-row .ad-btn { flex: 1 1 auto; }
+      .ad-kpi-grid { grid-template-columns: 1fr; }
+      .ad-chart-box { height: 210px; }
+    }
+  </style>
 </head>
 <body>
   <div class="ad-shell">
@@ -23,196 +175,1023 @@
       <div class="ad-topbar">
         <div>
           <h1>Dashboard Executivo &amp; Marketing</h1>
-          <p class="ad-topbar-sub">Indicadores reais de aquisição, qualificação, pipeline e mídia.</p>
+          <p class="ad-topbar-sub">Indicadores reais de aquisição, qualificação, pipeline e mídia da expansão.</p>
         </div>
 
         <div class="ad-actions-row">
-          <select id="period-preset" class="ad-select" style="width:auto;">
+          <label class="ad-sr-only" for="period-preset">Período</label>
+          <select id="period-preset" class="ad-select ad-filter-select">
             <option value="7">Últimos 7 dias</option>
             <option value="30" selected>Últimos 30 dias</option>
             <option value="90">Últimos 90 dias</option>
             <option value="360">Últimos 360 dias</option>
             <option value="custom">Período personalizado</option>
           </select>
-          <input type="date" id="custom-start" class="ad-input" style="width:auto;display:none;" />
-          <input type="date" id="custom-end" class="ad-input" style="width:auto;display:none;" />
+          <div id="custom-date-group" class="ad-date-group" hidden>
+            <label class="ad-sr-only" for="custom-start">Data inicial</label>
+            <input type="date" id="custom-start" class="ad-input ad-filter-date" aria-label="Data inicial" />
+            <label class="ad-sr-only" for="custom-end">Data final</label>
+            <input type="date" id="custom-end" class="ad-input ad-filter-date" aria-label="Data final" />
+          </div>
           <button type="button" id="refresh-btn" class="ad-btn ad-btn-primary">Atualizar</button>
+          <a href="#" data-crm-page="leads.html" class="ad-btn ad-btn-secondary">Leads</a>
+          <a href="#" data-crm-page="pipeline.html" class="ad-btn ad-btn-secondary">Pipeline</a>
         </div>
       </div>
 
-      <div id="ad-global-alert"></div>
-      <div id="kpi-grid" class="ad-kpi-grid"></div>
+      <div id="ad-global-alert" role="alert" aria-live="polite"></div>
+      <div id="integrations-status-banner" aria-live="polite"></div>
 
-      <div class="ad-grid-2" style="margin-bottom: 18px;">
+      <div class="ad-period-meta">
+        <span id="period-summary">Período: Últimos 30 dias</span>
+        <span id="loading-indicator" class="ad-loading-bar" hidden>
+          <span class="ad-loading-dot" aria-hidden="true"></span>
+          <span>Carregando dados atualizados...</span>
+        </span>
+      </div>
+
+      <div id="kpi-grid" class="ad-kpi-grid" aria-busy="true"></div>
+
+      <div class="ad-grid-2 ad-section-stack">
         <section class="ad-card">
           <div class="ad-card-title">
             <span>Saúde dos Indicadores (Metas Configuráveis)</span>
+            <a href="#" data-crm-page="configuracoes.html" class="ad-btn ad-btn-secondary ad-btn-sm">Ajustar metas →</a>
           </div>
-          <div id="health-bars" class="ad-health-list">Carregando...</div>
+          <div id="health-bars" class="ad-health-list">Carregando indicadores...</div>
         </section>
 
         <section class="ad-card">
           <div class="ad-card-title">
-            <span>Análises Automáticas &amp; Alertas</span>
+            <span>Diagnósticos de Gargalos &amp; Alertas</span>
           </div>
-          <div id="diagnostics-list">Carregando...</div>
+          <div id="diagnostics-list">Carregando diagnósticos...</div>
         </section>
       </div>
 
-      <div class="ad-grid-2" style="margin-bottom: 18px;">
+      <div class="ad-grid-2 ad-section-stack">
         <section class="ad-card">
           <div class="ad-card-title"><span>Evolução Diária: Leads vs. Qualificados</span></div>
-          <canvas id="timeseries-chart" height="190"></canvas>
+          <div id="timeseries-chart-box" class="ad-chart-box">
+            <canvas id="timeseries-chart"></canvas>
+          </div>
+          <div id="timeseries-fallback"></div>
         </section>
 
         <section class="ad-card">
           <div class="ad-card-title"><span>Funil Comercial por Estágio</span></div>
-          <canvas id="funnel-chart" height="190"></canvas>
+          <div id="funnel-chart-box" class="ad-chart-box">
+            <canvas id="funnel-chart"></canvas>
+          </div>
+          <div id="funnel-fallback"></div>
+          <div id="funnel-metrics-summary"></div>
         </section>
       </div>
 
-      <section class="ad-card">
+      <section class="ad-card ad-section-stack">
         <div class="ad-card-title">
-          <span>Desempenho das Campanhas no Período</span>
-          <a href="/admin/campanhas.html" class="ad-btn ad-btn-secondary ad-btn-sm">Ver todas →</a>
+          <span>Leads Recentes no CRM</span>
+          <a href="#" data-crm-page="leads.html" class="ad-btn ad-btn-secondary ad-btn-sm">Ver todos →</a>
         </div>
-        <div class="ad-table-wrap" id="campaigns-table-wrap">Carregando...</div>
+        <div class="ad-table-wrap" id="recent-leads-wrap">Carregando leads recentes...</div>
       </section>
-      <p id="revenue-notice" style="font-size:0.78rem;color:#94A3B8;margin-top:14px;"></p>
+
+      <div class="ad-grid-2 ad-section-stack">
+        <section class="ad-card">
+          <div class="ad-card-title">
+            <span>Desempenho das Campanhas no Período</span>
+            <a href="#" data-crm-page="campanhas.html" class="ad-btn ad-btn-secondary ad-btn-sm">Ver todas →</a>
+          </div>
+          <div class="ad-table-wrap" id="campaigns-table-wrap">Carregando campanhas...</div>
+        </section>
+
+        <section class="ad-card">
+          <div class="ad-card-title">
+            <span>Captação por Estado (UF)</span>
+            <a href="#" data-crm-page="analytics.html" class="ad-btn ad-btn-secondary ad-btn-sm">Tracking &amp; UF →</a>
+          </div>
+          <div class="ad-table-wrap" id="regional-table-wrap">Carregando distribuição regional...</div>
+        </section>
+      </div>
+
+      <p id="revenue-notice" style="font-size:0.78rem;color:#94A3B8;margin-top:6px;"></p>
     </main>
   </div>
 
-  <script src="/admin/assets/js/admin-core.js"></script>
+  <script src="/assets/js/admin-core.js"></script>
   <script>
     (function () {
+      'use strict';
+
       var tsChart = null;
       var funnelChart = null;
+      var activeRequestSeq = 0;
+      var hasLoadedDashboard = false;
 
-      function renderKpis(k) {
-        var fmtNum = function (v) { return v == null ? '—' : Number(v).toLocaleString('pt-BR'); };
-        var cards = [
-          { label: 'Leads Captados', val: fmtNum(k.leads_count), sub: 'Sem atendimento: ' + fmtNum(k.unattended_leads_count) },
-          { label: 'Leads Qualificados', val: fmtNum(k.qualified_leads_count), sub: 'Taxa: ' + (k.qualification_rate_pct || 0) + '%' },
-          { label: 'Reuniões Agendadas', val: fmtNum(k.meetings_scheduled_count), sub: 'Realizadas: ' + fmtNum(k.meetings_completed_count) },
-          { label: 'Propostas', val: fmtNum(k.proposals_count), sub: 'Avançado no funil' },
-          { label: 'Franquias Vendidas', val: fmtNum(k.sales_count), sub: 'Conversão: ' + (k.close_rate_pct || 0) + '%' },
-          { label: 'Investimento em Mídia', val: KingAdmin.formatBrl(k.media_spend_brl), sub: 'Cliques: ' + fmtNum(k.clicks) },
-          { label: 'CPL', val: KingAdmin.formatBrl(k.cpl_brl), sub: 'Custo por Lead' },
-          { label: 'CPQL', val: KingAdmin.formatBrl(k.cpql_brl), sub: 'Custo p/ Lead Qualificado' },
-          { label: 'CAC', val: KingAdmin.formatBrl(k.cac_brl), sub: 'Custo p/ Venda' },
-          { label: 'ROAS', val: k.roas != null ? k.roas + 'x' : '—', sub: 'Receita Contratada: ' + KingAdmin.formatBrl(k.attributed_contracted_revenue_brl) },
-          { label: 'Tempo Médio Atendimento', val: k.avg_response_minutes != null ? k.avg_response_minutes + ' min' : '—', sub: '1º contato após cadastro' }
-        ];
-        document.getElementById('kpi-grid').innerHTML = cards.map(function (c) {
-          return '<div class="ad-kpi-card"><div class="ad-kpi-label">' + KingAdmin.esc(c.label) + '</div><div class="ad-kpi-value">' + KingAdmin.esc(c.val) + '</div><div class="ad-kpi-sub">' + KingAdmin.esc(c.sub) + '</div></div>';
-        }).join('');
+      var PLATFORM_LABELS = {
+        meta_ads: 'Meta Ads',
+        google_ads: 'Google Ads',
+        organic: 'Orgânico',
+        blog: 'Blog SEO',
+        direct: 'Direto',
+        referral: 'Indicação',
+        other: 'Outro'
+      };
+
+      var CAMPAIGN_STATUS_MAP = {
+        active: { label: 'Ativa', badge: 'ad-badge-green' },
+        paused: { label: 'Pausada', badge: 'ad-badge-orange' },
+        ended: { label: 'Encerrada', badge: 'ad-badge-gray' },
+        draft: { label: 'Rascunho', badge: 'ad-badge-blue' }
+      };
+
+      var LEAD_STATUS_MAP = {
+        pending: { label: 'Pendente', badge: 'ad-badge-blue' },
+        qualified: { label: 'Qualificado', badge: 'ad-badge-green' },
+        nurture: { label: 'Nutrição', badge: 'ad-badge-orange' },
+        disqualified: { label: 'Desqualificado', badge: 'ad-badge-red' }
+      };
+
+      var TRACK_LABELS = {
+        comercial: 'Comercial',
+        designer: 'Designer',
+        hibrido: 'Híbrido'
+      };
+
+      var DIAGNOSTIC_TYPE_LABELS = {
+        high_cpl: 'Custo por Lead',
+        low_qualification: 'Qualificação',
+        unattended_leads: 'SLA de Atendimento',
+        pipeline_bottleneck: 'Gargalo no Funil',
+        conversion_drop: 'Queda de Conversão'
+      };
+
+      var INTEGRATION_STATUS_MAP = {
+        connected: { label: 'Conectada', badge: 'ad-badge-green' },
+        configured: { label: 'Configurada', badge: 'ad-badge-green' },
+        partial_missing_secret: { label: 'Parcial (falta API Secret)', badge: 'ad-badge-orange' },
+        partial_missing_token: { label: 'Parcial (falta Access Token)', badge: 'ad-badge-orange' },
+        not_configured: { label: 'Não configurada', badge: 'ad-badge-gray' },
+        error: { label: 'Erro de conexão', badge: 'ad-badge-red' }
+      };
+
+      function hydrateCrmLinks() {
+        var links = document.querySelectorAll('[data-crm-page]');
+        for (var i = 0; i < links.length; i++) {
+          var target = links[i].getAttribute('data-crm-page');
+          if (target) {
+            links[i].setAttribute('href', KingAdmin.crmUrl(target));
+          }
+        }
       }
 
-      function renderHealthBars(bars) {
-        var el = document.getElementById('health-bars');
-        if (!bars || !bars.length) {
-          el.innerHTML = '<p style="color:#94A3B8;font-size:0.88rem;">Sem indicadores suficientes no período.</p>';
-          return;
+      function toIsoDateInput(dateObj) {
+        var year = dateObj.getFullYear();
+        var month = String(dateObj.getMonth() + 1).padStart(2, '0');
+        var day = String(dateObj.getDate()).padStart(2, '0');
+        return year + '-' + month + '-' + day;
+      }
+
+      function isValidIsoDate(str) {
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(String(str || ''))) return false;
+        var parsed = new Date(str + 'T00:00:00.000Z');
+        if (isNaN(parsed.getTime())) return false;
+        return parsed.toISOString().slice(0, 10) === str;
+      }
+
+      function formatIsoDateBr(isoDate) {
+        if (!isoDate) return '—';
+        var raw = String(isoDate).slice(0, 10);
+        if (!isValidIsoDate(raw)) return String(isoDate);
+        var parts = raw.split('-');
+        return parts[2] + '/' + parts[1] + '/' + parts[0];
+      }
+
+      function fmtInt(v) {
+        if (v == null || !Number.isFinite(Number(v))) return '—';
+        return Number(v).toLocaleString('pt-BR');
+      }
+
+      function fmtDecimal(v, maxDecimals) {
+        if (v == null || !Number.isFinite(Number(v))) return '—';
+        var maxD = maxDecimals != null ? Number(maxDecimals) : 2;
+        if (!Number.isFinite(maxD)) maxD = 2;
+        maxD = Math.max(0, Math.min(20, Math.trunc(maxD)));
+        var minD = maxD === 0 ? 0 : Math.min(1, maxD);
+        return Number(v).toLocaleString('pt-BR', {
+          minimumFractionDigits: minD,
+          maximumFractionDigits: maxD
+        });
+      }
+
+      function sanitizeHexColor(hex) {
+        return /^#[0-9a-fA-F]{3,8}$/.test(String(hex || '').trim()) ? String(hex).trim() : '#0356C5';
+      }
+
+      function humanizeFallbackLabel(raw, fallback) {
+        var text = String(raw == null ? '' : raw).trim();
+        if (!text) return fallback || '—';
+        if (/^[a-z0-9]+(?:_[a-z0-9]+)+$/i.test(text)) {
+          return text
+            .split('_')
+            .map(function (part) {
+              return part.charAt(0).toUpperCase() + part.slice(1).toLowerCase();
+            })
+            .join(' ');
         }
-        el.innerHTML = bars.map(function (b) {
-          var formatted = b.value == null ? 'Sem dados' : (b.unit === 'R$' ? KingAdmin.formatBrl(b.value) : b.value + ' ' + b.unit);
+        return text;
+      }
+
+      function mapPlatform(platform) {
+        var key = String(platform || '').toLowerCase();
+        return PLATFORM_LABELS[key] || humanizeFallbackLabel(platform, 'Outro');
+      }
+
+      function renderCampaignStatusBadge(status) {
+        var key = String(status || '').toLowerCase();
+        var cfg = CAMPAIGN_STATUS_MAP[key] || { label: humanizeFallbackLabel(status, 'Indefinido'), badge: 'ad-badge-gray' };
+        return '<span class="ad-badge ' + cfg.badge + '">' + KingAdmin.esc(cfg.label) + '</span>';
+      }
+
+      function renderLeadStatusBadge(status) {
+        var key = String(status || '').toLowerCase();
+        var cfg = LEAD_STATUS_MAP[key] || { label: humanizeFallbackLabel(status, 'Pendente'), badge: 'ad-badge-gray' };
+        return '<span class="ad-badge ' + cfg.badge + '">' + KingAdmin.esc(cfg.label) + '</span>';
+      }
+
+      function mapTrack(track) {
+        if (!track) return 'Não informada';
+        var key = String(track).toLowerCase();
+        return TRACK_LABELS[key] || humanizeFallbackLabel(track, 'Não informada');
+      }
+
+      function mapIntegrationStatus(status) {
+        var key = String(status || '').toLowerCase();
+        return INTEGRATION_STATUS_MAP[key] || { label: humanizeFallbackLabel(status, 'Não configurada'), badge: 'ad-badge-gray' };
+      }
+
+      function mapHealthStatusLabel(band, rawStatusLabel) {
+        var normalized = String(rawStatusLabel || '').trim();
+        if (normalized && !/^[a-z0-9_]+$/.test(normalized)) {
+          return normalized;
+        }
+        if (band === 'green') return 'Dentro da meta';
+        if (band === 'orange') return 'Atenção';
+        if (band === 'red') return 'Crítico';
+        return 'Sem referência';
+      }
+
+      function clearGlobalAlert() {
+        var alertEl = document.getElementById('ad-global-alert');
+        if (alertEl) alertEl.innerHTML = '';
+        document.getElementById('custom-start').removeAttribute('aria-invalid');
+        document.getElementById('custom-end').removeAttribute('aria-invalid');
+      }
+
+      function showValidationBanner(message) {
+        var alertEl = document.getElementById('ad-global-alert');
+        if (!alertEl) return;
+        alertEl.innerHTML =
+          '<div class="ad-alert ad-alert-warn">' +
+          '  <strong>Filtro de período inválido:</strong> ' + KingAdmin.esc(message) +
+          '</div>';
+      }
+
+      function showErrorBanner(title, message, onRetry) {
+        var alertEl = document.getElementById('ad-global-alert');
+        if (!alertEl) return;
+        alertEl.innerHTML =
+          '<div class="ad-alert ad-alert-error ad-alert-row">' +
+          '  <div><strong>' + KingAdmin.esc(title) + '</strong> ' + KingAdmin.esc(message) + '</div>' +
+          '  <button type="button" id="retry-dashboard-btn" class="ad-btn ad-btn-secondary ad-btn-sm">Tentar novamente</button>' +
+          '</div>';
+        var retryBtn = document.getElementById('retry-dashboard-btn');
+        if (retryBtn && typeof onRetry === 'function') {
+          retryBtn.addEventListener('click', onRetry);
+        }
+      }
+
+      function validateAndBuildPeriodQuery() {
+        var preset = document.getElementById('period-preset').value;
+        if (preset !== 'custom') {
+          var daysNum = Number(preset);
+          if (!Number.isInteger(daysNum) || daysNum < 1 || daysNum > 365) {
+            return {
+              valid: false,
+              message: 'Selecione um preset de período válido entre 1 e 365 dias.'
+            };
+          }
+          return {
+            valid: true,
+            qs: 'days=' + encodeURIComponent(String(daysNum)),
+            label: 'Últimos ' + daysNum + ' dias'
+          };
+        }
+
+        var startEl = document.getElementById('custom-start');
+        var endEl = document.getElementById('custom-end');
+        var start = startEl.value.trim();
+        var end = endEl.value.trim();
+
+        if (!start || !end) {
+          if (!start) startEl.setAttribute('aria-invalid', 'true');
+          if (!end) endEl.setAttribute('aria-invalid', 'true');
+          return {
+            valid: false,
+            message: 'Preencha a data inicial e a data final para consultar o período personalizado.'
+          };
+        }
+
+        if (!isValidIsoDate(start) || !isValidIsoDate(end)) {
+          startEl.setAttribute('aria-invalid', 'true');
+          endEl.setAttribute('aria-invalid', 'true');
+          return {
+            valid: false,
+            message: 'As datas informadas precisam estar no formato válido de calendário.'
+          };
+        }
+
+        if (start > end) {
+          startEl.setAttribute('aria-invalid', 'true');
+          endEl.setAttribute('aria-invalid', 'true');
+          return {
+            valid: false,
+            message:
+              'A data inicial (' + formatIsoDateBr(start) + ') não pode ser posterior à data final (' + formatIsoDateBr(end) + ').'
+          };
+        }
+
+        return {
+          valid: true,
+          qs: 'start_date=' + encodeURIComponent(start) + '&end_date=' + encodeURIComponent(end),
+          label: formatIsoDateBr(start) + ' até ' + formatIsoDateBr(end)
+        };
+      }
+
+      function renderInitialKpiSkeletons() {
+        var placeholders = [];
+        for (var i = 0; i < 6; i++) {
+          placeholders.push(
+            '<div class="ad-kpi-card">' +
+            '  <div class="ad-kpi-label">Carregando...</div>' +
+            '  <div class="ad-kpi-value">—</div>' +
+            '  <div class="ad-kpi-sub">Aguardando dados reais</div>' +
+            '</div>'
+          );
+        }
+        document.getElementById('kpi-grid').innerHTML = placeholders.join('');
+      }
+
+      function setLoadingState(isLoading) {
+        var btn = document.getElementById('refresh-btn');
+        var indicator = document.getElementById('loading-indicator');
+        var kpiGrid = document.getElementById('kpi-grid');
+        if (btn) {
+          btn.disabled = isLoading;
+          btn.textContent = isLoading ? 'Atualizando...' : 'Atualizar';
+        }
+        if (indicator) {
+          indicator.hidden = !isLoading;
+        }
+        if (kpiGrid) {
+          kpiGrid.setAttribute('aria-busy', isLoading ? 'true' : 'false');
+        }
+        if (isLoading && !hasLoadedDashboard) {
+          renderInitialKpiSkeletons();
+        }
+      }
+
+      function renderUnavailableSections() {
+        document.getElementById('kpi-grid').innerHTML =
+          '<div class="ad-kpi-card" style="grid-column:1/-1;"><div class="ad-kpi-label">Indicadores Executivos</div><div class="ad-kpi-value" style="font-size:1.3rem;">Dados indisponíveis</div><div class="ad-kpi-sub">Não foi possível consultar o servidor. Utilize "Tentar novamente" acima.</div></div>';
+        document.getElementById('health-bars').innerHTML =
+          '<div class="ad-empty-state"><p>Indicadores de saúde indisponíveis devido a falha de conexão.</p></div>';
+        document.getElementById('diagnostics-list').innerHTML =
+          '<div class="ad-empty-state"><p>Diagnósticos indisponíveis devido a falha de conexão.</p></div>';
+        document.getElementById('timeseries-chart-box').hidden = true;
+        document.getElementById('timeseries-fallback').innerHTML =
+          '<div class="ad-empty-state"><p>Série temporal indisponível no momento.</p></div>';
+        document.getElementById('funnel-chart-box').hidden = true;
+        document.getElementById('funnel-fallback').innerHTML =
+          '<div class="ad-empty-state"><p>Funil comercial indisponível no momento.</p></div>';
+        document.getElementById('funnel-metrics-summary').innerHTML = '';
+        document.getElementById('campaigns-table-wrap').innerHTML =
+          '<div class="ad-empty-state"><p>Tabela de campanhas indisponível no momento.</p></div>';
+        document.getElementById('regional-table-wrap').innerHTML =
+          '<div class="ad-empty-state"><p>Distribuição regional indisponível no momento.</p></div>';
+      }
+
+      function renderKpis(k) {
+        var leadsCount = Number(k.leads_count || 0);
+        var qualifiedCount = Number(k.qualified_leads_count || 0);
+        var salesCount = Number(k.sales_count || 0);
+        var mediaSpend = Number(k.media_spend_brl || 0);
+
+        var cards = [
+          {
+            label: 'Leads Captados',
+            val: fmtInt(leadsCount),
+            sub: leadsCount > 0 ? 'Sem 1º contato (SLA): ' + fmtInt(k.unattended_leads_count || 0) : 'Nenhum lead captado no período'
+          },
+          {
+            label: 'Leads Qualificados',
+            val: fmtInt(qualifiedCount),
+            sub: leadsCount > 0 ? 'Taxa de qualificação: ' + fmtDecimal(k.qualification_rate_pct || 0, 1) + '%' : 'Aguardando novos leads'
+          },
+          {
+            label: 'Reuniões Agendadas',
+            val: fmtInt(k.meetings_scheduled_count || 0),
+            sub: 'Realizadas: ' + fmtInt(k.meetings_completed_count || 0)
+          },
+          {
+            label: 'Propostas & Negociação',
+            val: fmtInt(k.proposals_count || 0),
+            sub: 'Oportunidades em estágio avançado'
+          },
+          {
+            label: 'Franquias Vendidas',
+            val: fmtInt(salesCount),
+            sub: leadsCount > 0 ? 'Conversão sobre leads: ' + fmtDecimal(k.close_rate_pct || 0, 1) + '%' : 'Nenhuma venda fechada no período'
+          },
+          {
+            label: 'Tempo Médio Atendimento',
+            val: k.avg_response_minutes != null ? fmtInt(k.avg_response_minutes) + ' min' : 'Sem dados',
+            sub: 'Entre cadastro e 1º contato registrado'
+          },
+          {
+            label: 'Investimento em Mídia',
+            val: KingAdmin.formatBrl(mediaSpend),
+            sub: mediaSpend > 0 ? 'Cliques: ' + fmtInt(k.clicks || 0) + ' • Impr.: ' + fmtInt(k.impressions || 0) : 'Sem lançamentos de mídia no período'
+          },
+          {
+            label: 'CPL (Custo por Lead)',
+            val: k.cpl_brl != null ? KingAdmin.formatBrl(k.cpl_brl) : 'Sem dados',
+            sub: mediaSpend > 0 && leadsCount > 0 ? 'Investimento / Leads captados' : 'Requer investimento e leads no período'
+          },
+          {
+            label: 'CPQL',
+            val: k.cpql_brl != null ? KingAdmin.formatBrl(k.cpql_brl) : 'Sem dados',
+            sub: mediaSpend > 0 && qualifiedCount > 0 ? 'Investimento / Qualificados' : 'Requer investimento e qualificados'
+          },
+          {
+            label: 'CAC',
+            val: k.cac_brl != null ? KingAdmin.formatBrl(k.cac_brl) : 'Sem dados',
+            sub: mediaSpend > 0 && salesCount > 0 ? 'Investimento / Franquias vendidas' : 'Requer investimento e vendas'
+          },
+          {
+            label: 'ROAS (Taxa Contratada)',
+            val: k.roas != null ? fmtDecimal(k.roas, 2) + 'x' : 'Sem dados',
+            sub: 'Contratos fechados: ' + KingAdmin.formatBrl(k.attributed_contracted_revenue_brl || 0)
+          }
+        ];
+
+        document.getElementById('kpi-grid').innerHTML = cards.map(function (c) {
           return (
-            '<div>' +
-            '  <div class="ad-health-item-head">' +
-            '    <span><strong>' + KingAdmin.esc(b.label) + '</strong></span>' +
-            '    <span>' + KingAdmin.esc(formatted) + ' <em style="color:#94A3B8;">(' + KingAdmin.esc(b.status_label || '') + ')</em></span>' +
-            '  </div>' +
-            '  <div class="ad-health-track"><div class="ad-health-fill ' + KingAdmin.esc(b.band) + '" style="width:' + Number(b.pct || 0) + '%"></div></div>' +
+            '<div class="ad-kpi-card">' +
+            '  <div class="ad-kpi-label">' + KingAdmin.esc(c.label) + '</div>' +
+            '  <div class="ad-kpi-value">' + KingAdmin.esc(c.val) + '</div>' +
+            '  <div class="ad-kpi-sub">' + KingAdmin.esc(c.sub) + '</div>' +
             '</div>'
           );
         }).join('');
       }
 
-      function renderDiagnostics(alerts) {
-        var el = document.getElementById('diagnostics-list');
-        if (!alerts || !alerts.length) {
-          el.innerHTML = '<div class="ad-alert ad-alert-info">Nenhum gargalo crítico ou anomalia detectada no período selecionado.</div>';
+      function renderHealthBars(bars, kpis) {
+        var el = document.getElementById('health-bars');
+        var leadsCount = Number((kpis && kpis.leads_count) || 0);
+        var spendBrl = Number((kpis && kpis.media_spend_brl) || 0);
+
+        if (!bars || !bars.length) {
+          el.innerHTML =
+            '<div class="ad-empty-state"><p>Sem metas configuradas ou dados suficientes no período selecionado.</p></div>';
           return;
         }
+
+        var noticeHtml = '';
+        if (leadsCount === 0 && spendBrl === 0) {
+          noticeHtml =
+            '<div class="ad-alert ad-alert-info" style="margin-bottom:4px;">Ainda não há volume de leads ou investimento em mídia registrado neste período para medir eficiência contra as metas.</div>';
+        }
+
+        el.innerHTML =
+          noticeHtml +
+          bars.map(function (b) {
+            var isEmptyLeadRate = b.key === 'qualification_rate_pct' && leadsCount === 0;
+            var hasValue = !isEmptyLeadRate && b.value != null && Number.isFinite(Number(b.value));
+            var rawBand = isEmptyLeadRate ? 'neutral' : String(b.band || 'neutral').toLowerCase();
+            var safeBand = ['green', 'orange', 'red', 'neutral'].indexOf(rawBand) !== -1 ? rawBand : 'neutral';
+            var pct = hasValue ? Math.max(0, Math.min(100, Math.round(Number(b.pct || 0)))) : 0;
+
+            var formattedValue = 'Sem dados';
+            if (hasValue) {
+              if (b.unit === 'R$') formattedValue = KingAdmin.formatBrl(b.value);
+              else if (b.unit === '%') formattedValue = fmtDecimal(b.value, 1) + '%';
+              else if (b.unit === 'x') formattedValue = fmtDecimal(b.value, 2) + 'x';
+              else if (b.unit === 'min') formattedValue = fmtInt(b.value) + ' min';
+              else formattedValue = fmtDecimal(b.value, 1) + (b.unit ? ' ' + String(b.unit) : '');
+            }
+
+            var statusText = hasValue
+              ? mapHealthStatusLabel(safeBand, b.status_label)
+              : (isEmptyLeadRate ? 'Sem leads no período' : 'Sem dados no período');
+
+            var targetText = '';
+            if (b.target != null && Number.isFinite(Number(b.target))) {
+              if (b.unit === 'R$') targetText = ' • Meta: ' + KingAdmin.formatBrl(b.target);
+              else if (b.unit === '%') targetText = ' • Meta: ' + fmtDecimal(b.target, 0) + '%';
+              else if (b.unit === 'x') targetText = ' • Meta: ' + fmtDecimal(b.target, 1) + 'x';
+              else if (b.unit === 'min') targetText = ' • Meta: ' + fmtInt(b.target) + ' min';
+            }
+
+            return (
+              '<div>' +
+              '  <div class="ad-health-item-head">' +
+              '    <span><strong>' + KingAdmin.esc(b.label || 'Indicador') + '</strong></span>' +
+              '    <span>' + KingAdmin.esc(formattedValue) + ' <em style="color:#94A3B8;">(' + KingAdmin.esc(statusText + targetText) + ')</em></span>' +
+              '  </div>' +
+              '  <div class="ad-health-track"><div class="ad-health-fill ' + KingAdmin.esc(safeBand) + '" style="width:' + pct + '%"></div></div>' +
+              '</div>'
+            );
+          }).join('');
+      }
+
+      function renderDiagnostics(alerts, kpis) {
+        var el = document.getElementById('diagnostics-list');
+        var leadsCount = Number((kpis && kpis.leads_count) || 0);
+        var spendBrl = Number((kpis && kpis.media_spend_brl) || 0);
+
+        if (!alerts || !alerts.length) {
+          var emptyMsg =
+            leadsCount === 0 && spendBrl === 0
+              ? 'Sem movimentação de leads ou campanhas neste período para análise automática de gargalos.'
+              : 'Nenhum gargalo crítico ou anomalia detectada no período selecionado.';
+          el.innerHTML = '<div class="ad-alert ad-alert-info" style="margin-bottom:0;">' + KingAdmin.esc(emptyMsg) + '</div>';
+          return;
+        }
+
         el.innerHTML = alerts.map(function (a) {
-          var cls = a.severity === 'red' ? 'ad-alert-error' : 'ad-alert-warn';
-          return '<div class="ad-alert ' + cls + '"><strong>' + KingAdmin.esc(a.title) + '</strong><br/>' + KingAdmin.esc(a.description) + '</div>';
+          var sev = String(a.severity || '').toLowerCase();
+          var alertCls = sev === 'red' ? 'ad-alert-error' : (sev === 'orange' ? 'ad-alert-warn' : 'ad-alert-info');
+          var badgeCls = sev === 'red' ? 'ad-badge-red' : (sev === 'orange' ? 'ad-badge-orange' : 'ad-badge-blue');
+          var sevLabel = sev === 'red' ? 'Crítico' : (sev === 'orange' ? 'Atenção' : 'Informativo');
+          var catLabel = DIAGNOSTIC_TYPE_LABELS[String(a.type || '')] || 'Diagnóstico';
+
+          return (
+            '<div class="ad-alert ' + alertCls + '">' +
+            '  <div class="ad-diag-head">' +
+            '    <strong>' + KingAdmin.esc(a.title || 'Alerta operacional') + '</strong>' +
+            '    <span class="ad-badge ' + badgeCls + '">' + KingAdmin.esc(catLabel + ' • ' + sevLabel) + '</span>' +
+            '  </div>' +
+            '  <div style="font-size:0.84rem;">' + KingAdmin.esc(a.description || 'Verifique os indicadores correspondentes no período.') + '</div>' +
+            '</div>'
+          );
         }).join('');
       }
 
       function renderCharts(timeseries, stages) {
-        if (typeof Chart === 'undefined') return;
-        var tsCtx = document.getElementById('timeseries-chart');
-        if (tsChart) tsChart.destroy();
-        tsChart = new Chart(tsCtx, {
-          type: 'line',
-          data: {
-            labels: timeseries.map(function (t) { return t.date; }),
-            datasets: [
-              { label: 'Leads', data: timeseries.map(function (t) { return t.leads; }), borderColor: '#68D8FF', backgroundColor: 'rgba(104,216,255,0.16)', tension: 0.3 },
-              { label: 'Qualificados', data: timeseries.map(function (t) { return t.qualified; }), borderColor: '#168B48', backgroundColor: 'rgba(22,139,72,0.18)', tension: 0.3 }
-            ]
-          },
-          options: { plugins: { legend: { labels: { color: '#D6E2F1' } } }, scales: { x: { ticks: { color: '#AEBBD0' } }, y: { beginAtZero: true, ticks: { color: '#AEBBD0' } } } }
-        });
+        var tsBox = document.getElementById('timeseries-chart-box');
+        var tsFallback = document.getElementById('timeseries-fallback');
+        var fnBox = document.getElementById('funnel-chart-box');
+        var fnFallback = document.getElementById('funnel-fallback');
+        var fnSummary = document.getElementById('funnel-metrics-summary');
 
-        var fnCtx = document.getElementById('funnel-chart');
-        if (funnelChart) funnelChart.destroy();
-        funnelChart = new Chart(fnCtx, {
-          type: 'bar',
-          data: {
-            labels: stages.map(function (s) { return s.name; }),
-            datasets: [{ label: 'Oportunidades', data: stages.map(function (s) { return s.count; }), backgroundColor: '#0356C5' }]
-          },
-          options: { indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true, ticks: { color: '#AEBBD0' } }, y: { ticks: { color: '#D6E2F1' } } } }
-        });
+        if (tsChart) {
+          tsChart.destroy();
+          tsChart = null;
+        }
+        if (funnelChart) {
+          funnelChart.destroy();
+          funnelChart = null;
+        }
+
+        // 1. Timeseries
+        var cleanSeries = Array.isArray(timeseries) ? timeseries : [];
+        if (!cleanSeries.length) {
+          tsBox.hidden = true;
+          tsFallback.innerHTML =
+            '<div class="ad-empty-state"><p>Nenhum lead captado ou métrica diária registrada no período selecionado.</p></div>';
+        } else if (typeof Chart === 'undefined') {
+          tsBox.hidden = true;
+          tsFallback.innerHTML =
+            '<div class="ad-table-wrap"><table class="ad-table"><thead><tr><th>Data</th><th>Leads</th><th>Qualificados</th><th>Vendas</th><th>Mídia</th></tr></thead><tbody>' +
+            cleanSeries.slice(-14).map(function (row) {
+              return (
+                '<tr>' +
+                '  <td>' + KingAdmin.esc(formatIsoDateBr(row.date)) + '</td>' +
+                '  <td>' + KingAdmin.esc(fmtInt(row.leads || 0)) + '</td>' +
+                '  <td>' + KingAdmin.esc(fmtInt(row.qualified || 0)) + '</td>' +
+                '  <td>' + KingAdmin.esc(fmtInt(row.sales || 0)) + '</td>' +
+                '  <td>' + KingAdmin.esc(KingAdmin.formatBrl(row.spend_brl || 0)) + '</td>' +
+                '</tr>'
+              );
+            }).join('') +
+            '</tbody></table></div>';
+        } else {
+          tsBox.hidden = false;
+          tsFallback.innerHTML = '';
+          var tsCtx = document.getElementById('timeseries-chart');
+          tsChart = new Chart(tsCtx, {
+            type: 'line',
+            data: {
+              labels: cleanSeries.map(function (t) { return formatIsoDateBr(t.date); }),
+              datasets: [
+                {
+                  label: 'Leads',
+                  data: cleanSeries.map(function (t) { return Number(t.leads || 0); }),
+                  borderColor: '#68D8FF',
+                  backgroundColor: 'rgba(104,216,255,0.16)',
+                  tension: 0.3,
+                  fill: true
+                },
+                {
+                  label: 'Qualificados',
+                  data: cleanSeries.map(function (t) { return Number(t.qualified || 0); }),
+                  borderColor: '#168B48',
+                  backgroundColor: 'rgba(22,139,72,0.18)',
+                  tension: 0.3,
+                  fill: true
+                }
+              ]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                legend: { labels: { color: '#D6E2F1' } }
+              },
+              scales: {
+                x: { ticks: { color: '#AEBBD0', maxRotation: 45, autoSkip: true } },
+                y: { beginAtZero: true, ticks: { color: '#AEBBD0', precision: 0 } }
+              }
+            }
+          });
+        }
+
+        // 2. Funnel by Stage
+        var cleanStages = Array.isArray(stages) ? stages : [];
+        var totalFunnelOpps = cleanStages.reduce(function (acc, s) {
+          return acc + Number(s.count || 0);
+        }, 0);
+
+        if (!cleanStages.length || totalFunnelOpps === 0) {
+          fnBox.hidden = true;
+          fnFallback.innerHTML =
+            '<div class="ad-empty-state"><p>Nenhuma oportunidade ativa ou encerrada no funil comercial neste período.</p></div>';
+          fnSummary.innerHTML = '';
+        } else {
+          if (typeof Chart === 'undefined') {
+            fnBox.hidden = true;
+            fnFallback.innerHTML = '';
+          } else {
+            fnBox.hidden = false;
+            fnFallback.innerHTML = '';
+            var fnCtx = document.getElementById('funnel-chart');
+            funnelChart = new Chart(fnCtx, {
+              type: 'bar',
+              data: {
+                labels: cleanStages.map(function (s) { return String(s.name || 'Estágio'); }),
+                datasets: [
+                  {
+                    label: 'Oportunidades',
+                    data: cleanStages.map(function (s) { return Number(s.count || 0); }),
+                    backgroundColor: cleanStages.map(function (s) { return sanitizeHexColor(s.color_hex); }),
+                    borderRadius: 4
+                  }
+                ]
+              },
+              options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                  x: { beginAtZero: true, ticks: { color: '#AEBBD0', precision: 0 } },
+                  y: { ticks: { color: '#D6E2F1' } }
+                }
+              }
+            });
+          }
+
+          fnSummary.innerHTML =
+            '<div class="ad-funnel-list">' +
+            cleanStages.map(function (s) {
+              var count = Number(s.count || 0);
+              var pct = totalFunnelOpps > 0 ? Math.round((count / totalFunnelOpps) * 100) : 0;
+              var swatch = sanitizeHexColor(s.color_hex);
+              return (
+                '<div class="ad-funnel-row">' +
+                '  <span class="ad-funnel-name">' +
+                '    <span class="ad-funnel-swatch" style="background:' + KingAdmin.esc(swatch) + ';" aria-hidden="true"></span>' +
+                '    <span>' + KingAdmin.esc(s.name || 'Estágio') + '</span>' +
+                '  </span>' +
+                '  <span style="color:#AEBBD0;"><strong>' + KingAdmin.esc(fmtInt(count)) + '</strong> (' + KingAdmin.esc(String(pct)) + '%)</span>' +
+                '</div>'
+              );
+            }).join('') +
+            '</div>';
+        }
+      }
+
+      function renderRecentLeads(result) {
+        var wrap = document.getElementById('recent-leads-wrap');
+        var items = (result && Array.isArray(result.items)) ? result.items : [];
+        if (!items.length) {
+          wrap.innerHTML =
+            '<div class="ad-empty-state">' +
+            '  <p>Nenhum lead captado até o momento. Novos candidatos enviados pela landing page ou blog aparecerão aqui.</p>' +
+            '  <a href="' + KingAdmin.esc(KingAdmin.crmUrl('leads.html')) + '" class="ad-btn ad-btn-secondary ad-btn-sm">Ir para Gestão de Leads</a>' +
+            '</div>';
+          return;
+        }
+
+        wrap.innerHTML =
+          '<table class="ad-table"><thead><tr><th>Candidato</th><th>Cidade / UF</th><th>Trilha</th><th>Score</th><th>Estágio</th><th>Status</th><th>Cadastro</th><th>Ação</th></tr></thead><tbody>' +
+          items.map(function (l) {
+            var qual = Array.isArray(l.qualification) ? (l.qualification[0] || {}) : (l.qualification || {});
+            var opp = Array.isArray(l.opportunities) ? (l.opportunities[0] || null) : null;
+            var stageName = (opp && opp.stage && opp.stage.name) ? opp.stage.name : 'Sem estágio';
+            var location = (l.city || l.state) ? ((l.city || '—') + (l.state ? '/' + l.state : '')) : 'Não informado';
+            var unattendedBadge = !l.first_contact_at
+              ? ' <span class="ad-badge ad-badge-orange">Sem contato</span>'
+              : '';
+            var detailHref = KingAdmin.crmUrl('lead-detalhes.html?id=' + encodeURIComponent(l.id));
+
+            return (
+              '<tr>' +
+              '  <td><strong>' + KingAdmin.esc(l.full_name || 'Candidato') + '</strong>' + unattendedBadge + '</td>' +
+              '  <td>' + KingAdmin.esc(location) + '</td>' +
+              '  <td>' + KingAdmin.esc(mapTrack(qual.intended_track)) + '</td>' +
+              '  <td><strong>' + KingAdmin.esc(fmtInt(l.lead_score || 0)) + '</strong> (' + KingAdmin.esc(l.score_grade || '—') + ')</td>' +
+              '  <td><span class="ad-badge ad-badge-gray">' + KingAdmin.esc(stageName) + '</span></td>' +
+              '  <td>' + renderLeadStatusBadge(l.qualification_status) + '</td>' +
+              '  <td>' + KingAdmin.esc(KingAdmin.formatDate(l.created_at)) + '</td>' +
+              '  <td><a href="' + KingAdmin.esc(detailHref) + '" class="ad-btn ad-btn-primary ad-btn-sm">Abrir 360°</a></td>' +
+              '</tr>'
+            );
+          }).join('') +
+          '</tbody></table>';
       }
 
       function renderCampaignsTable(campaigns) {
         var wrap = document.getElementById('campaigns-table-wrap');
         if (!campaigns || !campaigns.length) {
-          wrap.innerHTML = '<p style="color:#94A3B8;font-size:0.9rem;">Nenhuma campanha cadastrada ou sincronizada neste período.</p>';
+          wrap.innerHTML =
+            '<div class="ad-empty-state">' +
+            '  <p>Nenhuma campanha cadastrada ou com métricas registradas neste período.</p>' +
+            '  <a href="' + KingAdmin.esc(KingAdmin.crmUrl('campanhas.html')) + '" class="ad-btn ad-btn-secondary ad-btn-sm">Gerenciar Campanhas →</a>' +
+            '</div>';
           return;
         }
+
         wrap.innerHTML =
-          '<table class="ad-table"><thead><tr><th>Campanha</th><th>Plataforma</th><th>Investimento</th><th>Leads</th><th>CPL</th><th>Qualif.</th><th>CPQL</th><th>Vendas</th><th>ROAS</th></tr></thead><tbody>' +
+          '<table class="ad-table"><thead><tr><th>Campanha</th><th>Plataforma</th><th>Status</th><th>Investimento</th><th>Leads</th><th>CPL</th><th>Qualif.</th><th>CPQL</th><th>Vendas</th><th>ROAS</th></tr></thead><tbody>' +
           campaigns.map(function (c) {
-            return '<tr><td><strong>' + KingAdmin.esc(c.name) + '</strong></td><td>' + KingAdmin.esc(c.platform) + '</td><td>' + KingAdmin.formatBrl(c.spend_brl) + '</td><td>' + c.leads + '</td><td>' + KingAdmin.formatBrl(c.cpl) + '</td><td>' + c.qualified_leads + '</td><td>' + KingAdmin.formatBrl(c.cpql) + '</td><td>' + c.sales + '</td><td>' + (c.roas != null ? c.roas + 'x' : '—') + '</td></tr>';
+            return (
+              '<tr>' +
+              '  <td><strong>' + KingAdmin.esc(c.name || 'Campanha') + '</strong></td>' +
+              '  <td>' + KingAdmin.esc(mapPlatform(c.platform)) + '</td>' +
+              '  <td>' + renderCampaignStatusBadge(c.status) + '</td>' +
+              '  <td>' + KingAdmin.esc(KingAdmin.formatBrl(c.spend_brl || 0)) + '</td>' +
+              '  <td>' + KingAdmin.esc(fmtInt(c.leads || 0)) + '</td>' +
+              '  <td>' + KingAdmin.esc(c.cpl != null ? KingAdmin.formatBrl(c.cpl) : 'Sem dados') + '</td>' +
+              '  <td>' + KingAdmin.esc(fmtInt(c.qualified_leads || 0)) + '</td>' +
+              '  <td>' + KingAdmin.esc(c.cpql != null ? KingAdmin.formatBrl(c.cpql) : 'Sem dados') + '</td>' +
+              '  <td>' + KingAdmin.esc(fmtInt(c.sales || 0)) + '</td>' +
+              '  <td>' + KingAdmin.esc(c.roas != null ? fmtDecimal(c.roas, 2) + 'x' : 'Sem dados') + '</td>' +
+              '</tr>'
+            );
           }).join('') +
           '</tbody></table>';
       }
 
+      function renderRegionalTable(regions) {
+        var wrap = document.getElementById('regional-table-wrap');
+        if (!regions || !regions.length) {
+          wrap.innerHTML =
+            '<div class="ad-empty-state"><p>Nenhum lead regional registrado neste período.</p></div>';
+          return;
+        }
+
+        wrap.innerHTML =
+          '<table class="ad-table"><thead><tr><th>UF</th><th>Leads</th><th>Qualificados</th><th>Vendas</th></tr></thead><tbody>' +
+          regions.slice(0, 12).map(function (r) {
+            var ufLabel = (!r.state || r.state === 'N/A') ? 'Não informado' : r.state;
+            return (
+              '<tr>' +
+              '  <td><strong>' + KingAdmin.esc(ufLabel) + '</strong></td>' +
+              '  <td>' + KingAdmin.esc(fmtInt(r.leads || 0)) + '</td>' +
+              '  <td>' + KingAdmin.esc(fmtInt(r.qualified || 0)) + '</td>' +
+              '  <td>' + KingAdmin.esc(fmtInt(r.sales || 0)) + '</td>' +
+              '</tr>'
+            );
+          }).join('') +
+          '</tbody></table>';
+      }
+
+      function renderIntegrationsBanner(statuses) {
+        var container = document.getElementById('integrations-status-banner');
+        if (!statuses || typeof statuses !== 'object') {
+          container.innerHTML = '';
+          return;
+        }
+
+        var adsApis = [
+          { key: 'meta_marketing_api', label: 'Meta Marketing API', info: statuses.meta_marketing_api || {} },
+          { key: 'google_ads_api', label: 'Google Ads API', info: statuses.google_ads_api || {} },
+          { key: 'ga4_data_api', label: 'GA4 Data API', info: statuses.ga4_data_api || {} }
+        ];
+
+        var configuredCount = adsApis.filter(function (a) { return Boolean(a.info.configured); }).length;
+        var alertClass = configuredCount === 0 ? 'ad-alert-warn' : 'ad-alert-info';
+        var heading =
+          configuredCount === 0
+            ? 'APIs externas de anúncios não configuradas'
+            : (configuredCount < adsApis.length
+              ? 'Integração parcial com APIs externas de mídia'
+              : 'APIs externas de mídia e analytics configuradas');
+
+        var bodyText =
+          configuredCount === 0
+            ? 'Nenhuma credencial de Meta Marketing, Google Ads ou GA4 Data API está configurada. Métricas de investimento, impressões e cliques refletem apenas registros manuais — nenhum dado de mídia é simulado.'
+            : (configuredCount < adsApis.length
+              ? 'Apenas as plataformas configuradas possuem sincronização automática; as demais dependem de lançamento manual em Campanhas & Mídia.'
+              : 'As três integrações externas estão configuradas para sincronização de campanhas e visitantes.');
+
+        var chipsHtml = adsApis.map(function (api) {
+          var stInfo = mapIntegrationStatus(api.info.status || (api.info.configured ? 'configured' : 'not_configured'));
+          return (
+            '<span class="ad-int-chip">' +
+            '  <span>' + KingAdmin.esc(api.label) + ':</span>' +
+            '  <span class="ad-badge ' + stInfo.badge + '">' + KingAdmin.esc(stInfo.label) + '</span>' +
+            '</span>'
+          );
+        }).join('');
+
+        container.innerHTML =
+          '<div class="ad-alert ' + alertClass + '">' +
+          '  <div class="ad-alert-row">' +
+          '    <div>' +
+          '      <strong>' + KingAdmin.esc(heading) + ':</strong> ' + KingAdmin.esc(bodyText) +
+          '      <div class="ad-int-chips">' + chipsHtml + '</div>' +
+          '    </div>' +
+          '    <a href="' + KingAdmin.esc(KingAdmin.crmUrl('configuracoes.html')) + '" class="ad-btn ad-btn-secondary ad-btn-sm">Configurações →</a>' +
+          '  </div>' +
+          '</div>';
+      }
+
       async function loadDashboard() {
-        var preset = document.getElementById('period-preset').value;
-        var qs = preset === 'custom'
-          ? 'start_date=' + encodeURIComponent(document.getElementById('custom-start').value) + '&end_date=' + encodeURIComponent(document.getElementById('custom-end').value)
-          : 'days=' + encodeURIComponent(preset);
+        var validation = validateAndBuildPeriodQuery();
+        if (!validation.valid) {
+          showValidationBanner(validation.message);
+          return;
+        }
+
+        clearGlobalAlert();
+        var mySeq = ++activeRequestSeq;
+        document.getElementById('period-summary').textContent = 'Período selecionado: ' + validation.label;
+        setLoadingState(true);
 
         try {
-          var data = await KingAdmin.apiFetch('/api/admin/dashboard?' + qs);
-          renderKpis(data.kpis);
-          renderHealthBars(data.health_bars);
-          renderDiagnostics(data.diagnostics);
-          renderCharts(data.timeseries || [], data.stage_breakdown || []);
-          renderCampaignsTable(data.campaigns || []);
-          document.getElementById('revenue-notice').textContent = data.revenue_notice || '';
-        } catch (err) {
-          KingAdmin.renderErrorState('ad-global-alert', err);
+          var settled = await Promise.allSettled([
+            KingAdmin.apiFetch('/api/admin/dashboard?' + validation.qs),
+            KingAdmin.apiFetch('/api/admin/leads?page=1&limit=8'),
+            KingAdmin.apiFetch('/api/admin/integrations/status')
+          ]);
+
+          if (mySeq !== activeRequestSeq) return;
+
+          var dashResult = settled[0];
+          var leadsResult = settled[1];
+          var intResult = settled[2];
+
+          if (dashResult.status === 'rejected') {
+            var errMsg = (dashResult.reason && dashResult.reason.message) || 'Erro de conexão com o servidor.';
+            showErrorBanner('Não foi possível carregar os dados:', errMsg, reloadDashboard);
+            if (!hasLoadedDashboard) {
+              renderUnavailableSections();
+            }
+          } else {
+            var data = dashResult.value || {};
+            hasLoadedDashboard = true;
+
+            if (data.period && data.period.start && data.period.end) {
+              document.getElementById('period-summary').textContent =
+                'Período ativo: ' + formatIsoDateBr(data.period.start) + ' até ' + formatIsoDateBr(data.period.end);
+            }
+
+            renderKpis(data.kpis || {});
+            renderHealthBars(data.health_bars || [], data.kpis || {});
+            renderDiagnostics(data.diagnostics || [], data.kpis || {});
+            renderCharts(data.timeseries || [], data.stage_breakdown || []);
+            renderCampaignsTable(data.campaigns || []);
+            renderRegionalTable(data.regional_performance || []);
+            document.getElementById('revenue-notice').textContent =
+              data.revenue_notice ||
+              'Receita atribuída refere-se exclusivamente a contratos de franquia marcados como Venda (taxa contratada), distinta de faturamento recorrente (royalties) e sem garantia de rentabilidade.';
+          }
+
+          if (leadsResult.status === 'fulfilled') {
+            renderRecentLeads(leadsResult.value || { items: [] });
+          } else {
+            var leadsErrMsg = (leadsResult.reason && leadsResult.reason.message) || 'Falha ao consultar leads.';
+            document.getElementById('recent-leads-wrap').innerHTML =
+              '<div class="ad-alert ad-alert-error ad-alert-row" style="margin-bottom:0;">' +
+              '  <span><strong>Erro ao carregar leads recentes:</strong> ' + KingAdmin.esc(leadsErrMsg) + '</span>' +
+              '  <button type="button" class="ad-btn ad-btn-secondary ad-btn-sm retry-inline-btn">Tentar novamente</button>' +
+              '</div>';
+          }
+
+          if (intResult.status === 'fulfilled') {
+            renderIntegrationsBanner((intResult.value && intResult.value.statuses) || {});
+          } else {
+            var intErrMsg = (intResult.reason && intResult.reason.message) || 'Não foi possível verificar o status das integrações.';
+            document.getElementById('integrations-status-banner').innerHTML =
+              '<div class="ad-alert ad-alert-warn ad-alert-row">' +
+              '  <span><strong>Status de integrações indisponível:</strong> ' + KingAdmin.esc(intErrMsg) + '</span>' +
+              '  <button type="button" class="ad-btn ad-btn-secondary ad-btn-sm retry-inline-btn">Tentar novamente</button>' +
+              '</div>';
+          }
+
+          var inlineRetries = document.querySelectorAll('.retry-inline-btn');
+          for (var i = 0; i < inlineRetries.length; i++) {
+            inlineRetries[i].addEventListener('click', reloadDashboard);
+          }
+        } finally {
+          if (mySeq === activeRequestSeq) {
+            setLoadingState(false);
+          }
+        }
+      }
+
+      async function initAndLoad() {
+        clearGlobalAlert();
+        var user = KingAdmin.getUser();
+        if (!user) {
+          setLoadingState(true);
+          user = await KingAdmin.initProtectedPage('dashboard');
+          if (!user) {
+            setLoadingState(false);
+            var existingAlert = document.getElementById('ad-global-alert').textContent.trim();
+            showErrorBanner(
+              'Falha na autenticação ou conexão:',
+              existingAlert || 'Não foi possível validar sua sessão administrativa.',
+              reloadDashboard
+            );
+            renderUnavailableSections();
+            return;
+          }
+        }
+        await loadDashboard();
+      }
+
+      function reloadDashboard() {
+        return initAndLoad();
+      }
+
+      function toggleCustomDateInputs(shouldLoad) {
+        var presetEl = document.getElementById('period-preset');
+        var groupEl = document.getElementById('custom-date-group');
+        var startEl = document.getElementById('custom-start');
+        var endEl = document.getElementById('custom-end');
+        var isCustom = presetEl.value === 'custom';
+
+        groupEl.hidden = !isCustom;
+        if (isCustom) {
+          if (!startEl.value && !endEl.value) {
+            var now = new Date();
+            var startDefault = new Date(now.getTime() - 29 * 24 * 60 * 60 * 1000);
+            startEl.value = toIsoDateInput(startDefault);
+            endEl.value = toIsoDateInput(now);
+          }
+          if (shouldLoad && startEl.value && endEl.value) {
+            loadDashboard();
+          }
+        } else if (shouldLoad) {
+          loadDashboard();
         }
       }
 
       document.getElementById('period-preset').addEventListener('change', function () {
-        var isCustom = this.value === 'custom';
-        document.getElementById('custom-start').style.display = isCustom ? 'inline-block' : 'none';
-        document.getElementById('custom-end').style.display = isCustom ? 'inline-block' : 'none';
-        if (!isCustom) loadDashboard();
+        toggleCustomDateInputs(true);
       });
 
-      document.getElementById('refresh-btn').addEventListener('click', loadDashboard);
+      document.getElementById('custom-start').addEventListener('change', function () {
+        if (document.getElementById('period-preset').value === 'custom' && document.getElementById('custom-end').value) {
+          loadDashboard();
+        }
+      });
 
-      document.addEventListener('DOMContentLoaded', async function () {
-        var user = await KingAdmin.initProtectedPage('dashboard');
-        if (user) loadDashboard();
+      document.getElementById('custom-end').addEventListener('change', function () {
+        if (document.getElementById('period-preset').value === 'custom' && document.getElementById('custom-start').value) {
+          loadDashboard();
+        }
+      });
+
+      document.getElementById('refresh-btn').addEventListener('click', reloadDashboard);
+
+      document.addEventListener('DOMContentLoaded', function () {
+        hydrateCrmLinks();
+        initAndLoad();
       });
     })();
   </script>

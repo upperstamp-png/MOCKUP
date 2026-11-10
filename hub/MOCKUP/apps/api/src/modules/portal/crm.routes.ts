@@ -8,8 +8,20 @@ import {
 } from '../../middleware/portalAuth.js';
 import { recordAuditLog } from '../../services/auditAndNotify.js';
 
+const uuidSchema = z.string().uuid();
+
+const stageLabelsPtBr: Record<string, string> = {
+  novo: 'Novo',
+  contato_iniciado: 'Contato iniciado',
+  qualificacao: 'Qualificação',
+  orcamento: 'Orçamento',
+  negociacao: 'Negociação',
+  ganho: 'Ganho',
+  perdido: 'Perdido',
+};
+
 const customerSchema = z.object({
-  name: z.string().min(2, 'Nome do cliente obrigatório'),
+  name: z.string().trim().min(2, 'Nome do cliente obrigatório'),
   documentNumber: z.string().max(32).optional().nullable(),
   customerType: z
     .enum(['time', 'escolinha', 'academia', 'empresa', 'organizador_eventos', 'atletica', 'outro'])
@@ -269,6 +281,9 @@ export async function portalCrmRoutes(fastify: FastifyInstance): Promise<void> {
     { preHandler: [requirePortalAuth, requirePermission('crm:write')] },
     async (request, reply) => {
       const { id } = request.params as { id: string };
+      if (!uuidSchema.safeParse(id).success) {
+        return reply.status(400).send({ statusCode: 400, code: 'VALIDATION_ERROR', message: 'ID de cliente inválido.' });
+      }
       const existing = await dbQuery<{ id: string; unit_id: string }>(`SELECT id, unit_id FROM portal.customers WHERE id = $1`, [id]);
       if (!existing.rows[0]) {
         return reply.status(404).send({ statusCode: 404, code: 'NOT_FOUND', message: 'Cliente não encontrado.' });
@@ -319,6 +334,9 @@ export async function portalCrmRoutes(fastify: FastifyInstance): Promise<void> {
     { preHandler: [requirePortalAuth, requirePermission('crm:write')] },
     async (request, reply) => {
       const { id } = request.params as { id: string };
+      if (!uuidSchema.safeParse(id).success) {
+        return reply.status(400).send({ statusCode: 400, code: 'VALIDATION_ERROR', message: 'ID de cliente inválido.' });
+      }
       const custRes = await dbQuery<{ unit_id: string }>(`SELECT unit_id FROM portal.customers WHERE id = $1`, [id]);
       if (!custRes.rows[0]) {
         return reply.status(404).send({ statusCode: 404, code: 'NOT_FOUND', message: 'Cliente não encontrado.' });
@@ -426,6 +444,9 @@ export async function portalCrmRoutes(fastify: FastifyInstance): Promise<void> {
     { preHandler: [requirePortalAuth, requirePermission('crm:read')] },
     async (request, reply) => {
       const { id } = request.params as { id: string };
+      if (!uuidSchema.safeParse(id).success) {
+        return reply.status(400).send({ statusCode: 400, code: 'VALIDATION_ERROR', message: 'ID de oportunidade inválido.' });
+      }
       const oppRes = await dbQuery(
         `SELECT o.*, c.name AS customer_name, c.customer_type, c.city AS customer_city, c.state AS customer_state,
                 p.full_name AS owner_name, o.updated_at::text AS edit_version
@@ -495,6 +516,21 @@ export async function portalCrmRoutes(fastify: FastifyInstance): Promise<void> {
         });
       }
 
+      if (d.ownerUserId) {
+        const memRes = await dbQuery<{ user_id: string }>(
+          `SELECT user_id FROM portal.unit_memberships
+           WHERE unit_id = $1 AND user_id = $2 AND status = 'active'`,
+          [ctx.activeUnitId, d.ownerUserId]
+        );
+        if (!memRes.rows[0]) {
+          return reply.status(400).send({
+            statusCode: 400,
+            code: 'INVALID_ASSIGNEE',
+            message: 'Responsável informado não pertence como membro ativo desta unidade.',
+          });
+        }
+      }
+
       if (d.stage === 'perdido' && (!d.lossReason || d.lossReason.trim().length < 3)) {
         return reply.status(400).send({
           statusCode: 400,
@@ -547,7 +583,7 @@ export async function portalCrmRoutes(fastify: FastifyInstance): Promise<void> {
             ctx.activeUnitId,
             d.customerId,
             createdOpp.id,
-            `Oportunidade criada na etapa '${d.stage}'`,
+            `Oportunidade criada na etapa '${stageLabelsPtBr[d.stage] || d.stage}'`,
             d.nextAction ? `Próxima ação: ${d.nextAction}` : null,
             ctx.userId,
             d.isSandbox,
@@ -579,6 +615,9 @@ export async function portalCrmRoutes(fastify: FastifyInstance): Promise<void> {
     { preHandler: [requirePortalAuth, requirePermission('crm:write')] },
     async (request, reply) => {
       const { id } = request.params as { id: string };
+      if (!uuidSchema.safeParse(id).success) {
+        return reply.status(400).send({ statusCode: 400, code: 'VALIDATION_ERROR', message: 'ID de oportunidade inválido.' });
+      }
       const schema = z.object({
         expectedUpdatedAt: z.string().max(50).optional(),
         stage: z.enum(['novo', 'contato_iniciado', 'qualificacao', 'orcamento', 'negociacao', 'ganho', 'perdido']),
@@ -680,8 +719,8 @@ export async function portalCrmRoutes(fastify: FastifyInstance): Promise<void> {
             id,
             isReopening ? 'reopen' : 'stage_change',
             isReopening
-              ? `Oportunidade reaberta de '${existing.stage}' para '${d.stage}'`
-              : `Etapa alterada de '${existing.stage}' para '${d.stage}'`,
+              ? `Oportunidade reaberta de '${stageLabelsPtBr[existing.stage] || existing.stage}' para '${stageLabelsPtBr[d.stage] || d.stage}'`
+              : `Etapa alterada de '${stageLabelsPtBr[existing.stage] || existing.stage}' para '${stageLabelsPtBr[d.stage] || d.stage}'`,
             d.stage === 'perdido'
               ? `Motivo da perda: ${d.lossReason}`
               : d.stage === 'ganho'
@@ -728,6 +767,9 @@ export async function portalCrmRoutes(fastify: FastifyInstance): Promise<void> {
     { preHandler: [requirePortalAuth, requirePermission('crm:write')] },
     async (request, reply) => {
       const { id } = request.params as { id: string };
+      if (!uuidSchema.safeParse(id).success) {
+        return reply.status(400).send({ statusCode: 400, code: 'VALIDATION_ERROR', message: 'ID de oportunidade inválido.' });
+      }
       const oppRes = await dbQuery<{ unit_id: string; customer_id: string; is_sandbox: boolean }>(
         `SELECT unit_id, customer_id, is_sandbox FROM portal.opportunities WHERE id = $1`,
         [id]
@@ -915,6 +957,20 @@ export async function portalCrmRoutes(fastify: FastifyInstance): Promise<void> {
         }
       }
 
+      if (d.assignedTo) {
+        const memberRes = await dbQuery<{ user_id: string }>(
+          `SELECT user_id FROM portal.unit_memberships WHERE unit_id = $1 AND user_id = $2 AND status = 'active'`,
+          [ctx.activeUnitId, d.assignedTo]
+        );
+        if (!memberRes.rows[0]) {
+          return reply.status(403).send({
+            statusCode: 403,
+            code: 'ASSIGNEE_UNIT_MISMATCH',
+            message: 'Responsável inválido ou não vinculado a esta unidade.',
+          });
+        }
+      }
+
       const task = await withTransaction(async (client) => {
         const insRes = await client.query<{ id: string }>(
           `INSERT INTO portal.tasks (
@@ -1041,6 +1097,20 @@ export async function portalCrmRoutes(fastify: FastifyInstance): Promise<void> {
             statusCode: 403,
             code: 'ORDER_UNIT_MISMATCH',
             message: 'Pedido inválido ou pertencente a outra unidade.',
+          });
+        }
+      }
+
+      if (d.assignedTo) {
+        const memberRes = await dbQuery<{ user_id: string }>(
+          `SELECT user_id FROM portal.unit_memberships WHERE unit_id = $1 AND user_id = $2 AND status = 'active'`,
+          [existing.unit_id, d.assignedTo]
+        );
+        if (!memberRes.rows[0]) {
+          return reply.status(403).send({
+            statusCode: 403,
+            code: 'ASSIGNEE_UNIT_MISMATCH',
+            message: 'Responsável inválido ou não vinculado a esta unidade.',
           });
         }
       }

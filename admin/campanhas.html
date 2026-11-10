@@ -12,7 +12,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/admin/assets/css/admin.css" />
+  <link rel="stylesheet" href="/assets/css/admin.css" />
 </head>
 <body>
   <div class="ad-shell">
@@ -26,21 +26,22 @@
         </div>
 
         <div class="ad-actions-row">
-          <select id="period-preset" class="ad-select" style="width:auto;">
+          <select id="period-preset" class="ad-select" style="width:auto;" aria-label="Período">
             <option value="7">Últimos 7 dias</option>
             <option value="30" selected>Últimos 30 dias</option>
             <option value="90">Últimos 90 dias</option>
             <option value="360">Últimos 360 dias</option>
             <option value="custom">Período personalizado</option>
           </select>
-          <input type="date" id="custom-start" class="ad-input" style="width:auto;display:none;" />
-          <input type="date" id="custom-end" class="ad-input" style="width:auto;display:none;" />
+          <input type="date" id="custom-start" class="ad-input" style="width:auto;display:none;" aria-label="Data inicial" />
+          <input type="date" id="custom-end" class="ad-input" style="width:auto;display:none;" aria-label="Data final" />
+          <button type="button" id="refresh-camp-btn" class="ad-btn ad-btn-secondary">Atualizar</button>
           <button type="button" id="sync-ads-btn" class="ad-btn ad-btn-secondary">Sincronizar APIs Ads/GA4</button>
           <button type="button" id="open-campaign-modal" class="ad-btn ad-btn-primary">+ Nova Campanha</button>
         </div>
       </div>
 
-      <div id="ad-global-alert"></div>
+      <div id="ad-global-alert" role="alert" aria-live="polite"></div>
       <div id="sync-status-box"></div>
       <div id="camp-kpis" class="ad-kpi-grid"></div>
 
@@ -55,43 +56,43 @@
           <form id="metric-form">
             <div class="ad-grid-2">
               <div class="ad-field">
-                <label>Campanha</label>
+                <label for="m-campaign-id">Campanha</label>
                 <select id="m-campaign-id" class="ad-select" required></select>
               </div>
               <div class="ad-field">
-                <label>Data de Referência</label>
+                <label for="m-date">Data de Referência</label>
                 <input type="date" id="m-date" class="ad-input" required />
               </div>
             </div>
             <div class="ad-grid-3">
               <div class="ad-field">
-                <label>Investimento (R$)</label>
+                <label for="m-spend-brl">Investimento (R$)</label>
                 <input type="number" step="0.01" min="0" id="m-spend-brl" class="ad-input" value="0" required />
               </div>
               <div class="ad-field">
-                <label>Impressões</label>
+                <label for="m-impressions">Impressões</label>
                 <input type="number" min="0" id="m-impressions" class="ad-input" value="0" />
               </div>
               <div class="ad-field">
-                <label>Alcance</label>
+                <label for="m-reach">Alcance</label>
                 <input type="number" min="0" id="m-reach" class="ad-input" value="0" />
               </div>
             </div>
             <div class="ad-grid-3">
               <div class="ad-field">
-                <label>Cliques</label>
+                <label for="m-clicks">Cliques</label>
                 <input type="number" min="0" id="m-clicks" class="ad-input" value="0" />
               </div>
               <div class="ad-field">
-                <label>Visitantes</label>
+                <label for="m-visitors">Visitantes</label>
                 <input type="number" min="0" id="m-visitors" class="ad-input" value="0" />
               </div>
               <div class="ad-field">
-                <label>Leads na Plataforma</label>
+                <label for="m-platform-leads">Leads na Plataforma</label>
                 <input type="number" min="0" id="m-platform-leads" class="ad-input" value="0" />
               </div>
             </div>
-            <button type="submit" class="ad-btn ad-btn-primary">Salvar Métrica Diária</button>
+            <button type="submit" id="metric-save-btn" class="ad-btn ad-btn-primary">Salvar Métrica Diária</button>
           </form>
         </section>
       </div>
@@ -104,32 +105,32 @@
   </div>
 
   <!-- Modal Nova Campanha -->
-  <div class="ad-modal-backdrop" id="campaign-modal">
+  <div class="ad-modal-backdrop" id="campaign-modal" role="dialog" aria-modal="true" aria-labelledby="campaign-modal-title">
     <div class="ad-modal">
       <div class="ad-card-title">
-        <span>Cadastrar Campanha de Expansão</span>
+        <span id="campaign-modal-title">Cadastrar Campanha de Expansão</span>
         <button type="button" class="ad-btn ad-btn-secondary ad-btn-sm" id="close-campaign-modal">Fechar</button>
       </div>
       <form id="campaign-form">
         <div class="ad-field">
-          <label>Nome da Campanha</label>
+          <label for="c-name">Nome da Campanha</label>
           <input type="text" id="c-name" class="ad-input" required placeholder="Ex.: Meta Lead Franquia Brasil — Lookalike" />
         </div>
         <div class="ad-grid-2">
           <div class="ad-field">
-            <label>Plataforma</label>
+            <label for="c-platform">Plataforma</label>
             <select id="c-platform" class="ad-select" required>
               <option value="meta_ads">Meta Ads</option>
               <option value="google_ads">Google Ads</option>
               <option value="organic">Orgânico</option>
-              <option value="blog">Blog</option>
+              <option value="blog">Blog SEO</option>
               <option value="direct">Direto</option>
               <option value="referral">Indicação / Referral</option>
               <option value="other">Outro</option>
             </select>
           </div>
           <div class="ad-field">
-            <label>Status</label>
+            <label for="c-status">Status</label>
             <select id="c-status" class="ad-select">
               <option value="active">Ativa</option>
               <option value="paused">Pausada</option>
@@ -140,42 +141,92 @@
         </div>
         <div class="ad-grid-3">
           <div class="ad-field">
-            <label>utm_source</label>
+            <label for="c-utm-source">UTM Source</label>
             <input type="text" id="c-utm-source" class="ad-input" placeholder="meta" />
           </div>
           <div class="ad-field">
-            <label>utm_medium</label>
+            <label for="c-utm-medium">UTM Medium</label>
             <input type="text" id="c-utm-medium" class="ad-input" placeholder="cpc" />
           </div>
           <div class="ad-field">
-            <label>utm_campaign</label>
+            <label for="c-utm-campaign">UTM Campaign</label>
             <input type="text" id="c-utm-campaign" class="ad-input" placeholder="franquia_sp_q4" />
           </div>
         </div>
         <div class="ad-grid-2">
           <div class="ad-field">
-            <label>Orçamento Diário (R$)</label>
+            <label for="c-budget">Orçamento Diário (R$)</label>
             <input type="number" step="0.01" min="0" id="c-budget" class="ad-input" value="150" />
           </div>
           <div class="ad-field">
-            <label>Meta de CPL (R$)</label>
+            <label for="c-target-cpl">Meta de CPL (R$)</label>
             <input type="number" step="0.01" min="0" id="c-target-cpl" class="ad-input" value="35" />
           </div>
         </div>
         <div class="ad-field">
-          <label>ID Externo na Plataforma (opcional)</label>
+          <label for="c-external-id">ID Externo na Plataforma (opcional)</label>
           <input type="text" id="c-external-id" class="ad-input" placeholder="ID da campanha no Meta/Google Ads" />
         </div>
-        <button type="submit" class="ad-btn ad-btn-primary">Criar Campanha</button>
+        <button type="submit" id="campaign-save-btn" class="ad-btn ad-btn-primary">Criar Campanha</button>
       </form>
     </div>
   </div>
 
-  <script src="/admin/assets/js/admin-core.js"></script>
+  <script src="/assets/js/admin-core.js"></script>
   <script>
     (function () {
+      'use strict';
+
+      var activeSeq = 0;
+
+      var PLATFORM_LABELS = {
+        meta_ads: 'Meta Ads',
+        google_ads: 'Google Ads',
+        organic: 'Orgânico',
+        blog: 'Blog SEO',
+        direct: 'Direto',
+        referral: 'Indicação',
+        other: 'Outro',
+        meta_marketing_api: 'Meta Marketing API',
+        google_ads_api: 'Google Ads API',
+        ga4_data_api: 'GA4 Data API'
+      };
+
+      var CAMPAIGN_STATUS_MAP = {
+        active: { label: 'Ativa', badge: 'ad-badge-green' },
+        paused: { label: 'Pausada', badge: 'ad-badge-orange' },
+        draft: { label: 'Rascunho', badge: 'ad-badge-blue' },
+        ended: { label: 'Encerrada', badge: 'ad-badge-gray' }
+      };
+
+      function todayLocalIso() {
+        var d = new Date();
+        var pad = function (n) { return String(n).padStart(2, '0'); };
+        return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+      }
+
       function fmtInt(v) {
-        return v == null ? '—' : Number(v).toLocaleString('pt-BR');
+        return v == null || !Number.isFinite(Number(v)) ? '—' : Number(v).toLocaleString('pt-BR');
+      }
+
+      function mapPlatform(p) {
+        return PLATFORM_LABELS[p] || String(p || 'Outro').replace(/_/g, ' ');
+      }
+
+      function statusBadge(st) {
+        var meta = CAMPAIGN_STATUS_MAP[st] || { label: st || 'Indefinido', badge: 'ad-badge-gray' };
+        return '<span class="ad-badge ' + meta.badge + '">' + KingAdmin.esc(meta.label) + '</span>';
+      }
+
+      function showCampaignsError(err) {
+        var alertEl = document.getElementById('ad-global-alert');
+        alertEl.innerHTML =
+          '<div class="ad-alert ad-alert-error ad-error-inline">' +
+          '  <div><strong>Não foi possível carregar campanhas:</strong> ' + KingAdmin.esc((err && err.message) || 'Erro de conexão.') + '</div>' +
+          '  <button type="button" id="retry-camp-btn" class="ad-btn ad-btn-secondary ad-btn-sm">Tentar novamente</button>' +
+          '</div>';
+        var btn = document.getElementById('retry-camp-btn');
+        if (btn) btn.addEventListener('click', loadCampaigns);
       }
 
       function renderKpis(k) {
@@ -199,11 +250,13 @@
           return;
         }
         el.innerHTML = bars.map(function (b) {
+          var band = ['green', 'orange', 'red', 'neutral'].indexOf(b.band) !== -1 ? b.band : 'neutral';
           var formatted = b.value == null ? 'Sem dados' : (b.unit === 'R$' ? KingAdmin.formatBrl(b.value) : b.value + ' ' + b.unit);
+          var statusLabel = b.status_label || (band === 'green' ? 'Dentro da meta' : band === 'orange' ? 'Atenção' : band === 'red' ? 'Crítico' : 'Sem dados');
           return (
             '<div>' +
-            '  <div class="ad-health-item-head"><span><strong>' + KingAdmin.esc(b.label) + '</strong></span><span>' + KingAdmin.esc(formatted) + ' (' + KingAdmin.esc(b.status_label || '') + ')</span></div>' +
-            '  <div class="ad-health-track"><div class="ad-health-fill ' + KingAdmin.esc(b.band) + '" style="width:' + Number(b.pct || 0) + '%"></div></div>' +
+            '  <div class="ad-health-item-head"><span><strong>' + KingAdmin.esc(b.label) + '</strong></span><span>' + KingAdmin.esc(formatted) + ' (' + KingAdmin.esc(statusLabel) + ')</span></div>' +
+            '  <div class="ad-health-track"><div class="ad-health-fill ' + KingAdmin.esc(band) + '" style="width:' + Math.max(0, Math.min(100, Number(b.pct || 0))) + '%"></div></div>' +
             '</div>'
           );
         }).join('');
@@ -212,7 +265,7 @@
       function renderCampaignsTable(rows) {
         var wrap = document.getElementById('camp-table-wrap');
         if (!rows || !rows.length) {
-          wrap.innerHTML = '<p style="color:#94A3B8;">Nenhuma campanha cadastrada ainda. Crie sua primeira campanha acima ou sincronize suas APIs em Configurações.</p>';
+          wrap.innerHTML = '<p style="color:#94A3B8;">Nenhuma campanha cadastrada ainda. Crie sua primeira campanha acima ou registre métricas manuais.</p>';
           return;
         }
         wrap.innerHTML =
@@ -223,23 +276,23 @@
             return (
               '<tr>' +
               '  <td><strong>' + KingAdmin.esc(c.name) + '</strong></td>' +
-              '  <td>' + KingAdmin.esc(c.platform) + '</td>' +
+              '  <td>' + KingAdmin.esc(mapPlatform(c.platform)) + '</td>' +
               '  <td><code>' + KingAdmin.esc(c.utm_campaign || '—') + '</code></td>' +
-              '  <td><span class="ad-badge ' + (c.status === 'active' ? 'ad-badge-green' : 'ad-badge-gray') + '">' + KingAdmin.esc(c.status) + '</span></td>' +
-              '  <td>' + KingAdmin.formatBrl(c.spend_brl) + '</td>' +
-              '  <td>' + fmtInt(c.impressions) + '</td>' +
-              '  <td>' + fmtInt(c.clicks) + '</td>' +
-              '  <td>' + (c.ctr_pct != null ? c.ctr_pct.toFixed(2) + '%' : '—') + '</td>' +
-              '  <td>' + KingAdmin.formatBrl(c.cpc) + '</td>' +
-              '  <td>' + fmtInt(c.leads) + '</td>' +
-              '  <td>' + KingAdmin.formatBrl(c.cpl) + '</td>' +
-              '  <td>' + fmtInt(c.qualified_leads) + '</td>' +
-              '  <td>' + KingAdmin.formatBrl(c.cpql) + '</td>' +
-              '  <td>' + fmtInt(c.meetings) + '</td>' +
-              '  <td>' + KingAdmin.formatBrl(c.cost_per_meeting) + '</td>' +
-              '  <td>' + fmtInt(c.sales) + '</td>' +
-              '  <td>' + KingAdmin.formatBrl(c.cac) + '</td>' +
-              '  <td>' + (c.roas != null ? c.roas.toFixed(2) + 'x' : '—') + '</td>' +
+              '  <td>' + statusBadge(c.status) + '</td>' +
+              '  <td>' + KingAdmin.esc(KingAdmin.formatBrl(c.spend_brl)) + '</td>' +
+              '  <td>' + KingAdmin.esc(fmtInt(c.impressions)) + '</td>' +
+              '  <td>' + KingAdmin.esc(fmtInt(c.clicks)) + '</td>' +
+              '  <td>' + (c.ctr_pct != null ? Number(c.ctr_pct).toFixed(2) + '%' : '—') + '</td>' +
+              '  <td>' + KingAdmin.esc(KingAdmin.formatBrl(c.cpc)) + '</td>' +
+              '  <td>' + KingAdmin.esc(fmtInt(c.leads)) + '</td>' +
+              '  <td>' + KingAdmin.esc(KingAdmin.formatBrl(c.cpl)) + '</td>' +
+              '  <td>' + KingAdmin.esc(fmtInt(c.qualified_leads)) + '</td>' +
+              '  <td>' + KingAdmin.esc(KingAdmin.formatBrl(c.cpql)) + '</td>' +
+              '  <td>' + KingAdmin.esc(fmtInt(c.meetings)) + '</td>' +
+              '  <td>' + KingAdmin.esc(KingAdmin.formatBrl(c.cost_per_meeting)) + '</td>' +
+              '  <td>' + KingAdmin.esc(fmtInt(c.sales)) + '</td>' +
+              '  <td>' + KingAdmin.esc(KingAdmin.formatBrl(c.cac)) + '</td>' +
+              '  <td>' + (c.roas != null ? Number(c.roas).toFixed(2) + 'x' : '—') + '</td>' +
               '</tr>'
             );
           }).join('') +
@@ -248,11 +301,35 @@
 
       async function loadCampaigns() {
         var preset = document.getElementById('period-preset').value;
-        var qs = preset === 'custom'
-          ? 'start_date=' + encodeURIComponent(document.getElementById('custom-start').value) + '&end_date=' + encodeURIComponent(document.getElementById('custom-end').value)
-          : 'days=' + encodeURIComponent(preset);
+        var qs;
+        document.getElementById('ad-global-alert').innerHTML = '';
+
+        if (preset === 'custom') {
+          var start = document.getElementById('custom-start').value;
+          var end = document.getElementById('custom-end').value;
+          if (!start || !end) {
+            document.getElementById('ad-global-alert').innerHTML =
+              '<div class="ad-alert ad-alert-warn">Selecione data inicial e data final para o período personalizado.</div>';
+            return;
+          }
+          if (start > end) {
+            document.getElementById('ad-global-alert').innerHTML =
+              '<div class="ad-alert ad-alert-warn">A data inicial não pode ser posterior à data final.</div>';
+            return;
+          }
+          qs = 'start_date=' + encodeURIComponent(start) + '&end_date=' + encodeURIComponent(end);
+        } else {
+          qs = 'days=' + encodeURIComponent(preset);
+        }
+
+        var seq = ++activeSeq;
+        var refreshBtn = document.getElementById('refresh-camp-btn');
+        refreshBtn.disabled = true;
+        refreshBtn.textContent = 'Atualizando...';
+
         try {
           var data = await KingAdmin.apiFetch('/api/admin/campaigns?' + qs);
+          if (seq !== activeSeq) return;
           renderKpis(data.kpis || {});
           renderHealthBars(data.health_bars || []);
           renderCampaignsTable(data.campaigns || []);
@@ -260,36 +337,77 @@
           var select = document.getElementById('m-campaign-id');
           var raw = data.raw_campaigns || [];
           select.innerHTML = raw.length
-            ? raw.map(function (r) { return '<option value="' + KingAdmin.esc(r.id) + '">' + KingAdmin.esc(r.name + ' (' + r.platform + ')') + '</option>'; }).join('')
+            ? raw.map(function (r) {
+                return '<option value="' + KingAdmin.esc(r.id) + '">' + KingAdmin.esc(r.name + ' (' + mapPlatform(r.platform) + ')') + '</option>';
+              }).join('')
             : '<option value="">Crie uma campanha primeiro</option>';
         } catch (err) {
-          KingAdmin.renderErrorState('ad-global-alert', err);
+          if (seq !== activeSeq) return;
+          showCampaignsError(err);
+        } finally {
+          if (seq === activeSeq) {
+            refreshBtn.disabled = false;
+            refreshBtn.textContent = 'Atualizar';
+          }
         }
       }
 
       document.getElementById('period-preset').addEventListener('change', function () {
         var isCustom = this.value === 'custom';
-        document.getElementById('custom-start').style.display = isCustom ? 'inline-block' : 'none';
-        document.getElementById('custom-end').style.display = isCustom ? 'inline-block' : 'none';
-        if (!isCustom) loadCampaigns();
+        var startEl = document.getElementById('custom-start');
+        var endEl = document.getElementById('custom-end');
+        startEl.style.display = isCustom ? 'inline-block' : 'none';
+        endEl.style.display = isCustom ? 'inline-block' : 'none';
+        if (isCustom && !startEl.value && !endEl.value) {
+          endEl.value = todayLocalIso();
+          var d = new Date();
+          d.setDate(d.getDate() - 29);
+          var pad = function (n) { return String(n).padStart(2, '0'); };
+          startEl.value = d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+        }
+        loadCampaigns();
       });
 
-      document.getElementById('custom-end').addEventListener('change', loadCampaigns);
+      document.getElementById('custom-start').addEventListener('change', function () {
+        if (document.getElementById('period-preset').value === 'custom') loadCampaigns();
+      });
+      document.getElementById('custom-end').addEventListener('change', function () {
+        if (document.getElementById('period-preset').value === 'custom') loadCampaigns();
+      });
+      document.getElementById('refresh-camp-btn').addEventListener('click', loadCampaigns);
+
+      function closeCampaignModal() {
+        document.getElementById('campaign-modal').classList.remove('open');
+      }
 
       document.getElementById('open-campaign-modal').addEventListener('click', function () {
         document.getElementById('campaign-modal').classList.add('open');
       });
-      document.getElementById('close-campaign-modal').addEventListener('click', function () {
-        document.getElementById('campaign-modal').classList.remove('open');
+      document.getElementById('close-campaign-modal').addEventListener('click', closeCampaignModal);
+      document.getElementById('campaign-modal').addEventListener('click', function (e) {
+        if (e.target === this) closeCampaignModal();
+      });
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && document.getElementById('campaign-modal').classList.contains('open')) {
+          closeCampaignModal();
+        }
       });
 
       document.getElementById('campaign-form').addEventListener('submit', async function (e) {
         e.preventDefault();
+        var btn = document.getElementById('campaign-save-btn');
+        var name = document.getElementById('c-name').value.trim();
+        if (name.length < 2) {
+          KingAdmin.showToast('Informe um nome de campanha válido.', true);
+          return;
+        }
+        btn.disabled = true;
+        btn.textContent = 'Criando...';
         try {
           await KingAdmin.apiFetch('/api/admin/campaigns', {
             method: 'POST',
             body: JSON.stringify({
-              name: document.getElementById('c-name').value.trim(),
+              name: name,
               platform: document.getElementById('c-platform').value,
               status: document.getElementById('c-status').value,
               utm_source: document.getElementById('c-utm-source').value.trim() || null,
@@ -300,12 +418,15 @@
               external_campaign_id: document.getElementById('c-external-id').value.trim() || null
             })
           });
-          document.getElementById('campaign-modal').classList.remove('open');
+          closeCampaignModal();
           this.reset();
           KingAdmin.showToast('Campanha criada com sucesso.');
           loadCampaigns();
         } catch (err) {
-          KingAdmin.showToast(err.message, true);
+          KingAdmin.showToast(err.message || 'Erro ao criar campanha.', true);
+        } finally {
+          btn.disabled = false;
+          btn.textContent = 'Criar Campanha';
         }
       });
 
@@ -316,6 +437,9 @@
           KingAdmin.showToast('Cadastre e selecione uma campanha antes de lançar métricas.', true);
           return;
         }
+        var btn = document.getElementById('metric-save-btn');
+        btn.disabled = true;
+        btn.textContent = 'Salvando...';
         try {
           await KingAdmin.apiFetch('/api/admin/campaigns/' + encodeURIComponent(campId) + '/metrics', {
             method: 'POST',
@@ -332,29 +456,55 @@
           KingAdmin.showToast('Métrica diária salva.');
           loadCampaigns();
         } catch (err) {
-          KingAdmin.showToast(err.message, true);
+          KingAdmin.showToast(err.message || 'Erro ao salvar métrica.', true);
+        } finally {
+          btn.disabled = false;
+          btn.textContent = 'Salvar Métrica Diária';
         }
       });
 
       document.getElementById('sync-ads-btn').addEventListener('click', async function () {
+        var btn = this;
+        var prev = btn.textContent;
+        btn.disabled = true;
+        btn.textContent = 'Verificando APIs...';
         try {
           var res = await KingAdmin.apiFetch('/api/admin/campaigns/sync', { method: 'POST', body: '{}' });
           var box = document.getElementById('sync-status-box');
+          var cfgHref = KingAdmin.crmUrl('configuracoes.html');
           if (!res.synced) {
-            box.innerHTML = '<div class="ad-alert ad-alert-warn">' + KingAdmin.esc(res.message) + ' <a href="/admin/configuracoes.html" style="text-decoration:underline;margin-left:6px;">Ir para Configurações →</a></div>';
+            box.innerHTML =
+              '<div class="ad-alert ad-alert-warn">' +
+              KingAdmin.esc(res.message) +
+              ' <a href="' + KingAdmin.esc(cfgHref) + '" style="text-decoration:underline;margin-left:6px;">Ir para Configurações →</a>' +
+              '</div>';
           } else {
-            box.innerHTML = '<div class="ad-alert ad-alert-info">Sincronização enfileirada para: ' + KingAdmin.esc((res.platforms || []).join(', ')) + '</div>';
-            KingAdmin.showToast('Sincronização agendada na fila BullMQ.');
+            var names = (res.platforms || []).map(mapPlatform).join(', ');
+            var queueNote = res.queued
+              ? 'Sincronização enfileirada no BullMQ para: ' + names
+              : 'Credenciais detectadas (' + names + '), aguardando worker Redis para execução assíncrona.';
+            box.innerHTML = '<div class="ad-alert ad-alert-info">' + KingAdmin.esc(queueNote) + '</div>';
+            KingAdmin.showToast(res.queued ? 'Sincronização agendada na fila.' : 'Solicitação registrada em auditoria.');
           }
         } catch (err) {
-          KingAdmin.showToast(err.message, true);
+          KingAdmin.showToast(err.message || 'Erro ao sincronizar APIs.', true);
+        } finally {
+          btn.disabled = false;
+          btn.textContent = prev;
         }
       });
 
-      document.addEventListener('DOMContentLoaded', async function () {
-        document.getElementById('m-date').value = new Date().toISOString().slice(0, 10);
-        if (await KingAdmin.initProtectedPage('campanhas')) loadCampaigns();
-      });
+      async function boot() {
+        document.getElementById('m-date').value = todayLocalIso();
+        var user = await KingAdmin.initProtectedPage('campanhas');
+        if (!user) {
+          showCampaignsError(new Error('Sessão administrativa indisponível.'));
+          return;
+        }
+        loadCampaigns();
+      }
+
+      document.addEventListener('DOMContentLoaded', boot);
     })();
   </script>
 </body>

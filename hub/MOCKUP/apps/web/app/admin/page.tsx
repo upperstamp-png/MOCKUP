@@ -4,7 +4,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, Home, Shield, Sparkles } from 'lucide-react';
-import { hubAsset, portalFetch, PortalApiError } from '@/lib/api-client';
+import { hubAsset, portalFetch, PortalApiError, useUnifiedHubPrefix } from '@/lib/api-client';
 import type { PortalMeResponse } from '@/components/portal/PortalTypes';
 import { NetworkAdminTab } from '@/components/portal/NotificationsAndAdminTabs';
 import { ErrorBanner, LoadingCard } from '@/components/portal/UiPrimitives';
@@ -19,6 +19,8 @@ interface DiskTexture {
 
 export default function AdminPage() {
   const router = useRouter();
+  const hubPrefix = useUnifiedHubPrefix();
+  const homeHref = hubPrefix ? `${hubPrefix}` : '/';
   const [me, setMe] = useState<PortalMeResponse | null>(null);
   const [diskTextures, setDiskTextures] = useState<DiskTexture[]>([]);
   const [loading, setLoading] = useState(true);
@@ -57,7 +59,7 @@ export default function AdminPage() {
       <header className="h-16 apple-glass border-x-0 border-t-0 border-b border-white/15 px-6 flex items-center justify-between gap-4 shrink-0 sticky top-0 z-20">
         <div className="flex items-center gap-3 flex-wrap">
           <Link
-            href="/"
+            href={homeHref}
             className="flex items-center gap-1.5 text-xs font-semibold text-wise-body hover:text-wise-ink bg-white/6 hover:bg-white/14 px-3.5 py-2 rounded-full transition-colors border border-white/12"
           >
             <Home className="w-3.5 h-3.5" />

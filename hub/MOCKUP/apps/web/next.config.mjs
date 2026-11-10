@@ -4,8 +4,15 @@ const apiInternalOrigin =
   process.env.API_INTERNAL_URL ||
   'http://127.0.0.1:4000';
 
+const rawBasePath = (process.env.NEXT_PUBLIC_HUB_BASE_PATH || '').trim();
+const normalizedBasePath = rawBasePath === '/' ? '' : rawBasePath.replace(/\/+$/, '');
+const basePath =
+  normalizedBasePath && !normalizedBasePath.startsWith('/')
+    ? `/${normalizedBasePath}`
+    : normalizedBasePath;
+
 const nextConfig = {
-  basePath: '/hub',
+  basePath,
   reactStrictMode: true,
   transpilePackages: ['@mockup/canvas-engine', '@mockup/types', '@mockup/validation'],
   experimental: {

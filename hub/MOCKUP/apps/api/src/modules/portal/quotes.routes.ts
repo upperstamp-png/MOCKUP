@@ -10,6 +10,17 @@ import {
 import { computeQuoteTotals } from '../../services/businessEngine.js';
 import { recordAuditLog } from '../../services/auditAndNotify.js';
 
+function escapeHtml(value: unknown): string {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+const uuidSchema = z.string().uuid();
+
 const quoteItemSchema = z.object({
   productId: z.string().uuid().optional().nullable(),
   productSku: z.string().min(1),
@@ -114,6 +125,18 @@ export async function portalQuotesRoutes(fastify: FastifyInstance): Promise<void
           code: 'CUSTOMER_UNIT_MISMATCH',
           message: 'Cliente inválido para a unidade ativa.',
         });
+      }
+      if (d.opportunityId) {
+        const oppRes = await dbQuery<{ unit_id: string }>(`SELECT unit_id FROM portal.opportunities WHERE id = $1`, [
+          d.opportunityId,
+        ]);
+        if (!oppRes.rows[0] || oppRes.rows[0].unit_id !== ctx.activeUnitId) {
+          return reply.status(403).send({
+            statusCode: 403,
+            code: 'OPPORTUNITY_UNIT_MISMATCH',
+            message: 'Oportunidade inválida para a unidade ativa.',
+          });
+        }
       }
 
       // Busca custos reais do catálogo por productId ou SKU (nunca confia cegamente nem permite item sob revisão jurídica)
@@ -353,6 +376,9 @@ export async function portalQuotesRoutes(fastify: FastifyInstance): Promise<void
     { preHandler: [requirePortalAuth, requirePermission('quotes:write')] },
     async (request, reply) => {
       const { id } = request.params as { id: string };
+      if (!uuidSchema.safeParse(id).success) {
+        return reply.status(400).send({ statusCode: 400, code: 'VALIDATION_ERROR', message: 'ID de orçamento inválido.' });
+      }
       const existing = await dbQuery<{ unit_id: string; status: string }>(
         `SELECT unit_id, status FROM portal.quotes WHERE id = $1`,
         [id]
@@ -404,6 +430,9 @@ export async function portalQuotesRoutes(fastify: FastifyInstance): Promise<void
     { preHandler: [requirePortalAuth, requirePermission('quotes:read')] },
     async (request, reply) => {
       const { id } = request.params as { id: string };
+      if (!uuidSchema.safeParse(id).success) {
+        return reply.status(400).send({ statusCode: 400, code: 'VALIDATION_ERROR', message: 'ID de orçamento inválido.' });
+      }
       const qRes = await dbQuery(
         `SELECT qt.*, c.name AS customer_name, c.city AS customer_city, c.state AS customer_state,
                 u.name AS unit_name, u.city AS unit_city, u.state AS unit_state, u.code AS unit_code
@@ -433,11 +462,11 @@ export async function portalQuotesRoutes(fastify: FastifyInstance): Promise<void
         .map(
           (i) => `
           <tr>
-            <td><strong>${i.product_name}</strong><br/><small>${i.product_sku}</small></td>
-            <td>${i.quantity} un</td>
-            <td>${brl(i.unit_sale_price_cents)}</td>
-            <td>${i.personalization_summary || 'Padrão'}${Number(i.personalization_cents) > 0 ? ` (+${brl(i.personalization_cents)}/un)` : ''}</td>
-            <td style="text-align:right"><strong>${brl(i.line_total_cents)}</strong></td>
+            <td><strong>${escapeHtml(i.product_name)}</strong><br/><small>${escapeHtml(i.product_sku)}</small></td>
+            <td>${Number(i.quantity) || 0} un</td>
+            <td>${escapeHtml(brl(i.unit_sale_price_cents))}</td>
+            <td>${escapeHtml(i.personalization_summary || 'Padrão')}${Number(i.personalization_cents) > 0 ? ` (+${escapeHtml(brl(i.personalization_cents))}/un)` : ''}</td>
+            <td style="text-align:right"><strong>${escapeHtml(brl(i.line_total_cents))}</strong></td>
           </tr>`
         )
         .join('');
@@ -446,7 +475,7 @@ export async function portalQuotesRoutes(fastify: FastifyInstance): Promise<void
 <html lang="pt-BR">
 <head>
   <meta charset="utf-8" />
-  <title>Proposta ${qt.quote_number} — King Sports</title>
+  <title>Proposta ${escapeHtml(qt.quote_number)} — King Sports</title>
   <style>
     body{font-family:-apple-system,BlinkMacSystemFont,'Inter',sans-serif;color:#111827;margin:32px;line-height:1.45}
     .header{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #1d4ed8;padding-bottom:16px;margin-bottom:24px}
@@ -468,13 +497,13 @@ export async function portalQuotesRoutes(fastify: FastifyInstance): Promise<void
   <div class="header">
     <div>
       <span class="badge">PROPOSTA COMERCIAL KING SPORTS</span>
-      <h1 style="margin:8px 0 4px">Orçamento ${qt.quote_number}</h1>
-      <p style="margin:0;color:#475569;font-size:13px">Unidade Emissora: ${qt.unit_name} (${qt.unit_code}) · ${qt.unit_city}/${qt.unit_state}</p>
+      <h1 style="margin:8px 0 4px">Orçamento ${escapeHtml(qt.quote_number)}</h1>
+      <p style="margin:0;color:#475569;font-size:13px">Unidade Emissora: ${escapeHtml(qt.unit_name)} (${escapeHtml(qt.unit_code)}) · ${escapeHtml(qt.unit_city)}/${escapeHtml(qt.unit_state)}</p>
     </div>
     <div style="text-align:right;font-size:13px">
-      <div><strong>Cliente:</strong> ${qt.customer_name}</div>
-      <div>${qt.customer_city || ''} ${qt.customer_state ? `/${qt.customer_state}` : ''}</div>
-      <div><strong>Validade:</strong> ${qt.valid_until ? String(qt.valid_until).slice(0, 10).split('-').reverse().join('/') : 'A confirmar'}</div>
+      <div><strong>Cliente:</strong> ${escapeHtml(qt.customer_name)}</div>
+      <div>${escapeHtml(qt.customer_city || '')} ${qt.customer_state ? `/${escapeHtml(qt.customer_state)}` : ''}</div>
+      <div><strong>Validade:</strong> ${qt.valid_until ? escapeHtml(String(qt.valid_until).slice(0, 10).split('-').reverse().join('/')) : 'A confirmar'}</div>
     </div>
   </div>
   <table>
@@ -482,17 +511,17 @@ export async function portalQuotesRoutes(fastify: FastifyInstance): Promise<void
     <tbody>${rowsHtml}</tbody>
   </table>
   <div class="totals">
-    <div><span>Subtotal peças</span><span>${brl(qt.subtotal_cents)}</span></div>
-    <div><span>Personalização</span><span>${brl(qt.personalization_total_cents)}</span></div>
-    <div><span>Serviços adicionais</span><span>${brl(qt.additional_services_cents)}</span></div>
-    <div><span>Frete estimado</span><span>${brl(qt.shipping_cents)}</span></div>
-    <div><span>Desconto</span><span>-${brl(qt.discount_cents)}</span></div>
-    <div class="grand"><span>Total da Proposta</span><span>${brl(qt.total_cents)}</span></div>
+    <div><span>Subtotal peças</span><span>${escapeHtml(brl(qt.subtotal_cents))}</span></div>
+    <div><span>Personalização</span><span>${escapeHtml(brl(qt.personalization_total_cents))}</span></div>
+    <div><span>Serviços adicionais</span><span>${escapeHtml(brl(qt.additional_services_cents))}</span></div>
+    <div><span>Frete estimado</span><span>${escapeHtml(brl(qt.shipping_cents))}</span></div>
+    <div><span>Desconto</span><span>-${escapeHtml(brl(qt.discount_cents))}</span></div>
+    <div class="grand"><span>Total da Proposta</span><span>${escapeHtml(brl(qt.total_cents))}</span></div>
   </div>
   <div class="note">
-    <strong>Condições comerciais:</strong> ${qt.payment_terms || 'A combinar com a unidade.'}<br/>
-    <strong>Prazo indicativo após aprovações:</strong> ${qt.estimated_delivery_days ? `${qt.estimated_delivery_days} dias corridos após aceite da arte, grade e entrada financeira` : 'A confirmar com PCP.'}<br/>
-    <strong>Observação:</strong> ${qt.terms_text || ''}
+    <strong>Condições comerciais:</strong> ${escapeHtml(qt.payment_terms || 'A combinar com a unidade.')}<br/>
+    <strong>Prazo indicativo após aprovações:</strong> ${qt.estimated_delivery_days ? `${Number(qt.estimated_delivery_days)} dias corridos após aceite da arte, grade e entrada financeira` : 'A confirmar com PCP.'}<br/>
+    <strong>Observação:</strong> ${escapeHtml(qt.terms_text || '')}
   </div>
 </body>
 </html>`;
@@ -505,6 +534,13 @@ export async function portalQuotesRoutes(fastify: FastifyInstance): Promise<void
   // GET /api/v1/quotes/shared/:token (Link controlado para o cliente — sem expor custo/margem interna)
   fastify.get('/shared/:token', async (request, reply) => {
     const { token } = request.params as { token: string };
+    if (!token || token.length < 16 || !/^[a-f0-9_-]+$/i.test(token)) {
+      return reply.status(404).send({
+        statusCode: 404,
+        code: 'SHARED_QUOTE_NOT_FOUND',
+        message: 'Link de proposta inválido ou desativado.',
+      });
+    }
     const qRes = await dbQuery(
       `SELECT qt.id, qt.quote_number, qt.status, qt.subtotal_cents, qt.personalization_total_cents,
               qt.additional_services_cents, qt.shipping_cents, qt.discount_cents, qt.total_cents,

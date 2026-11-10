@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { RotateCcw, Share2, History, Settings, Shield } from 'lucide-react';
-import { hubAsset } from '@/lib/api-client';
+import { hubAdminHref, hubAsset, useUnifiedHubPrefix } from '@/lib/api-client';
 
 interface HeaderProps {
   onOpenExportModal: () => void;
@@ -26,12 +26,16 @@ export const Header: React.FC<HeaderProps> = ({
   tenantName = 'Portal do Franqueado',
   canAccessAdmin = false,
 }) => {
+  const hubPrefix = useUnifiedHubPrefix();
+  const homeHref = hubPrefix ? `${hubPrefix}` : '/';
+  const adminHref = hubAdminHref(hubPrefix);
+
   return (
     <header className="h-14 apple-glass border-x-0 border-t-0 border-b border-white/15 px-5 flex items-center justify-between z-30 shrink-0 select-none">
       {/* Brand & Model Info */}
       <div className="flex items-center gap-4">
         <div className="flex items-center gap-3">
-          <Link href="/" aria-label="Voltar ao Portal King Sports" className="shrink-0">
+          <Link href={homeHref} aria-label="Voltar ao Portal King Sports" className="shrink-0">
             <img src={hubAsset('/king-sports/logo.png')} alt="King Sports" width={116} height={29} />
           </Link>
           <div className="hidden sm:block">
@@ -90,15 +94,24 @@ export const Header: React.FC<HeaderProps> = ({
         >
           <Settings className="w-4 h-4" />
         </Link>
-        {canAccessAdmin && (
-          <Link
-            href="/admin"
-            className="p-2 text-wise-body hover:text-wise-ink bg-white/5 hover:bg-white/12 border border-white/10 rounded-full transition-colors hidden sm:flex"
-            title="Administração da Rede"
-          >
-            <Shield className="w-4 h-4" />
-          </Link>
-        )}
+        {canAccessAdmin &&
+          (hubPrefix ? (
+            <a
+              href={adminHref}
+              className="p-2 text-wise-body hover:text-wise-ink bg-white/5 hover:bg-white/12 border border-white/10 rounded-full transition-colors hidden sm:flex"
+              title="Administração da Rede"
+            >
+              <Shield className="w-4 h-4" />
+            </a>
+          ) : (
+            <Link
+              href={adminHref}
+              className="p-2 text-wise-body hover:text-wise-ink bg-white/5 hover:bg-white/12 border border-white/10 rounded-full transition-colors hidden sm:flex"
+              title="Administração da Rede"
+            >
+              <Shield className="w-4 h-4" />
+            </Link>
+          ))}
 
         <button
           onClick={onOpenExportModal}

@@ -92,6 +92,32 @@ interface ExpenseRow {
   status: string;
 }
 
+const MODALITY_LABELS: Record<string, string> = {
+  revenda: 'Revenda',
+  intermediacao: 'Intermediação',
+  pending_definition: 'Pendente de definição',
+};
+
+const PAYMENT_METHOD_LABELS: Record<string, string> = {
+  pix: 'PIX',
+  transferencia: 'Transferência Bancária',
+  boleto: 'Boleto',
+  cartao_link_externo: 'Cartão (Link externo)',
+  dinheiro: 'Dinheiro / Recibo',
+};
+
+const EXPENSE_CATEGORY_LABELS: Record<string, string> = {
+  pagamento_fabrica: 'Pagamento à Fábrica SP',
+  frete: 'Frete / Logística',
+  servico_adicional: 'Serviço adicional',
+  despesa_operacional: 'Despesa operacional',
+};
+
+function todayLocalIso(): string {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+}
+
 export function FinanceTab({ me }: { me: PortalMeResponse }) {
   const [period, setPeriod] = useState('month');
   const [summary, setSummary] = useState<FinanceSummaryResponse | null>(null);
@@ -108,15 +134,29 @@ export function FinanceTab({ me }: { me: PortalMeResponse }) {
   const [payMethod, setPayMethod] = useState<'pix' | 'boleto' | 'cartao_link_externo' | 'transferencia' | 'dinheiro'>('pix');
   const [payNotes, setPayNotes] = useState('');
   const [payFile, setPayFile] = useState<File | null>(null);
+  const [payError, setPayError] = useState<string | null>(null);
   const [submittingPay, setSubmittingPay] = useState(false);
+
+  // Reverse Modal (replaces window.prompt)
+  const [reverseTxTargetId, setReverseTxTargetId] = useState<string | null>(null);
+  const [reverseReason, setReverseReason] = useState('');
+  const [reverseError, setReverseError] = useState<string | null>(null);
+  const [reversingTx, setReversingTx] = useState(false);
 
   // New Expense Modal
   const [expOpen, setExpOpen] = useState(false);
   const [expCat, setExpCat] = useState<'pagamento_fabrica' | 'frete' | 'servico_adicional' | 'despesa_operacional'>('pagamento_fabrica');
   const [expDesc, setExpDesc] = useState('');
   const [expVendor] = useState('Matriz King Sports SP');
-  const [expDue, setExpDue] = useState(() => new Date().toISOString().slice(0, 10));
+  const [expDue, setExpDue] = useState(() => todayLocalIso());
   const [expAmountReais, setExpAmountReais] = useState('');
+  const [expError, setExpError] = useState<string | null>(null);
+  const [savingExp, setSavingExp] = useState(false);
+
+  // Action busy flags
+  const [busyTxId, setBusyTxId] = useState<string | null>(null);
+  const [busyExpId, setBusyExpId] = useState<string | null>(null);
+  const [testingIntegration, setTestingIntegration] = useState<'asaas_payments' | 'nfe_emitter' | null>(null);
 
   const canWrite = me.activeRole.permissions.includes('finance:write');
   const canReconcile = me.activeRole.permissions.includes('finance:reconcile');
@@ -149,10 +189,15 @@ export function FinanceTab({ me }: { me: PortalMeResponse }) {
   const handleRecordPayment = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!payRec) return;
+    setPayError(null);
+    const amountCents = Math.round((Number(payAmountReais.replace(',', '.')) || 0) * 100);
+    if (!Number.isFinite(amountCents) || amountCents <= 0) {
+      setPayError('Informe um valor pago maior que R$ 0,00.');
+      return;
+    }
     setSubmittingPay(true);
     setError(null);
     try {
-      const amountCents = Math.round((Number(payAmountReais.replace(',', '.')) || 0) * 100);
       const proofFile = payFile ? await fileToDataUrl(payFile) : null;
       const res = await portalFetch<{ transaction: { confirmation_status: string } }>('/finance/payments', {
         method: 'POST',
@@ -169,6 +214,7 @@ export function FinanceTab({ me }: { me: PortalMeResponse }) {
       setPayRec(null);
       setPayFile(null);
       setPayNotes('');
+      setPayError(null);
       setFeedback(
         res.transaction.confirmation_status === 'confirmed'
           ? 'Pagamento registrado e confirmado.'
@@ -176,13 +222,15 @@ export function FinanceTab({ me }: { me: PortalMeResponse }) {
       );
       await loadFinance();
     } catch (err) {
-      setError(err instanceof PortalApiError ? err.message : 'Erro ao registrar recebimento.');
+      setPayError(err instanceof PortalApiError ? err.message : 'Erro ao registrar recebimento.');
     } finally {
       setSubmittingPay(false);
     }
   };
 
   const handleValidateTx = async (txId: string, decision: 'confirmed' | 'rejected') => {
+    setBusyTxId(txId);
+    setError(null);
     try {
       await portalFetch(`/finance/payments/${txId}/validate`, {
         method: 'POST',
@@ -192,21 +240,33 @@ export function FinanceTab({ me }: { me: PortalMeResponse }) {
       await loadFinance();
     } catch (err) {
       setError(err instanceof PortalApiError ? err.message : 'Erro ao validar pagamento.');
+    } finally {
+      setBusyTxId(null);
     }
   };
 
-  const handleReverseTx = async (txId: string) => {
-    const reason = window.prompt('Informe o motivo obrigatório do estorno (o histórico original será preservado):');
-    if (!reason || reason.trim().length < 4) return;
+  const handleConfirmReverseTx = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!reverseTxTargetId) return;
+    if (reverseReason.trim().length < 4) {
+      setReverseError('Informe o motivo obrigatório do estorno (mínimo 4 caracteres).');
+      return;
+    }
+    setReversingTx(true);
+    setReverseError(null);
     try {
-      await portalFetch(`/finance/payments/${txId}/reverse`, {
+      await portalFetch(`/finance/payments/${reverseTxTargetId}/reverse`, {
         method: 'POST',
-        body: JSON.stringify({ reason: reason.trim() }),
+        body: JSON.stringify({ reason: reverseReason.trim() }),
       });
+      setReverseTxTargetId(null);
+      setReverseReason('');
       setFeedback('Estorno contabilizado e saldo da parcela restaurado.');
       await loadFinance();
     } catch (err) {
-      setError(err instanceof PortalApiError ? err.message : 'Erro ao estornar lançamento.');
+      setReverseError(err instanceof PortalApiError ? err.message : 'Erro ao estornar lançamento.');
+    } finally {
+      setReversingTx(false);
     }
   };
 
@@ -221,6 +281,21 @@ export function FinanceTab({ me }: { me: PortalMeResponse }) {
 
   const handleCreateExpense = async (e: React.FormEvent) => {
     e.preventDefault();
+    setExpError(null);
+    if (expDesc.trim().length < 3) {
+      setExpError('Informe uma descrição clara da despesa (mínimo 3 caracteres).');
+      return;
+    }
+    const amountCents = Math.round((Number(expAmountReais.replace(',', '.')) || 0) * 100);
+    if (!Number.isFinite(amountCents) || amountCents <= 0) {
+      setExpError('Informe um valor válido maior que R$ 0,00.');
+      return;
+    }
+    if (!expDue) {
+      setExpError('Informe a data de vencimento.');
+      return;
+    }
+    setSavingExp(true);
     try {
       await portalFetch('/finance/expenses', {
         method: 'POST',
@@ -229,28 +304,38 @@ export function FinanceTab({ me }: { me: PortalMeResponse }) {
           description: expDesc.trim(),
           vendorName: expVendor.trim() || null,
           dueDate: expDue,
-          amountCents: Math.round((Number(expAmountReais.replace(',', '.')) || 0) * 100),
+          amountCents,
         }),
       });
       setExpOpen(false);
       setExpDesc('');
       setExpAmountReais('');
+      setExpError(null);
+      setFeedback('Custo lançado no financeiro da unidade.');
       await loadFinance();
     } catch (err) {
-      setError(err instanceof PortalApiError ? err.message : 'Erro ao lançar despesa.');
+      setExpError(err instanceof PortalApiError ? err.message : 'Erro ao lançar despesa.');
+    } finally {
+      setSavingExp(false);
     }
   };
 
   const handlePayExpense = async (id: string) => {
+    setBusyExpId(id);
+    setError(null);
     try {
       await portalFetch(`/finance/expenses/${id}/pay`, { method: 'POST', body: '{}' });
+      setFeedback('Pagamento de despesa registrado.');
       await loadFinance();
     } catch (err) {
       setError(err instanceof PortalApiError ? err.message : 'Erro ao baixar despesa.');
+    } finally {
+      setBusyExpId(null);
     }
   };
 
   const handleTestIntegration = async (integrationName: 'asaas_payments' | 'nfe_emitter') => {
+    setTestingIntegration(integrationName);
     try {
       const res = await portalFetch<{ configured: boolean; message: string }>('/finance/integrations/attempt', {
         method: 'POST',
@@ -266,6 +351,8 @@ export function FinanceTab({ me }: { me: PortalMeResponse }) {
           ? `Integração pendente (honestidade operacional): ${err.message}`
           : 'Integração externa ainda não configurada.'
       );
+    } finally {
+      setTestingIntegration(null);
     }
   };
 
@@ -342,7 +429,12 @@ export function FinanceTab({ me }: { me: PortalMeResponse }) {
             ) : (
               <div className="space-y-1 text-emerald-100">
                 <p>
-                  Modalidade configurada e aprovada: <strong>{summary.apportionmentBreakdown.modality}</strong>
+                  Modalidade configurada e aprovada:{' '}
+                  <strong>
+                    {(summary.apportionmentBreakdown.modality &&
+                      MODALITY_LABELS[summary.apportionmentBreakdown.modality]) ||
+                      summary.apportionmentBreakdown.modality}
+                  </strong>
                 </p>
                 <p>
                   Estimativa sobre recebimentos líquidos confirmados: Royalties{' '}
@@ -406,6 +498,7 @@ export function FinanceTab({ me }: { me: PortalMeResponse }) {
                           type="button"
                           onClick={() => {
                             setPayRec(rec);
+                            setPayError(null);
                             setPayAmountReais((remaining / 100).toFixed(2));
                           }}
                           className="px-3 py-1 rounded-full apple-glass-cta text-white text-[11px] font-semibold"
@@ -433,7 +526,7 @@ export function FinanceTab({ me }: { me: PortalMeResponse }) {
                     <div>
                       <span className="font-bold text-wise-ink">
                         {tx.transaction_type === 'reversal' ? 'ESTORNO ' : ''}
-                        {formatBrl(tx.amount_cents)} ({tx.payment_method.toUpperCase()})
+                        {formatBrl(tx.amount_cents)} ({PAYMENT_METHOD_LABELS[tx.payment_method] || tx.payment_method})
                       </span>
                       <p className="text-[11px] text-wise-mute">
                         {tx.receivable_description} · {formatDateBr(tx.occurred_at, { withTime: true })}
@@ -456,15 +549,17 @@ export function FinanceTab({ me }: { me: PortalMeResponse }) {
                       <>
                         <button
                           type="button"
+                          disabled={busyTxId === tx.id}
                           onClick={() => handleValidateTx(tx.id, 'confirmed')}
-                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-500/20 border border-emerald-400/40 text-emerald-100 text-[11px] font-semibold"
+                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-500/20 border border-emerald-400/40 text-emerald-100 text-[11px] font-semibold disabled:opacity-50"
                         >
                           <CheckCircle2 className="w-3 h-3" /> Confirmar entrada
                         </button>
                         <button
                           type="button"
+                          disabled={busyTxId === tx.id}
                           onClick={() => handleValidateTx(tx.id, 'rejected')}
-                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-rose-500/20 border border-rose-400/40 text-rose-100 text-[11px] font-semibold"
+                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-rose-500/20 border border-rose-400/40 text-rose-100 text-[11px] font-semibold disabled:opacity-50"
                         >
                           <XCircle className="w-3 h-3" /> Rejeitar
                         </button>
@@ -473,7 +568,11 @@ export function FinanceTab({ me }: { me: PortalMeResponse }) {
                     {canReverse && tx.transaction_type === 'payment' && tx.confirmation_status === 'confirmed' ? (
                       <button
                         type="button"
-                        onClick={() => handleReverseTx(tx.id)}
+                        onClick={() => {
+                          setReverseTxTargetId(tx.id);
+                          setReverseReason('');
+                          setReverseError(null);
+                        }}
                         className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/8 hover:bg-rose-500/20 border border-white/15 text-rose-200 text-[11px] font-semibold"
                       >
                         <RotateCcw className="w-3 h-3" /> Estornar
@@ -495,7 +594,10 @@ export function FinanceTab({ me }: { me: PortalMeResponse }) {
             {canWrite ? (
               <button
                 type="button"
-                onClick={() => setExpOpen(true)}
+                onClick={() => {
+                  setExpError(null);
+                  setExpOpen(true);
+                }}
                 className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full apple-glass-cta text-white text-xs font-semibold"
               >
                 <Plus className="w-3.5 h-3.5" /> Lançar custo
@@ -511,7 +613,7 @@ export function FinanceTab({ me }: { me: PortalMeResponse }) {
                   <div>
                     <p className="font-bold text-wise-ink">{ex.description}</p>
                     <p className="text-[11px] text-wise-mute">
-                      {ex.vendor_name || ex.expense_category} · Venc.: {formatDateBr(ex.due_date)}
+                      {ex.vendor_name || EXPENSE_CATEGORY_LABELS[ex.expense_category] || ex.expense_category} · Venc.: {formatDateBr(ex.due_date)}
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
@@ -520,10 +622,11 @@ export function FinanceTab({ me }: { me: PortalMeResponse }) {
                     {canWrite && ex.status === 'pending' ? (
                       <button
                         type="button"
+                        disabled={busyExpId === ex.id}
                         onClick={() => handlePayExpense(ex.id)}
-                        className="px-2.5 py-1 rounded-full bg-emerald-500/20 border border-emerald-400/35 text-emerald-100 text-[11px] font-semibold"
+                        className="px-2.5 py-1 rounded-full bg-emerald-500/20 border border-emerald-400/35 text-emerald-100 text-[11px] font-semibold disabled:opacity-50"
                       >
-                        Pagar
+                        {busyExpId === ex.id ? 'Baixando...' : 'Pagar'}
                       </button>
                     ) : null}
                   </div>
@@ -548,10 +651,11 @@ export function FinanceTab({ me }: { me: PortalMeResponse }) {
               </div>
               <button
                 type="button"
+                disabled={testingIntegration !== null}
                 onClick={() => handleTestIntegration('asaas_payments')}
-                className="px-3 py-1.5 rounded-full bg-white/10 border border-white/15 text-xs font-semibold text-white shrink-0"
+                className="px-3 py-1.5 rounded-full bg-white/10 border border-white/15 text-xs font-semibold text-white shrink-0 disabled:opacity-50"
               >
-                Verificar integração
+                {testingIntegration === 'asaas_payments' ? 'Verificando...' : 'Verificar integração'}
               </button>
             </div>
             <div className="rounded-2xl bg-white/5 border border-white/10 p-3 flex items-center justify-between gap-3">
@@ -563,10 +667,11 @@ export function FinanceTab({ me }: { me: PortalMeResponse }) {
               </div>
               <button
                 type="button"
+                disabled={testingIntegration !== null}
                 onClick={() => handleTestIntegration('nfe_emitter')}
-                className="px-3 py-1.5 rounded-full bg-white/10 border border-white/15 text-xs font-semibold text-white shrink-0"
+                className="px-3 py-1.5 rounded-full bg-white/10 border border-white/15 text-xs font-semibold text-white shrink-0 disabled:opacity-50"
               >
-                Verificar integração
+                {testingIntegration === 'nfe_emitter' ? 'Verificando...' : 'Verificar integração'}
               </button>
             </div>
           </div>
@@ -578,10 +683,14 @@ export function FinanceTab({ me }: { me: PortalMeResponse }) {
         open={Boolean(payRec)}
         title="Registrar pagamento / comprovante"
         subtitle={payRec?.description}
-        onClose={() => setPayRec(null)}
+        onClose={() => {
+          setPayRec(null);
+          setPayError(null);
+        }}
         maxWidthClass="max-w-md"
       >
         <form onSubmit={handleRecordPayment} className="space-y-4">
+          {payError ? <ErrorBanner message={payError} /> : null}
           <div>
             <label className="block text-xs font-semibold text-wise-ink mb-1">Valor pago (R$) *</label>
             <input
@@ -625,7 +734,14 @@ export function FinanceTab({ me }: { me: PortalMeResponse }) {
             />
           </div>
           <div className="flex justify-end gap-2">
-            <button type="button" onClick={() => setPayRec(null)} className="px-4 py-2 rounded-full bg-white/8 text-xs font-semibold text-wise-body">
+            <button
+              type="button"
+              onClick={() => {
+                setPayRec(null);
+                setPayError(null);
+              }}
+              className="px-4 py-2 rounded-full bg-white/8 text-xs font-semibold text-wise-body"
+            >
               Cancelar
             </button>
             <button
@@ -639,9 +755,65 @@ export function FinanceTab({ me }: { me: PortalMeResponse }) {
         </form>
       </GlassModal>
 
+      {/* Modal Estorno de Lançamento */}
+      <GlassModal
+        open={Boolean(reverseTxTargetId)}
+        title="Confirmar estorno financeiro"
+        subtitle="O lançamento original será preservado para auditoria e o saldo da parcela será restaurado."
+        onClose={() => {
+          setReverseTxTargetId(null);
+          setReverseError(null);
+        }}
+        maxWidthClass="max-w-md"
+      >
+        <form onSubmit={handleConfirmReverseTx} className="space-y-4">
+          {reverseError ? <ErrorBanner message={reverseError} /> : null}
+          <div>
+            <label className="block text-xs font-semibold text-wise-ink mb-1">Motivo obrigatório do estorno *</label>
+            <textarea
+              required
+              minLength={4}
+              rows={3}
+              value={reverseReason}
+              onChange={(e) => setReverseReason(e.target.value)}
+              placeholder="Ex: Comprovante enviado em duplicidade ou devolução acordada..."
+              className="w-full apple-glass-well rounded-xl px-3.5 py-2.5 text-xs text-wise-ink outline-none"
+            />
+          </div>
+          <div className="flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                setReverseTxTargetId(null);
+                setReverseError(null);
+              }}
+              className="px-4 py-2 rounded-full bg-white/8 text-xs font-semibold text-wise-body"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              disabled={reversingTx}
+              className="px-5 py-2 rounded-full bg-rose-500/80 hover:bg-rose-500 text-xs font-semibold text-white disabled:opacity-50"
+            >
+              {reversingTx ? 'Estornando...' : 'Confirmar estorno'}
+            </button>
+          </div>
+        </form>
+      </GlassModal>
+
       {/* Modal Nova Despesa */}
-      <GlassModal open={expOpen} title="Lançar custo ou despesa" onClose={() => setExpOpen(false)} maxWidthClass="max-w-md">
+      <GlassModal
+        open={expOpen}
+        title="Lançar custo ou despesa"
+        onClose={() => {
+          setExpOpen(false);
+          setExpError(null);
+        }}
+        maxWidthClass="max-w-md"
+      >
         <form onSubmit={handleCreateExpense} className="space-y-4">
+          {expError ? <ErrorBanner message={expError} /> : null}
           <div>
             <label className="block text-xs font-semibold text-wise-ink mb-1">Categoria</label>
             <select
@@ -660,6 +832,7 @@ export function FinanceTab({ me }: { me: PortalMeResponse }) {
             <input
               type="text"
               required
+              minLength={3}
               value={expDesc}
               onChange={(e) => setExpDesc(e.target.value)}
               className="w-full apple-glass-well rounded-xl px-3 py-2 text-xs text-wise-ink outline-none"
@@ -688,11 +861,22 @@ export function FinanceTab({ me }: { me: PortalMeResponse }) {
             </div>
           </div>
           <div className="flex justify-end gap-2">
-            <button type="button" onClick={() => setExpOpen(false)} className="px-4 py-2 rounded-full bg-white/8 text-xs font-semibold text-wise-body">
+            <button
+              type="button"
+              onClick={() => {
+                setExpOpen(false);
+                setExpError(null);
+              }}
+              className="px-4 py-2 rounded-full bg-white/8 text-xs font-semibold text-wise-body"
+            >
               Cancelar
             </button>
-            <button type="submit" className="px-5 py-2 rounded-full apple-glass-cta text-xs font-semibold text-white">
-              Salvar custo
+            <button
+              type="submit"
+              disabled={savingExp}
+              className="px-5 py-2 rounded-full apple-glass-cta text-xs font-semibold text-white disabled:opacity-50"
+            >
+              {savingExp ? 'Salvando...' : 'Salvar custo'}
             </button>
           </div>
         </form>

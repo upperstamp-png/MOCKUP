@@ -12,7 +12,208 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/admin/assets/css/admin.css" />
+  <link rel="stylesheet" href="/assets/css/admin.css" />
+  <style>
+    .ad-alert-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .ad-loading-box {
+      padding: 20px 16px;
+      border: 1px dashed var(--ad-border);
+      border-radius: 10px;
+      color: var(--ad-text-muted);
+      font-size: 0.88rem;
+      text-align: center;
+    }
+
+    .ad-empty-box {
+      padding: 22px 16px;
+      border: 1px dashed var(--ad-border);
+      border-radius: 10px;
+      color: var(--ad-text-muted);
+      font-size: 0.88rem;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 10px;
+    }
+
+    .ad-queue-fallback-card {
+      grid-column: 1 / -1;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 14px;
+    }
+
+    .ad-queue-fallback-copy {
+      flex: 1 1 320px;
+      min-width: 0;
+    }
+
+    .ad-badge-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+      margin-top: 6px;
+    }
+
+    .ad-config-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      max-width: 320px;
+    }
+
+    .ad-config-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 8px;
+      border-radius: 6px;
+      background: rgba(15, 23, 42, 0.72);
+      border: 1px solid rgba(158, 201, 255, 0.16);
+      font-size: 0.75rem;
+      color: #D6E2F1;
+      line-height: 1.35;
+    }
+
+    .ad-config-chip strong {
+      color: var(--ad-sky);
+      font-weight: 600;
+    }
+
+    .ad-rule-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .ad-cell-wrap {
+      max-width: 280px;
+      white-space: normal;
+      word-break: break-word;
+    }
+
+    .ad-lead-link {
+      color: var(--ad-sky);
+      font-weight: 600;
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
+
+    .ad-lead-link:hover {
+      color: #FFFFFF;
+    }
+
+    .ad-card-head-wrap {
+      flex-wrap: wrap;
+    }
+
+    .ad-filters-inline {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .ad-filters-inline .ad-select {
+      width: auto;
+      min-width: 170px;
+      padding: 7px 10px;
+      font-size: 0.82rem;
+    }
+
+    .ad-check-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 10px 12px;
+      border: 1px solid var(--ad-border);
+      border-radius: 9px;
+      background: rgba(2, 6, 14, 0.55);
+      cursor: pointer;
+      font-size: 0.86rem;
+      color: var(--ad-text);
+    }
+
+    .ad-check-row input[type="checkbox"] {
+      width: 17px;
+      height: 17px;
+      margin-top: 2px;
+      flex-shrink: 0;
+      accent-color: var(--ad-blue);
+    }
+
+    .ad-modal-meta {
+      padding: 12px 14px;
+      border-radius: 10px;
+      background: rgba(2, 6, 14, 0.55);
+      border: 1px solid rgba(158, 201, 255, 0.16);
+      margin-bottom: 16px;
+      font-size: 0.84rem;
+      color: var(--ad-text-muted);
+    }
+
+    .ad-modal-footer {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 18px;
+      padding-top: 14px;
+      border-top: 1px solid var(--ad-border);
+    }
+
+    @media (max-width: 640px) {
+      .ad-topbar h1 {
+        font-size: 1.65rem;
+      }
+
+      .ad-actions-row {
+        width: 100%;
+      }
+
+      .ad-actions-row .ad-btn {
+        flex: 1 1 100%;
+      }
+
+      .ad-filters-inline {
+        width: 100%;
+      }
+
+      .ad-filters-inline .ad-select {
+        width: 100%;
+        min-width: 0;
+      }
+
+      .ad-card {
+        padding: 16px;
+      }
+
+      .ad-modal {
+        padding: 18px;
+      }
+
+      .ad-modal-footer .ad-btn {
+        flex: 1 1 auto;
+      }
+
+      .ad-toast {
+        left: 16px;
+        right: 16px;
+        bottom: 16px;
+      }
+    }
+  </style>
 </head>
 <body>
   <div class="ad-shell">
@@ -21,8 +222,8 @@
     <main class="ad-main">
       <div class="ad-topbar">
         <div>
-          <h1>Automações Comerciais &amp; Filas BullMQ</h1>
-          <p class="ad-topbar-sub">Regras ativas de CRM, SLA de primeiro atendimento, retries e Dead Letter Queue.</p>
+          <h1>Automações Comerciais &amp; Filas</h1>
+          <p class="ad-topbar-sub">Regras ativas de CRM, varredura SLA de primeiro atendimento, histórico de jobs e reprocessamento.</p>
         </div>
         <div class="ad-actions-row">
           <button type="button" id="run-sla-btn" class="ad-btn ad-btn-secondary">Executar Varredura SLA Agora</button>
@@ -30,141 +231,1035 @@
         </div>
       </div>
 
-      <div id="ad-global-alert"></div>
-      <div id="queue-metrics-grid" class="ad-kpi-grid"></div>
+      <div id="ad-global-alert" aria-live="polite"></div>
+      <div id="sla-feedback-box" aria-live="polite"></div>
+
+      <div id="queue-metrics-grid" class="ad-kpi-grid">
+        <div class="ad-kpi-card" style="grid-column:1/-1;">
+          <div class="ad-loading-box">Carregando status das filas e indicadores de automação...</div>
+        </div>
+      </div>
 
       <section class="ad-card" style="margin-bottom:18px;">
-        <div class="ad-card-title"><span>Regras de Automação do Sistema</span></div>
-        <div class="ad-table-wrap" id="rules-table-wrap">Carregando regras...</div>
+        <div class="ad-card-title ad-card-head-wrap">
+          <span>Regras de Automação do Sistema</span>
+          <span id="rules-count-badge" class="ad-badge ad-badge-gray">Carregando...</span>
+        </div>
+        <div class="ad-table-wrap" id="rules-table-wrap">
+          <div class="ad-loading-box">Carregando regras de automação...</div>
+        </div>
       </section>
 
       <section class="ad-card">
-        <div class="ad-card-title"><span>Histórico Recente de Execução de Jobs (`automation_jobs`)</span></div>
-        <div class="ad-table-wrap" id="jobs-table-wrap">Carregando jobs...</div>
+        <div class="ad-card-title ad-card-head-wrap">
+          <span>Histórico Recente de Execução de Jobs</span>
+          <div class="ad-filters-inline">
+            <select id="job-filter-queue" class="ad-select" aria-label="Filtrar jobs por fila">
+              <option value="">Todas as filas</option>
+              <option value="tracking-events">Tracking &amp; Conversões</option>
+              <option value="crm-automations">Automações do CRM</option>
+              <option value="marketing-sync">Sincronização de Mídia</option>
+              <option value="dead-letter">Dead Letter Queue (DLQ)</option>
+            </select>
+            <select id="job-filter-status" class="ad-select" aria-label="Filtrar jobs por status">
+              <option value="">Todos os status</option>
+              <option value="pending_worker">Aguardando Worker</option>
+              <option value="queued">Na fila</option>
+              <option value="waiting">Aguardando</option>
+              <option value="active">Em execução</option>
+              <option value="completed">Concluído</option>
+              <option value="delayed">Agendado</option>
+              <option value="failed">Falhou</option>
+              <option value="dlq">Falha Definitiva (DLQ)</option>
+            </select>
+          </div>
+        </div>
+        <div class="ad-table-wrap" id="jobs-table-wrap">
+          <div class="ad-loading-box">Carregando histórico de execuções...</div>
+        </div>
       </section>
     </main>
   </div>
 
-  <script src="/admin/assets/js/admin-core.js"></script>
+  <!-- Modal de Edição de Regra de Automação -->
+  <div class="ad-modal-backdrop" id="rule-edit-modal" role="dialog" aria-modal="true" aria-labelledby="rule-modal-title">
+    <div class="ad-modal">
+      <div class="ad-card-title ad-card-head-wrap">
+        <span id="rule-modal-title">Editar Regra de Automação</span>
+        <button type="button" id="rule-modal-close" class="ad-btn ad-btn-secondary ad-btn-sm">Fechar</button>
+      </div>
+
+      <div id="rule-modal-meta" class="ad-modal-meta"></div>
+
+      <form id="rule-edit-form">
+        <input type="hidden" id="edit-rule-id" />
+
+        <div class="ad-field">
+          <label class="ad-check-row" for="edit-rule-active">
+            <input type="checkbox" id="edit-rule-active" />
+            <span>
+              <strong>Regra ativa</strong><br />
+              <span style="font-size:0.78rem;color:#AEBBD0;">Quando pausada, o sistema ignora este fluxo ao receber o gatilho correspondente.</span>
+            </span>
+          </label>
+        </div>
+
+        <div id="edit-rule-config-fields"></div>
+
+        <div class="ad-modal-footer">
+          <button type="button" id="rule-modal-cancel" class="ad-btn ad-btn-secondary">Cancelar</button>
+          <button type="submit" id="rule-modal-save" class="ad-btn ad-btn-primary">Salvar Alterações</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="/assets/js/admin-core.js"></script>
   <script>
     (function () {
+      'use strict';
+
+      var state = {
+        rules: [],
+        jobs: [],
+        queueMetrics: null,
+        loadSeq: 0,
+        slaInFlight: false,
+        editingRuleId: null,
+        savingModal: false,
+        authReady: false
+      };
+
+      var TRIGGER_LABELS = {
+        'lead.created': 'Lead cadastrado',
+        'lead.qualified': 'Lead qualificado',
+        'lead.sla_breached': 'SLA de 1º atendimento vencido',
+        'meeting.scheduled': 'Reunião agendada',
+        'opportunity.won': 'Franquia vendida'
+      };
+
+      var RULE_KEY_LABELS = {
+        new_lead_workflow: 'Captação de Novo Lead',
+        lead_qualified_workflow: 'Qualificação Comercial',
+        unattended_lead_sla_alert: 'Monitoramento de SLA',
+        meeting_scheduled_workflow: 'Agendamento de Reunião',
+        franchise_sold_workflow: 'Fechamento & Conversão Offline'
+      };
+
+      var QUEUE_LABELS = {
+        tracking: 'Tracking & Conversões',
+        'tracking-events': 'Tracking & Conversões',
+        automations: 'Automações do CRM',
+        'crm-automations': 'Automações do CRM',
+        marketingSync: 'Sincronização de Mídia',
+        'marketing-sync': 'Sincronização de Mídia',
+        dlq: 'Dead Letter Queue (DLQ)',
+        'dead-letter': 'Dead Letter Queue (DLQ)'
+      };
+
+      var JOB_NAME_LABELS = {
+        'new-lead-workflow': 'Fluxo de Novo Lead',
+        'lead-qualified-workflow': 'Fluxo de Lead Qualificado',
+        'meeting-scheduled-workflow': 'Fluxo de Reunião Agendada',
+        'franchise-sold-workflow': 'Fluxo de Franquia Vendida',
+        'dispatch-conversion': 'Disparo de Conversão Server-Side',
+        'sync-ads-platforms': 'Sincronização de Plataformas Ads',
+        'scheduled-ads-sync': 'Sincronização Agendada de Ads',
+        'dead-letter-entry': 'Entrada na Dead Letter Queue'
+      };
+
+      var PLATFORM_LABELS = {
+        meta_capi: 'Meta CAPI',
+        ga4_mp: 'GA4 MP',
+        google_ads_offline: 'Google Ads Offline',
+        internal: 'CRM Interno'
+      };
+
+      var JOB_STATUS_META = {
+        completed: { label: 'Concluído', badgeClass: 'ad-badge-green' },
+        active: { label: 'Em execução', badgeClass: 'ad-badge-blue' },
+        queued: { label: 'Na fila', badgeClass: 'ad-badge-blue' },
+        waiting: { label: 'Aguardando', badgeClass: 'ad-badge-gray' },
+        pending_worker: { label: 'Aguardando Worker', badgeClass: 'ad-badge-orange' },
+        delayed: { label: 'Agendado', badgeClass: 'ad-badge-gray' },
+        failed: { label: 'Falhou', badgeClass: 'ad-badge-red' },
+        dlq: { label: 'Falha Definitiva (DLQ)', badgeClass: 'ad-badge-red' },
+        not_configured: { label: 'Não configurado', badgeClass: 'ad-badge-gray' }
+      };
+
+      var RULE_CONFIG_SCHEMAS = {
+        new_lead_workflow: [
+          {
+            key: 'notify_admin',
+            type: 'boolean',
+            defaultValue: true,
+            label: 'Notificar equipe via webhook ao captar novo lead'
+          },
+          {
+            key: 'auto_create_first_task',
+            type: 'boolean',
+            defaultValue: true,
+            label: 'Criar tarefa automática de primeiro contato consultivo'
+          },
+          {
+            key: 'first_task_due_minutes',
+            type: 'number',
+            min: 1,
+            max: 1440,
+            step: 1,
+            defaultValue: 30,
+            label: 'Prazo da 1ª tarefa (minutos)',
+            unitSuffix: 'min'
+          }
+        ],
+        lead_qualified_workflow: [
+          {
+            key: 'min_score_for_high_priority',
+            type: 'number',
+            min: 0,
+            max: 100,
+            step: 1,
+            defaultValue: 70,
+            label: 'Score mínimo para prioridade alta (0 a 100)',
+            unitSuffix: 'pts'
+          },
+          {
+            key: 'min_scorecard_points',
+            type: 'number',
+            min: 0,
+            max: 25,
+            step: 1,
+            defaultValue: 18,
+            label: 'Pontuação mínima no Scorecard 5 Filtros (0 a 25)',
+            unitSuffix: '/25 pts'
+          },
+          {
+            key: 'send_conversion_event',
+            type: 'boolean',
+            defaultValue: true,
+            label: 'Disparar evento de conversão qualificada (Meta CAPI / GA4 / Google Ads)'
+          }
+        ],
+        unattended_lead_sla_alert: [
+          {
+            key: 'sla_minutes',
+            type: 'number',
+            min: 5,
+            max: 10080,
+            step: 1,
+            defaultValue: 30,
+            label: 'Prazo máximo sem 1º atendimento (minutos)',
+            unitSuffix: 'min'
+          },
+          {
+            key: 'escalate_priority',
+            type: 'boolean',
+            defaultValue: true,
+            label: 'Escalar prioridade do lead para Urgente ao exceder SLA'
+          }
+        ],
+        meeting_scheduled_workflow: [
+          {
+            key: 'auto_advance_stage',
+            type: 'boolean',
+            defaultValue: true,
+            label: 'Avançar oportunidade automaticamente para o estágio Reunião'
+          },
+          {
+            key: 'send_schedule_event',
+            type: 'boolean',
+            defaultValue: true,
+            label: 'Disparar evento de Agendamento quando consentido na LGPD'
+          }
+        ],
+        franchise_sold_workflow: [
+          {
+            key: 'send_offline_conversion',
+            type: 'boolean',
+            defaultValue: true,
+            label: 'Enviar conversões offline elegíveis (Meta Purchase, GA4 e Google Ads)'
+          },
+          {
+            key: 'currency',
+            type: 'select',
+            options: [
+              { value: 'BRL', label: 'Real Brasileiro (BRL)' },
+              { value: 'USD', label: 'Dólar Americano (USD)' },
+              { value: 'EUR', label: 'Euro (EUR)' }
+            ],
+            defaultValue: 'BRL',
+            label: 'Moeda das conversões'
+          }
+        ]
+      };
+
+      var CONFIG_KEY_LABELS = {
+        notify_admin: 'Notificação webhook',
+        auto_create_first_task: 'Criar 1ª tarefa',
+        first_task_due_minutes: 'Prazo 1ª tarefa',
+        min_score_for_high_priority: 'Score mín. alta prioridade',
+        min_scorecard_points: 'Scorecard mínimo',
+        send_conversion_event: 'Evento de conversão',
+        sla_minutes: 'Prazo de SLA',
+        escalate_priority: 'Escalar para urgente',
+        auto_advance_stage: 'Avançar para Reunião',
+        send_schedule_event: 'Evento de agendamento',
+        send_offline_conversion: 'Conversão offline',
+        currency: 'Moeda'
+      };
+
+      function triggerLabel(trigger) {
+        return TRIGGER_LABELS[trigger] || String(trigger || 'Evento interno').replace(/[._]/g, ' ');
+      }
+
+      function ruleCategoryLabel(ruleKey) {
+        return RULE_KEY_LABELS[ruleKey] || String(ruleKey || 'Automação').replace(/_/g, ' ');
+      }
+
+      function queueLabel(name) {
+        return QUEUE_LABELS[name] || String(name || 'Fila padrão');
+      }
+
+      function jobNameLabel(name) {
+        return JOB_NAME_LABELS[name] || String(name || 'Tarefa automática');
+      }
+
+      function jobStatusText(st) {
+        var meta = JOB_STATUS_META[st];
+        return meta ? meta.label : String(st || 'Desconhecido');
+      }
+
       function jobBadge(st) {
-        if (st === 'completed') return '<span class="ad-badge ad-badge-green">Concluído</span>';
-        if (st === 'active') return '<span class="ad-badge ad-badge-blue">Processando</span>';
-        if (st === 'pending_worker') return '<span class="ad-badge ad-badge-orange">Aguardando Worker</span>';
-        if (st === 'queued') return '<span class="ad-badge ad-badge-gray">Na fila</span>';
-        if (st === 'failed' || st === 'dlq') return '<span class="ad-badge ad-badge-red">' + KingAdmin.esc(st.toUpperCase()) + '</span>';
-        return '<span class="ad-badge ad-badge-gray">' + KingAdmin.esc(st) + '</span>';
+        var meta = JOB_STATUS_META[st] || { label: st || 'Desconhecido', badgeClass: 'ad-badge-gray' };
+        return '<span class="ad-badge ' + meta.badgeClass + '">' + KingAdmin.esc(meta.label) + '</span>';
+      }
+
+      function humanizeKey(key) {
+        if (CONFIG_KEY_LABELS[key]) return CONFIG_KEY_LABELS[key];
+        var clean = String(key || '').replace(/_/g, ' ');
+        return clean.charAt(0).toUpperCase() + clean.slice(1);
+      }
+
+      function formatConfigValue(ruleKey, key, value) {
+        if (typeof value === 'boolean') return value ? 'Sim' : 'Não';
+        var schemaList = RULE_CONFIG_SCHEMAS[ruleKey] || [];
+        var schema = schemaList.find(function (item) { return item.key === key; });
+        if (schema && schema.unitSuffix && value != null && value !== '') {
+          return String(value) + ' ' + schema.unitSuffix;
+        }
+        if (value == null || value === '') return '—';
+        if (typeof value === 'object') return 'Configurado';
+        return String(value);
+      }
+
+      function renderConfigChips(rule) {
+        var cfg = rule && rule.config && typeof rule.config === 'object' ? rule.config : {};
+        var keys = Object.keys(cfg);
+        if (!keys.length) {
+          return '<span class="ad-badge ad-badge-gray">Configuração padrão</span>';
+        }
+        return (
+          '<div class="ad-config-chips">' +
+          keys
+            .map(function (k) {
+              return (
+                '<span class="ad-config-chip">' +
+                '  <span>' + KingAdmin.esc(humanizeKey(k)) + ':</span> ' +
+                '  <strong>' + KingAdmin.esc(formatConfigValue(rule.rule_key, k, cfg[k])) + '</strong>' +
+                '</span>'
+              );
+            })
+            .join('') +
+          '</div>'
+        );
+      }
+
+      function renderGlobalError(err) {
+        var box = document.getElementById('ad-global-alert');
+        if (!box) return;
+        box.innerHTML =
+          '<div class="ad-alert ad-alert-error ad-alert-row">' +
+          '  <div><strong>Não foi possível carregar as automações:</strong> ' +
+          KingAdmin.esc((err && err.message) || 'Erro de conexão com o servidor.') +
+          '  </div>' +
+          '  <button type="button" id="retry-load-btn" class="ad-btn ad-btn-secondary ad-btn-sm">Tentar novamente</button>' +
+          '</div>';
+
+        var retryBtn = document.getElementById('retry-load-btn');
+        if (retryBtn) {
+          retryBtn.addEventListener('click', function () {
+            if (!state.authReady) {
+              bootstrapPage();
+            } else {
+              loadAutomations();
+            }
+          });
+        }
+      }
+
+      function clearGlobalError() {
+        var box = document.getElementById('ad-global-alert');
+        if (box) box.innerHTML = '';
+      }
+
+      function setLoadingState() {
+        document.getElementById('queue-metrics-grid').innerHTML =
+          '<div class="ad-kpi-card" style="grid-column:1/-1;"><div class="ad-loading-box">Carregando status das filas Redis/BullMQ e métricas do banco...</div></div>';
+        document.getElementById('rules-count-badge').textContent = 'Carregando...';
+        document.getElementById('rules-table-wrap').innerHTML =
+          '<div class="ad-loading-box">Carregando regras de automação...</div>';
+        document.getElementById('jobs-table-wrap').innerHTML =
+          '<div class="ad-loading-box">Carregando histórico de execuções...</div>';
+      }
+
+      function renderQueueMetrics(qm, rules, jobs) {
+        var grid = document.getElementById('queue-metrics-grid');
+        var cardsHtml = [];
+
+        var activeRules = rules.filter(function (r) { return Boolean(r.is_active); }).length;
+        var pausedRules = rules.length - activeRules;
+        var completedJobs = jobs.filter(function (j) { return j.status === 'completed'; }).length;
+        var pendingWorkerJobs = jobs.filter(function (j) { return j.status === 'pending_worker'; }).length;
+        var inQueueJobs = jobs.filter(function (j) {
+          return j.status === 'queued' || j.status === 'waiting' || j.status === 'active' || j.status === 'delayed';
+        }).length;
+        var failedJobs = jobs.filter(function (j) { return j.status === 'failed' || j.status === 'dlq'; }).length;
+
+        var isNotConfigured =
+          !qm ||
+          qm.configured === false ||
+          qm.status === 'not_configured';
+
+        var isConnected = Boolean(qm && (qm.connected === true || qm.available === true) && !isNotConfigured);
+
+        if (isNotConfigured) {
+          cardsHtml.push(
+            '<div class="ad-kpi-card ad-queue-fallback-card">' +
+            '  <div class="ad-queue-fallback-copy">' +
+            '    <div class="ad-kpi-label">Motor de Filas Redis / BullMQ</div>' +
+            '    <div class="ad-badge-row">' +
+            '      <span class="ad-badge ad-badge-gray">Não configurado</span>' +
+            '      <span class="ad-badge ad-badge-orange">Fallback Interno Ativo</span>' +
+            '    </div>' +
+            '    <div class="ad-kpi-value" style="font-size:1.55rem;margin-top:10px;color:#FCD34D;">Modo Interno via PostgreSQL</div>' +
+            '    <div class="ad-kpi-sub" style="color:#CBD5E1;margin-top:6px;line-height:1.5;">' +
+            '      A variável <code>REDIS_URL</code> não está configurada no servidor. Nenhuma métrica simulada de workers BullMQ é exibida. ' +
+            '      Novos jobs são persistidos na tabela de auditoria com status <strong>Aguardando Worker</strong>, enquanto a varredura de SLA executa diretamente pela API.' +
+            '    </div>' +
+            '  </div>' +
+            '  <div class="ad-actions-row">' +
+            '    <a href="' + KingAdmin.esc(KingAdmin.crmUrl('configuracoes.html')) + '" class="ad-btn ad-btn-secondary ad-btn-sm">Verificar Integrações →</a>' +
+            '  </div>' +
+            '</div>'
+          );
+        } else if (!isConnected) {
+          cardsHtml.push(
+            '<div class="ad-kpi-card ad-queue-fallback-card">' +
+            '  <div class="ad-queue-fallback-copy">' +
+            '    <div class="ad-kpi-label">Motor de Filas Redis / BullMQ</div>' +
+            '    <div class="ad-badge-row">' +
+            '      <span class="ad-badge ad-badge-blue">Configurado</span>' +
+            '      <span class="ad-badge ad-badge-red">Desconectado / Erro</span>' +
+            '    </div>' +
+            '    <div class="ad-kpi-value" style="font-size:1.55rem;margin-top:10px;color:#FCA5A5;">Conexão BullMQ Indisponível</div>' +
+            '    <div class="ad-kpi-sub" style="color:#FECACA;margin-top:6px;">' +
+            KingAdmin.esc(qm.error || 'O servidor Redis não respondeu à verificação das filas.') +
+            '    </div>' +
+            '  </div>' +
+            '  <div class="ad-actions-row">' +
+            '    <button type="button" id="queue-retry-btn" class="ad-btn ad-btn-secondary ad-btn-sm">Tentar novamente</button>' +
+            '  </div>' +
+            '</div>'
+          );
+        } else {
+          var qEntries = Object.entries(qm.queues || {});
+          if (!qEntries.length) {
+            cardsHtml.push(
+              '<div class="ad-kpi-card" style="grid-column:1/-1;">' +
+              '  <div class="ad-kpi-label">Filas Redis / BullMQ</div>' +
+              '  <div class="ad-badge-row"><span class="ad-badge ad-badge-green">Conectado</span></div>' +
+              '  <div class="ad-kpi-sub">Redis conectado, nenhuma fila registrada até o momento.</div>' +
+              '</div>'
+            );
+          } else {
+            qEntries.forEach(function (entry) {
+              var name = entry[0];
+              var c = entry[1] || {};
+              var waiting = Number(c.waiting || 0);
+              var active = Number(c.active || 0);
+              var completed = Number(c.completed || 0);
+              var failed = Number(c.failed || 0);
+              var delayed = Number(c.delayed || 0);
+              var isDlq = name === 'dlq' || name === 'dead-letter';
+              var badgeHtml = isDlq && (waiting + failed > 0)
+                ? '<span class="ad-badge ad-badge-red">Atenção DLQ</span>'
+                : '<span class="ad-badge ad-badge-green">Conectado</span>';
+
+              cardsHtml.push(
+                '<div class="ad-kpi-card">' +
+                '  <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">' +
+                '    <div class="ad-kpi-label">' + KingAdmin.esc(queueLabel(name)) + '</div>' +
+                badgeHtml +
+                '  </div>' +
+                '  <div class="ad-kpi-value">' + waiting + ' aguardando</div>' +
+                '  <div class="ad-kpi-sub">Em execução: ' + active + ' • Concluídos: ' + completed + ' • Com falha: ' + failed + ' • Agendados: ' + delayed + '</div>' +
+                '</div>'
+              );
+            });
+          }
+        }
+
+        // Resumo real persistido no banco de dados (PostgreSQL)
+        cardsHtml.push(
+          '<div class="ad-kpi-card">' +
+          '  <div class="ad-kpi-label">Regras Ativas (CRM)</div>' +
+          '  <div class="ad-kpi-value">' + activeRules + ' / ' + rules.length + '</div>' +
+          '  <div class="ad-kpi-sub">Pausadas: ' + pausedRules + '</div>' +
+          '</div>'
+        );
+        cardsHtml.push(
+          '<div class="ad-kpi-card">' +
+          '  <div class="ad-kpi-label">Jobs Registrados (Banco)</div>' +
+          '  <div class="ad-kpi-value">' + jobs.length + '</div>' +
+          '  <div class="ad-kpi-sub">Concluídos: ' + completedJobs + ' • Na fila/execução: ' + inQueueJobs + '</div>' +
+          '</div>'
+        );
+        cardsHtml.push(
+          '<div class="ad-kpi-card">' +
+          '  <div class="ad-kpi-label">Aguardando Worker</div>' +
+          '  <div class="ad-kpi-value" style="' + (pendingWorkerJobs > 0 ? 'color:#FCD34D;' : '') + '">' + pendingWorkerJobs + '</div>' +
+          '  <div class="ad-kpi-sub">Registros em fallback interno</div>' +
+          '</div>'
+        );
+        cardsHtml.push(
+          '<div class="ad-kpi-card">' +
+          '  <div class="ad-kpi-label">Falhas / DLQ</div>' +
+          '  <div class="ad-kpi-value" style="' + (failedJobs > 0 ? 'color:#FCA5A5;' : '') + '">' + failedJobs + '</div>' +
+          '  <div class="ad-kpi-sub">Elegíveis para reprocessamento</div>' +
+          '</div>'
+        );
+
+        grid.innerHTML = cardsHtml.join('');
+
+        var queueRetryBtn = document.getElementById('queue-retry-btn');
+        if (queueRetryBtn) {
+          queueRetryBtn.addEventListener('click', loadAutomations);
+        }
+      }
+
+      function renderRules(rules) {
+        var wrap = document.getElementById('rules-table-wrap');
+        var countBadge = document.getElementById('rules-count-badge');
+        var activeCount = rules.filter(function (r) { return Boolean(r.is_active); }).length;
+        countBadge.textContent = rules.length ? activeCount + ' ativas de ' + rules.length : '0 regras';
+
+        if (!rules.length) {
+          wrap.innerHTML =
+            '<div class="ad-empty-box">' +
+            '  <strong>Nenhuma regra de automação cadastrada.</strong>' +
+            '  <span>As regras padrão do CRM e do monitoramento de SLA são populadas pelas migrations estruturais do banco de dados.</span>' +
+            '</div>';
+          return;
+        }
+
+        wrap.innerHTML =
+          '<table class="ad-table"><thead><tr>' +
+          '<th>Regra</th><th>Gatilho</th><th>Descrição</th><th>Parâmetros</th><th>Status</th><th>Ações</th>' +
+          '</tr></thead><tbody>' +
+          rules
+            .map(function (r) {
+              var active = Boolean(r.is_active);
+              return (
+                '<tr>' +
+                '  <td class="ad-cell-wrap">' +
+                '    <strong>' + KingAdmin.esc(r.name) + '</strong>' +
+                '    <div style="font-size:0.76rem;color:#AEBBD0;margin-top:2px;">' + KingAdmin.esc(ruleCategoryLabel(r.rule_key)) + '</div>' +
+                '  </td>' +
+                '  <td><span class="ad-badge ad-badge-blue">' + KingAdmin.esc(triggerLabel(r.trigger_event)) + '</span></td>' +
+                '  <td class="ad-cell-wrap" style="font-size:0.83rem;color:#CBD5E1;">' + KingAdmin.esc(r.description || '—') + '</td>' +
+                '  <td>' + renderConfigChips(r) + '</td>' +
+                '  <td>' + (active ? '<span class="ad-badge ad-badge-green">Ativa</span>' : '<span class="ad-badge ad-badge-gray">Pausada</span>') + '</td>' +
+                '  <td>' +
+                '    <div class="ad-rule-actions">' +
+                '      <button type="button" class="ad-btn ad-btn-secondary ad-btn-sm edit-rule-btn" data-id="' + KingAdmin.esc(r.id) + '">Editar</button>' +
+                '      <button type="button" class="ad-btn ad-btn-secondary ad-btn-sm toggle-rule-btn" data-id="' + KingAdmin.esc(r.id) + '" data-next="' + (!active) + '">' + (active ? 'Pausar' : 'Ativar') + '</button>' +
+                '    </div>' +
+                '  </td>' +
+                '</tr>'
+              );
+            })
+            .join('') +
+          '</tbody></table>';
+
+        wrap.querySelectorAll('.edit-rule-btn').forEach(function (btn) {
+          btn.addEventListener('click', function () {
+            var rule = state.rules.find(function (x) { return String(x.id) === String(btn.dataset.id); });
+            if (rule) openRuleModal(rule);
+          });
+        });
+
+        wrap.querySelectorAll('.toggle-rule-btn').forEach(function (btn) {
+          btn.addEventListener('click', async function () {
+            var ruleId = btn.dataset.id;
+            var nextActive = btn.dataset.next === 'true';
+            var row = btn.closest('tr');
+            var editBtn = row ? row.querySelector('.edit-rule-btn') : null;
+            var originalLabel = btn.textContent;
+
+            btn.disabled = true;
+            btn.textContent = nextActive ? 'Ativando...' : 'Pausando...';
+            if (editBtn) editBtn.disabled = true;
+
+            try {
+              await KingAdmin.apiFetch('/api/admin/automations/rules/' + encodeURIComponent(ruleId), {
+                method: 'PATCH',
+                body: JSON.stringify({ is_active: nextActive })
+              });
+              KingAdmin.showToast(nextActive ? 'Regra ativada com sucesso.' : 'Regra pausada com sucesso.');
+              await loadAutomations();
+            } catch (err) {
+              KingAdmin.showToast(err.message || 'Erro ao atualizar regra.', true);
+            } finally {
+              if (document.body.contains(btn)) {
+                btn.disabled = false;
+                btn.textContent = originalLabel;
+              }
+              if (editBtn && document.body.contains(editBtn)) {
+                editBtn.disabled = false;
+              }
+            }
+          });
+        });
+      }
+
+      function renderJobs() {
+        var wrap = document.getElementById('jobs-table-wrap');
+        var queueFilter = document.getElementById('job-filter-queue').value;
+        var statusFilter = document.getElementById('job-filter-status').value;
+        var allJobs = state.jobs || [];
+
+        if (!allJobs.length) {
+          wrap.innerHTML =
+            '<div class="ad-empty-box">' +
+            '  <strong>Nenhum job registrado ainda.</strong>' +
+            '  <span>Os registros aparecem automaticamente quando novos leads entram pelo formulário, avançam no scorecard, agendam reuniões ou concluem vendas.</span>' +
+            '</div>';
+          return;
+        }
+
+        var filtered = allJobs.filter(function (j) {
+          if (queueFilter && j.queue_name !== queueFilter) return false;
+          if (statusFilter && j.status !== statusFilter) return false;
+          return true;
+        });
+
+        if (!filtered.length) {
+          wrap.innerHTML =
+            '<div class="ad-empty-box">' +
+            '  <strong>Nenhum job encontrado para os filtros selecionados.</strong>' +
+            '  <span>Ajuste a fila ou o status acima, ou limpe os filtros para visualizar os ' + allJobs.length + ' registros recentes.</span>' +
+            '  <button type="button" id="clear-job-filters-btn" class="ad-btn ad-btn-secondary ad-btn-sm">Limpar filtros</button>' +
+            '</div>';
+          var clearBtn = document.getElementById('clear-job-filters-btn');
+          if (clearBtn) {
+            clearBtn.addEventListener('click', function () {
+              document.getElementById('job-filter-queue').value = '';
+              document.getElementById('job-filter-status').value = '';
+              renderJobs();
+            });
+          }
+          return;
+        }
+
+        wrap.innerHTML =
+          '<table class="ad-table"><thead><tr>' +
+          '<th>Criado em</th><th>Fila</th><th>Job</th><th>Lead</th><th>Tentativas</th><th>Status</th><th>Detalhe / Erro</th><th>Ação</th>' +
+          '</tr></thead><tbody>' +
+          filtered
+            .map(function (j) {
+              var canRetry = j.status === 'failed' || j.status === 'dlq';
+              var payloadMeta = [];
+              if (j.payload && j.payload.platform) {
+                payloadMeta.push(PLATFORM_LABELS[j.payload.platform] || j.payload.platform);
+              }
+              if (j.payload && j.payload.event_name) {
+                payloadMeta.push(j.payload.event_name);
+              }
+              var leadHtml = '—';
+              if (j.lead && j.lead.id && j.lead.full_name) {
+                leadHtml =
+                  '<a class="ad-lead-link" href="' +
+                  KingAdmin.esc(KingAdmin.crmUrl('lead-detalhes.html?id=' + encodeURIComponent(j.lead.id))) +
+                  '">' +
+                  KingAdmin.esc(j.lead.full_name) +
+                  '</a>';
+              } else if (j.lead && j.lead.full_name) {
+                leadHtml = KingAdmin.esc(j.lead.full_name);
+              }
+
+              var detailText = j.error_message
+                ? j.error_message
+                : j.duration_ms != null
+                ? j.duration_ms + ' ms'
+                : '—';
+              var detailColor = j.error_message ? '#FCA5A5' : '#AEBBD0';
+
+              return (
+                '<tr>' +
+                '  <td style="white-space:nowrap;">' + KingAdmin.esc(KingAdmin.formatDate(j.created_at)) + '</td>' +
+                '  <td><span class="ad-badge ad-badge-gray">' + KingAdmin.esc(queueLabel(j.queue_name)) + '</span></td>' +
+                '  <td class="ad-cell-wrap">' +
+                '    <strong>' + KingAdmin.esc(jobNameLabel(j.job_name)) + '</strong>' +
+                (payloadMeta.length
+                  ? '<div style="font-size:0.75rem;color:#AEBBD0;margin-top:2px;">' + KingAdmin.esc(payloadMeta.join(' • ')) + '</div>'
+                  : '') +
+                '  </td>' +
+                '  <td>' + leadHtml + '</td>' +
+                '  <td>' + Number(j.attempts || 0) + '/' + Number(j.max_attempts || 5) + '</td>' +
+                '  <td>' + jobBadge(j.status) + '</td>' +
+                '  <td class="ad-cell-wrap" style="font-size:0.79rem;color:' + detailColor + ';">' + KingAdmin.esc(detailText) + '</td>' +
+                '  <td>' +
+                (canRetry
+                  ? '<button type="button" class="ad-btn ad-btn-secondary ad-btn-sm retry-job-btn" data-id="' + KingAdmin.esc(j.id) + '">Reprocessar</button>'
+                  : '—') +
+                '  </td>' +
+                '</tr>'
+              );
+            })
+            .join('') +
+          '</tbody></table>';
+
+        wrap.querySelectorAll('.retry-job-btn').forEach(function (btn) {
+          btn.addEventListener('click', async function () {
+            var jobId = btn.dataset.id;
+            var originalLabel = btn.textContent;
+            btn.disabled = true;
+            btn.textContent = 'Reprocessando...';
+            try {
+              var res = await KingAdmin.apiFetch('/api/admin/automations/jobs/' + encodeURIComponent(jobId) + '/retry', {
+                method: 'POST',
+                body: '{}'
+              });
+              var r = (res && res.result) || {};
+              if (r.queued) {
+                KingAdmin.showToast('Job reenviado para a fila BullMQ com sucesso.');
+              } else if (r.reason === 'redis_not_configured') {
+                KingAdmin.showToast('Reprocessamento registrado como "Aguardando Worker" (Redis não configurado).');
+              } else {
+                KingAdmin.showToast('Reprocessamento solicitado: ' + jobStatusText(r.status || 'pending_worker') + '.');
+              }
+              await loadAutomations();
+            } catch (err) {
+              KingAdmin.showToast(err.message || 'Erro ao reprocessar job.', true);
+            } finally {
+              if (document.body.contains(btn)) {
+                btn.disabled = false;
+                btn.textContent = originalLabel;
+              }
+            }
+          });
+        });
+      }
+
+      function buildRuleConfigFields(rule) {
+        var container = document.getElementById('edit-rule-config-fields');
+        var cfg = rule && rule.config && typeof rule.config === 'object' ? rule.config : {};
+        var schema = (RULE_CONFIG_SCHEMAS[rule.rule_key] || []).slice();
+        var knownKeys = {};
+        schema.forEach(function (f) { knownKeys[f.key] = true; });
+
+        Object.keys(cfg).forEach(function (k) {
+          if (knownKeys[k]) return;
+          var val = cfg[k];
+          if (typeof val === 'boolean') {
+            schema.push({ key: k, type: 'boolean', defaultValue: val, label: humanizeKey(k) });
+          } else if (typeof val === 'number') {
+            schema.push({ key: k, type: 'number', min: 0, step: 1, defaultValue: val, label: humanizeKey(k) });
+          } else {
+            schema.push({ key: k, type: 'text', defaultValue: val == null ? '' : String(val), label: humanizeKey(k) });
+          }
+        });
+
+        if (!schema.length) {
+          container.innerHTML =
+            '<p style="font-size:0.84rem;color:#AEBBD0;">Esta regra não possui parâmetros adicionais configuráveis além do status Ativa/Pausada.</p>';
+          return;
+        }
+
+        container.innerHTML = schema
+          .map(function (field, idx) {
+            var val = Object.prototype.hasOwnProperty.call(cfg, field.key) ? cfg[field.key] : field.defaultValue;
+            var inputId = 'rule-cfg-input-' + idx;
+
+            if (field.type === 'boolean') {
+              return (
+                '<div class="ad-field">' +
+                '  <label class="ad-check-row" for="' + inputId + '">' +
+                '    <input type="checkbox" id="' + inputId + '" data-cfg-key="' + KingAdmin.esc(field.key) + '" data-cfg-type="boolean" ' + (val ? 'checked' : '') + ' />' +
+                '    <span>' + KingAdmin.esc(field.label) + '</span>' +
+                '  </label>' +
+                '</div>'
+              );
+            }
+
+            if (field.type === 'select') {
+              var optsHtml = (field.options || [])
+                .map(function (opt) {
+                  var sel = String(val) === String(opt.value) ? ' selected' : '';
+                  return '<option value="' + KingAdmin.esc(opt.value) + '"' + sel + '>' + KingAdmin.esc(opt.label) + '</option>';
+                })
+                .join('');
+              return (
+                '<div class="ad-field">' +
+                '  <label for="' + inputId + '">' + KingAdmin.esc(field.label) + '</label>' +
+                '  <select id="' + inputId + '" class="ad-select" data-cfg-key="' + KingAdmin.esc(field.key) + '" data-cfg-type="select">' +
+                optsHtml +
+                '  </select>' +
+                '</div>'
+              );
+            }
+
+            if (field.type === 'number') {
+              var minAttr = field.min != null ? ' min="' + Number(field.min) + '"' : '';
+              var maxAttr = field.max != null ? ' max="' + Number(field.max) + '"' : '';
+              var stepAttr = field.step != null ? ' step="' + Number(field.step) + '"' : '';
+              return (
+                '<div class="ad-field">' +
+                '  <label for="' + inputId + '">' + KingAdmin.esc(field.label) + '</label>' +
+                '  <input type="number" id="' + inputId + '" class="ad-input" data-cfg-key="' + KingAdmin.esc(field.key) + '" data-cfg-type="number"' +
+                minAttr + maxAttr + stepAttr + ' value="' + KingAdmin.esc(val != null ? String(val) : '0') + '" required />' +
+                '</div>'
+              );
+            }
+
+            return (
+              '<div class="ad-field">' +
+              '  <label for="' + inputId + '">' + KingAdmin.esc(field.label) + '</label>' +
+              '  <input type="text" id="' + inputId + '" class="ad-input" data-cfg-key="' + KingAdmin.esc(field.key) + '" data-cfg-type="text" value="' + KingAdmin.esc(val != null ? String(val) : '') + '" />' +
+              '</div>'
+            );
+          })
+          .join('');
+      }
+
+      function openRuleModal(rule) {
+        state.editingRuleId = rule.id;
+        document.getElementById('edit-rule-id').value = rule.id;
+        document.getElementById('rule-modal-title').textContent = 'Editar Regra: ' + rule.name;
+        document.getElementById('rule-modal-meta').innerHTML =
+          '<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:6px;">' +
+          '  <span class="ad-badge ad-badge-blue">Gatilho: ' + KingAdmin.esc(triggerLabel(rule.trigger_event)) + '</span>' +
+          '  <span class="ad-badge ad-badge-gray">' + KingAdmin.esc(ruleCategoryLabel(rule.rule_key)) + '</span>' +
+          '</div>' +
+          '<div>' + KingAdmin.esc(rule.description || 'Sem descrição adicional.') + '</div>';
+
+        document.getElementById('edit-rule-active').checked = Boolean(rule.is_active);
+        buildRuleConfigFields(rule);
+        document.getElementById('rule-edit-modal').classList.add('open');
+      }
+
+      function closeRuleModal() {
+        if (state.savingModal) return;
+        state.editingRuleId = null;
+        document.getElementById('rule-edit-modal').classList.remove('open');
       }
 
       async function loadAutomations() {
+        var seq = ++state.loadSeq;
+        var refreshBtn = document.getElementById('refresh-auto-btn');
+        var prevLabel = refreshBtn.textContent;
+        refreshBtn.disabled = true;
+        refreshBtn.textContent = 'Atualizando...';
+        clearGlobalError();
+
+        if (!state.rules.length && !state.jobs.length && !state.queueMetrics) {
+          setLoadingState();
+        }
+
         try {
           var data = await KingAdmin.apiFetch('/api/admin/automations');
-          var qm = data.queue_metrics || {};
+          if (seq !== state.loadSeq) return;
 
-          if (!qm.available) {
-            document.getElementById('queue-metrics-grid').innerHTML =
-              '<div class="ad-kpi-card" style="grid-column:1/-1;"><div class="ad-kpi-label">Estado das Filas Redis / BullMQ</div><div class="ad-kpi-value" style="color:#F59E0B;">Indisponível / Não conectado</div><div class="ad-kpi-sub">' + KingAdmin.esc(qm.error || 'Redis não configurado ou offline.') + '</div></div>';
-          } else {
-            var qEntries = Object.entries(qm.queues || {});
-            document.getElementById('queue-metrics-grid').innerHTML = qEntries.map(function (entry) {
-              var name = entry[0];
-              var c = entry[1];
-              return (
-                '<div class="ad-kpi-card">' +
-                '  <div class="ad-kpi-label">Fila: ' + KingAdmin.esc(name) + '</div>' +
-                '  <div class="ad-kpi-value">' + (c.waiting || 0) + ' aguardando</div>' +
-                '  <div class="ad-kpi-sub">Ativos: ' + (c.active || 0) + ' • Concluídos: ' + (c.completed || 0) + ' • Falhas: ' + (c.failed || 0) + '</div>' +
-                '</div>'
-              );
-            }).join('');
-          }
+          state.rules = Array.isArray(data.rules) ? data.rules : [];
+          state.jobs = Array.isArray(data.jobs) ? data.jobs : [];
+          state.queueMetrics = data.queue_metrics || { configured: false, connected: false, queues: {} };
 
-          var rules = data.rules || [];
-          document.getElementById('rules-table-wrap').innerHTML = rules.length
-            ? '<table class="ad-table"><thead><tr><th>Regra</th><th>Gatilho</th><th>Descrição</th><th>Configuração</th><th>Status</th><th>Ação</th></tr></thead><tbody>' +
-              rules.map(function (r) {
-                return (
-                  '<tr>' +
-                  '  <td><strong>' + KingAdmin.esc(r.name) + '</strong><div style="font-size:0.75rem;color:#94A3B8;"><code>' + KingAdmin.esc(r.rule_key) + '</code></div></td>' +
-                  '  <td><code>' + KingAdmin.esc(r.trigger_event) + '</code></td>' +
-                  '  <td style="font-size:0.84rem;color:#CBD5E1;">' + KingAdmin.esc(r.description) + '</td>' +
-                  '  <td><code style="font-size:0.76rem;">' + KingAdmin.esc(JSON.stringify(r.config || {})) + '</code></td>' +
-                  '  <td>' + (r.is_active ? '<span class="ad-badge ad-badge-green">Ativa</span>' : '<span class="ad-badge ad-badge-gray">Pausada</span>') + '</td>' +
-                  '  <td><button type="button" class="ad-btn ad-btn-secondary ad-btn-sm toggle-rule-btn" data-id="' + KingAdmin.esc(r.id) + '" data-next="' + (!r.is_active) + '">' + (r.is_active ? 'Pausar' : 'Ativar') + '</button></td>' +
-                  '</tr>'
-                );
-              }).join('') + '</tbody></table>'
-            : '<p style="color:#94A3B8;">Nenhuma regra encontrada.</p>';
-
-          document.querySelectorAll('.toggle-rule-btn').forEach(function (btn) {
-            btn.addEventListener('click', async function () {
-              try {
-                await KingAdmin.apiFetch('/api/admin/automations/rules/' + encodeURIComponent(btn.dataset.id), {
-                  method: 'PATCH',
-                  body: JSON.stringify({ is_active: btn.dataset.next === 'true' })
-                });
-                KingAdmin.showToast('Regra atualizada.');
-                loadAutomations();
-              } catch (err) {
-                KingAdmin.showToast(err.message, true);
-              }
-            });
-          });
-
-          var jobs = data.jobs || [];
-          document.getElementById('jobs-table-wrap').innerHTML = jobs.length
-            ? '<table class="ad-table"><thead><tr><th>Criado em</th><th>Fila</th><th>Job</th><th>Lead</th><th>Tentativas</th><th>Status</th><th>Erro</th><th>Ação</th></tr></thead><tbody>' +
-              jobs.map(function (j) {
-                var canRetry = j.status === 'failed' || j.status === 'dlq';
-                return (
-                  '<tr>' +
-                  '  <td>' + KingAdmin.esc(KingAdmin.formatDate(j.created_at)) + '</td>' +
-                  '  <td><code>' + KingAdmin.esc(j.queue_name) + '</code></td>' +
-                  '  <td><strong>' + KingAdmin.esc(j.job_name) + '</strong></td>' +
-                  '  <td>' + KingAdmin.esc(j.lead ? j.lead.full_name : '—') + '</td>' +
-                  '  <td>' + (j.attempts || 0) + '/' + (j.max_attempts || 5) + '</td>' +
-                  '  <td>' + jobBadge(j.status) + '</td>' +
-                  '  <td style="font-size:0.78rem;color:#FCA5A5;">' + KingAdmin.esc(j.error_message || '—') + '</td>' +
-                  '  <td>' + (canRetry ? '<button type="button" class="ad-btn ad-btn-secondary ad-btn-sm retry-job-btn" data-id="' + KingAdmin.esc(j.id) + '">Reprocessar</button>' : '—') + '</td>' +
-                  '</tr>'
-                );
-              }).join('') + '</tbody></table>'
-            : '<p style="color:#94A3B8;">Nenhum job enfileirado ainda.</p>';
-
-          document.querySelectorAll('.retry-job-btn').forEach(function (btn) {
-            btn.addEventListener('click', async function () {
-              try {
-                await KingAdmin.apiFetch('/api/admin/automations/jobs/' + encodeURIComponent(btn.dataset.id) + '/retry', {
-                  method: 'POST',
-                  body: '{}'
-                });
-                KingAdmin.showToast('Job reenviado para fila.');
-                loadAutomations();
-              } catch (err) {
-                KingAdmin.showToast(err.message, true);
-              }
-            });
-          });
+          renderQueueMetrics(state.queueMetrics, state.rules, state.jobs);
+          renderRules(state.rules);
+          renderJobs();
         } catch (err) {
-          KingAdmin.renderErrorState('ad-global-alert', err);
+          if (seq !== state.loadSeq) return;
+          renderGlobalError(err);
+
+          if (!state.rules.length && !state.jobs.length && !state.queueMetrics) {
+            document.getElementById('queue-metrics-grid').innerHTML =
+              '<div class="ad-kpi-card" style="grid-column:1/-1;">' +
+              '  <div class="ad-kpi-label">Estado das Filas</div>' +
+              '  <div class="ad-kpi-sub" style="color:#FECACA;">Não foi possível carregar os indicadores. Use "Tentar novamente" no alerta acima.</div>' +
+              '</div>';
+            document.getElementById('rules-count-badge').textContent = 'Indisponível';
+            document.getElementById('rules-table-wrap').innerHTML =
+              '<div class="ad-empty-box"><span>Falha ao carregar regras de automação. Clique em <strong>Tentar novamente</strong> no banner de erro.</span></div>';
+            document.getElementById('jobs-table-wrap').innerHTML =
+              '<div class="ad-empty-box"><span>Falha ao carregar histórico de jobs. Clique em <strong>Tentar novamente</strong> no banner de erro.</span></div>';
+          }
+        } finally {
+          if (seq === state.loadSeq) {
+            refreshBtn.disabled = false;
+            refreshBtn.textContent = prevLabel;
+          }
         }
       }
 
       document.getElementById('refresh-auto-btn').addEventListener('click', loadAutomations);
+      document.getElementById('job-filter-queue').addEventListener('change', renderJobs);
+      document.getElementById('job-filter-status').addEventListener('change', renderJobs);
+
       document.getElementById('run-sla-btn').addEventListener('click', async function () {
+        if (state.slaInFlight) return;
+        var btn = this;
+        var originalLabel = btn.textContent;
+        var feedbackBox = document.getElementById('sla-feedback-box');
+        state.slaInFlight = true;
+        btn.disabled = true;
+        btn.textContent = 'Executando varredura...';
+
         try {
-          var res = await KingAdmin.apiFetch('/api/admin/automations/sla-scan', { method: 'POST', body: '{}' });
-          KingAdmin.showToast('Varredura SLA concluída: ' + (res.escalated || 0) + ' lead(s) escalado(s).');
-          loadAutomations();
+          var res = await KingAdmin.apiFetch('/api/admin/automations/sla-scan', {
+            method: 'POST',
+            body: '{}'
+          });
+          var checked = Number(res && res.checked != null ? res.checked : 0);
+          var alerted = Number(res && res.alerted != null ? res.alerted : (res && res.escalated != null ? res.escalated : 0));
+          var slaRule = state.rules.find(function (r) { return r.rule_key === 'unattended_lead_sla_alert'; });
+          var rulePaused = slaRule && !slaRule.is_active;
+
+          if (rulePaused && checked === 0 && alerted === 0) {
+            KingAdmin.showToast('Varredura SLA ignorada: a regra de alerta SLA está pausada.', true);
+            feedbackBox.innerHTML =
+              '<div class="ad-alert ad-alert-warn"><strong>Varredura SLA:</strong> A regra <em>Alerta de Lead Sem Atendimento</em> está pausada no momento. Ative a regra abaixo para habilitar alertas automáticos.</div>';
+          } else {
+            var msg = alerted > 0
+              ? 'Varredura SLA concluída: ' + checked + ' lead(s) verificado(s) e ' + alerted + ' alerta(s) gerado(s).'
+              : 'Varredura SLA concluída: ' + checked + ' lead(s) verificado(s), nenhum atraso de SLA encontrado.';
+            KingAdmin.showToast(msg);
+            feedbackBox.innerHTML =
+              '<div class="ad-alert ad-alert-info"><strong>Última varredura SLA:</strong> ' + KingAdmin.esc(msg) + '</div>';
+          }
+          await loadAutomations();
         } catch (err) {
-          KingAdmin.showToast(err.message, true);
+          KingAdmin.showToast(err.message || 'Erro ao executar varredura SLA.', true);
+        } finally {
+          state.slaInFlight = false;
+          btn.disabled = false;
+          btn.textContent = originalLabel;
         }
       });
 
-      document.addEventListener('DOMContentLoaded', async function () {
-        if (await KingAdmin.initProtectedPage('automacoes')) loadAutomations();
+      document.getElementById('rule-modal-close').addEventListener('click', closeRuleModal);
+      document.getElementById('rule-modal-cancel').addEventListener('click', closeRuleModal);
+      document.getElementById('rule-edit-modal').addEventListener('click', function (e) {
+        if (e.target === this) closeRuleModal();
       });
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && document.getElementById('rule-edit-modal').classList.contains('open')) {
+          closeRuleModal();
+        }
+      });
+
+      document.getElementById('rule-edit-form').addEventListener('submit', async function (e) {
+        e.preventDefault();
+        if (state.savingModal) return;
+
+        var ruleId = document.getElementById('edit-rule-id').value;
+        var isActive = document.getElementById('edit-rule-active').checked;
+        var rule = state.rules.find(function (x) { return String(x.id) === String(ruleId); });
+        var nextConfig = Object.assign({}, (rule && rule.config) || {});
+
+        var inputs = document.querySelectorAll('#edit-rule-config-fields [data-cfg-key]');
+        for (var i = 0; i < inputs.length; i += 1) {
+          var el = inputs[i];
+          var key = el.getAttribute('data-cfg-key');
+          var type = el.getAttribute('data-cfg-type');
+
+          if (type === 'boolean') {
+            nextConfig[key] = Boolean(el.checked);
+          } else if (type === 'number') {
+            var num = Number(el.value);
+            if (!Number.isFinite(num)) {
+              KingAdmin.showToast('Informe um número válido para "' + humanizeKey(key) + '".', true);
+              el.focus();
+              return;
+            }
+            if (el.min !== '' && num < Number(el.min)) {
+              KingAdmin.showToast('O valor mínimo para "' + humanizeKey(key) + '" é ' + el.min + '.', true);
+              el.focus();
+              return;
+            }
+            if (el.max !== '' && num > Number(el.max)) {
+              KingAdmin.showToast('O valor máximo para "' + humanizeKey(key) + '" é ' + el.max + '.', true);
+              el.focus();
+              return;
+            }
+            nextConfig[key] = num;
+          } else {
+            nextConfig[key] = String(el.value || '').trim();
+          }
+        }
+
+        var saveBtn = document.getElementById('rule-modal-save');
+        var cancelBtn = document.getElementById('rule-modal-cancel');
+        var closeBtn = document.getElementById('rule-modal-close');
+        var prevText = saveBtn.textContent;
+
+        state.savingModal = true;
+        saveBtn.disabled = true;
+        cancelBtn.disabled = true;
+        closeBtn.disabled = true;
+        saveBtn.textContent = 'Salvando...';
+
+        try {
+          await KingAdmin.apiFetch('/api/admin/automations/rules/' + encodeURIComponent(ruleId), {
+            method: 'PATCH',
+            body: JSON.stringify({
+              is_active: isActive,
+              config: nextConfig
+            })
+          });
+          KingAdmin.showToast('Regra de automação atualizada com sucesso.');
+          state.savingModal = false;
+          closeRuleModal();
+          await loadAutomations();
+        } catch (err) {
+          KingAdmin.showToast(err.message || 'Não foi possível salvar a regra.', true);
+        } finally {
+          state.savingModal = false;
+          saveBtn.disabled = false;
+          cancelBtn.disabled = false;
+          closeBtn.disabled = false;
+          saveBtn.textContent = prevText;
+        }
+      });
+
+      async function bootstrapPage() {
+        var user = await KingAdmin.initProtectedPage('automacoes');
+        if (user) {
+          state.authReady = true;
+          await loadAutomations();
+          return;
+        }
+        state.authReady = false;
+        renderGlobalError(new Error('Não foi possível validar sua sessão administrativa.'));
+        document.getElementById('queue-metrics-grid').innerHTML =
+          '<div class="ad-kpi-card" style="grid-column:1/-1;"><div class="ad-empty-box"><span>Sessão administrativa não inicializada.</span></div></div>';
+        document.getElementById('rules-count-badge').textContent = 'Aguardando';
+        document.getElementById('rules-table-wrap').innerHTML =
+          '<div class="ad-empty-box"><span>Faça login ou clique em <strong>Tentar novamente</strong> para carregar as regras.</span></div>';
+        document.getElementById('jobs-table-wrap').innerHTML =
+          '<div class="ad-empty-box"><span>Faça login ou clique em <strong>Tentar novamente</strong> para carregar o histórico de jobs.</span></div>';
+      }
+
+      document.addEventListener('DOMContentLoaded', bootstrapPage);
     })();
   </script>
 </body>

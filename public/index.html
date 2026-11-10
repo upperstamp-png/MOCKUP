@@ -329,26 +329,26 @@
                   <div class="ks-form-step active" data-step="1">
                     <div class="ks-field">
                       <label for="f_full_name">Nome completo *</label>
-                      <input type="text" id="f_full_name" name="full_name" required placeholder="Seu nome completo" autocomplete="name" />
+                      <input type="text" id="f_full_name" name="full_name" required maxlength="140" placeholder="Seu nome completo" autocomplete="name" />
                       <div class="ks-field-error">Informe seu nome completo.</div>
                     </div>
 
                     <div class="ks-field">
                       <label for="f_whatsapp">WhatsApp com DDD *</label>
-                      <input type="tel" id="f_whatsapp" name="whatsapp" required placeholder="(00) 00000-0000" autocomplete="tel" inputmode="tel" />
+                      <input type="tel" id="f_whatsapp" name="whatsapp" required maxlength="25" placeholder="(00) 00000-0000" autocomplete="tel" inputmode="tel" />
                       <div class="ks-field-error">Informe um WhatsApp válido com DDD.</div>
                     </div>
 
                     <div class="ks-field">
                       <label for="f_email">E-mail *</label>
-                      <input type="email" id="f_email" name="email" required placeholder="seuemail@dominio.com.br" autocomplete="email" inputmode="email" />
+                      <input type="email" id="f_email" name="email" required maxlength="160" placeholder="seuemail@dominio.com.br" autocomplete="email" inputmode="email" />
                       <div class="ks-field-error">Informe um e-mail válido.</div>
                     </div>
 
                     <div class="ks-field-row">
                       <div class="ks-field">
                         <label for="f_city">Cidade de interesse *</label>
-                        <input type="text" id="f_city" name="city" required placeholder="Ex.: Campinas" autocomplete="address-level2" />
+                        <input type="text" id="f_city" name="city" required maxlength="100" placeholder="Ex.: Campinas" autocomplete="address-level2" />
                         <div class="ks-field-error">Informe sua cidade.</div>
                       </div>
                       <div class="ks-field">
@@ -369,7 +369,7 @@
 
                     <div class="ks-field">
                       <label for="f_zip">CEP de referência (opcional)</label>
-                      <input type="text" id="f_zip" name="desired_zip_prefix" placeholder="Ex.: 13000-000" />
+                      <input type="text" id="f_zip" name="desired_zip_prefix" maxlength="15" inputmode="numeric" placeholder="Ex.: 13000-000" />
                     </div>
 
                     <button type="button" id="ks-next-step-btn" class="ks-btn ks-btn-primary" style="width:100%;">
@@ -405,7 +405,7 @@
 
                     <div class="ks-field">
                       <label for="f_current_profession">Profissão atual *</label>
-                      <input type="text" id="f_current_profession" name="current_profession" required placeholder="Ex.: Vendedor, Designer, Empresário" />
+                      <input type="text" id="f_current_profession" name="current_profession" required maxlength="120" placeholder="Ex.: Vendedor, Designer, Empresário" />
                       <div class="ks-field-error">Informe sua profissão atual.</div>
                     </div>
 
@@ -622,10 +622,10 @@
 
             <div id="produtos" class="ks-tabs-wrap">
               <div class="ks-tab-bar" role="tablist" aria-label="Especificações de produtos e modelo">
-                <button type="button" class="ks-tab-btn active" role="tab" aria-selected="true" data-tab="linhas">Linhas Oficiais</button>
-                <button type="button" class="ks-tab-btn" role="tab" aria-selected="false" data-tab="malhas">6 Malhas Dry</button>
-                <button type="button" class="ks-tab-btn" role="tab" aria-selected="false" data-tab="acabamentos">Acabamentos</button>
-                <button type="button" class="ks-tab-btn" role="tab" aria-selected="false" data-tab="triangular">Operação Triangular</button>
+                <button type="button" class="ks-tab-btn active" role="tab" aria-selected="true" aria-controls="tab-linhas" data-tab="linhas">Linhas Oficiais</button>
+                <button type="button" class="ks-tab-btn" role="tab" aria-selected="false" aria-controls="tab-malhas" data-tab="malhas">6 Malhas Dry</button>
+                <button type="button" class="ks-tab-btn" role="tab" aria-selected="false" aria-controls="tab-acabamentos" data-tab="acabamentos">Acabamentos</button>
+                <button type="button" class="ks-tab-btn" role="tab" aria-selected="false" aria-controls="tab-triangular" data-tab="triangular">Operação Triangular</button>
               </div>
 
               <div class="ks-tab-panel active" id="tab-linhas" role="tabpanel">
@@ -660,7 +660,7 @@
                 <ul>
                   <li>Exige CNPJ próprio como <strong>ME ou SLU no Simples Nacional</strong> com Inscrição Estadual ativa.</li>
                   <li>Emissão de NF-e para remessa direta da fábrica ao cliente final sem trânsito de estoque em casa.</li>
-                  <li>Split de pagamentos transparente e cobrança recorrente sobre vendas (ref. 5% royalties + 2% fundo mkt).</li>
+                  <li>Regras comerciais, taxas operacionais e fluxo financeiro apresentados com total transparência na Circular de Oferta de Franquia (COF).</li>
                 </ul>
               </div>
             </div>
@@ -834,7 +834,7 @@
               <div>
                 <span class="ks-label">CONTROLE DE PRODUÇÃO</span>
                 <h3>Fluxo PCP &amp; Operação Triangular</h3>
-                <p>Conferência pré-calandra de arquivos e grade de tamanhos, Split automático e despacho direto de São Paulo ao destino final.</p>
+                <p>Conferência pré-calandra de arquivos e grade de tamanhos, histórico financeiro do pedido e despacho direto de São Paulo ao destino final.</p>
               </div>
             </article>
 
@@ -971,7 +971,7 @@
         <div class="ks-lp-wrap ks-split">
           <div class="ks-stack">
             <p class="ks-eyebrow">10 / Ecossistema King Sports</p>
-            <h2 class="ks-display ks-h-lg" style="font-size:clamp(42px,5.6vw,80px);">
+            <h2 class="ks-display ks-h-lg" style="font-size:clamp(32px,5.6vw,80px);">
               Leve a estrutura industrial da King Sports para a sua cidade.
             </h2>
             <p class="ks-lead">

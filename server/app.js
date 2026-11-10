@@ -43,43 +43,176 @@ const DEFAULT_PORTAL_API_URL = 'http://127.0.0.1:4000';
 const DEFAULT_HUB_WEB_URL = 'http://127.0.0.1:3333';
 const UPSTREAM_TIMEOUT_MS = 30000;
 
-function resolveUpstreamTarget(rawUrl, { portalApiUrl, hubWebUrl }) {
-  const safeUrl = rawUrl || '/';
-  const qIndex = safeUrl.indexOf('?');
-  const pathname = qIndex === -1 ? safeUrl : safeUrl.slice(0, qIndex);
-  const query = qIndex === -1 ? '' : safeUrl.slice(qIndex);
+function normalizeHostToken(value) {
+  const raw = String(value || '').trim().toLowerCase();
+  if (!raw) return '';
+  if (raw.startsWith('[')) {
+    const endIdx = raw.indexOf(']');
+    return endIdx !== -1 ? raw.slice(0, endIdx + 1) : raw;
+  }
+  return raw.split(':')[0].trim();
+}
 
-  if (pathname === '/api/v1' || pathname.startsWith('/api/v1/')) {
-    return {
-      upstreamBase: portalApiUrl,
-      targetPath: safeUrl,
-      name: 'portal-api'
-    };
+function extractRequestHostname(req) {
+  const raw = String(req?.headers?.['x-forwarded-host'] || req?.headers?.host || '')
+    .split(',')[0]
+    .trim();
+  return normalizeHostToken(raw);
+}
+
+function parseHostAliases(rawAliases) {
+  return String(rawAliases || '')
+    .split(',')
+    .map((item) => normalizeHostToken(item))
+    .filter(Boolean);
+}
+
+function resolveRequestDomainKind(req, appEnv = env) {
+  const hostname = extractRequestHostname(req);
+  if (!hostname) {
+    return 'unified';
   }
 
-  if (pathname === '/hub' || pathname.startsWith('/hub/')) {
-    return {
-      upstreamBase: hubWebUrl,
-      targetPath: safeUrl,
-      name: 'hub-web'
-    };
-  }
-
-  // Fallback de compatibilidade para assets estáticos e rotas legadas do HUB/Studio 3D
+  const crmHost = normalizeHostToken(appEnv?.CRM_HOST);
   if (
+    (crmHost && hostname === crmHost) ||
+    hostname === 'crm.kingsports.com.br' ||
+    hostname === 'crm.localhost' ||
+    hostname.startsWith('crm.')
+  ) {
+    return 'crm';
+  }
+
+  const hubHost = normalizeHostToken(appEnv?.HUB_HOST);
+  if (
+    (hubHost && hostname === hubHost) ||
+    hostname === 'app.kingsports.com.br' ||
+    hostname === 'app.localhost' ||
+    hostname === 'hub.localhost' ||
+    hostname.startsWith('app.') ||
+    hostname.startsWith('hub.')
+  ) {
+    return 'hub';
+  }
+
+  const lpHost = normalizeHostToken(appEnv?.LP_HOST);
+  const lpAliases = parseHostAliases(appEnv?.LP_HOST_ALIASES);
+  if (
+    (lpHost && hostname === lpHost) ||
+    lpAliases.includes(hostname) ||
+    hostname === 'lp.kinsports.com.br' ||
+    hostname === 'lp.kingsports.com.br' ||
+    hostname === 'lp.localhost' ||
+    hostname.startsWith('lp.')
+  ) {
+    return 'lp';
+  }
+
+  return 'unified';
+}
+
+function stripHubPrefix(pathname) {
+  if (pathname === '/hub') return '/';
+  if (pathname.startsWith('/hub/')) {
+    const stripped = pathname.slice(4);
+    return stripped || '/';
+  }
+  return pathname;
+}
+
+function isUnifiedUnprefixedHubPath(pathname) {
+  return (
+    pathname === '/login' ||
+    pathname.startsWith('/login/') ||
+    pathname === '/studio' ||
+    pathname.startsWith('/studio/') ||
+    pathname === '/universidade' ||
+    pathname.startsWith('/universidade/') ||
+    pathname === '/quotes' ||
+    pathname.startsWith('/quotes/') ||
+    pathname === '/crm' ||
+    pathname.startsWith('/crm/') ||
+    pathname === '/history' ||
+    pathname.startsWith('/history/') ||
+    pathname === '/settings' ||
+    pathname.startsWith('/settings/') ||
+    pathname === '/_next' ||
+    pathname.startsWith('/_next/') ||
     pathname === '/king-sports' ||
     pathname.startsWith('/king-sports/') ||
     pathname === '/textures' ||
     pathname.startsWith('/textures/') ||
     pathname === '/api/textures' ||
     pathname.startsWith('/api/textures/') ||
-    /^\/assets\/(?:MOCKUP_MULTIPLAY|[a-z0-9_]+_mask)\.png$/i.test(pathname) ||
-    /^\/videos\/(?:banca-demo|setor-\d+)\.mp4$/i.test(pathname)
-  ) {
+    /^\/assets\/(?:MOCKUP_MULTIPLAY|[a-z0-9_-]+_mask)\.png$/i.test(pathname) ||
+    pathname === '/videos' ||
+    pathname.startsWith('/videos/')
+  );
+}
+
+function resolveUpstreamTarget(reqOrUrl, { portalApiUrl, hubWebUrl, appEnv = env }) {
+  const isStringInput = typeof reqOrUrl === 'string';
+  const safeUrl = (isStringInput ? reqOrUrl : reqOrUrl?.originalUrl || reqOrUrl?.url) || '/';
+  const domainKind = isStringInput
+    ? 'unified'
+    : reqOrUrl?.domainKind || resolveRequestDomainKind(reqOrUrl, appEnv);
+  const method = isStringInput ? 'GET' : String(reqOrUrl?.method || 'GET').toUpperCase();
+
+  const qIndex = safeUrl.indexOf('?');
+  const pathname = qIndex === -1 ? safeUrl : safeUrl.slice(0, qIndex);
+  const query = qIndex === -1 ? '' : safeUrl.slice(qIndex);
+
+  if (domainKind === 'crm' || domainKind === 'lp') {
+    return null;
+  }
+
+  if (domainKind === 'hub') {
+    if (pathname === '/api/health' && (method === 'GET' || method === 'HEAD')) {
+      return null;
+    }
+
+    if (pathname === '/api/v1' || pathname.startsWith('/api/v1/')) {
+      return {
+        upstreamBase: portalApiUrl,
+        targetPath: safeUrl,
+        name: 'portal-api',
+        domainKind
+      };
+    }
+
     return {
       upstreamBase: hubWebUrl,
-      targetPath: `/hub${pathname}${query}`,
-      name: 'hub-web'
+      targetPath: `${stripHubPrefix(pathname)}${query}`,
+      name: 'hub-web',
+      domainKind
+    };
+  }
+
+  if (pathname === '/api/v1' || pathname.startsWith('/api/v1/')) {
+    return {
+      upstreamBase: portalApiUrl,
+      targetPath: safeUrl,
+      name: 'portal-api',
+      domainKind
+    };
+  }
+
+  if (pathname === '/hub' || pathname.startsWith('/hub/')) {
+    return {
+      upstreamBase: hubWebUrl,
+      targetPath: `${stripHubPrefix(pathname)}${query}`,
+      name: 'hub-web',
+      domainKind
+    };
+  }
+
+  // Fallback de compatibilidade para rotas Next sem prefixo e assets do HUB/Studio 3D no modo unificado
+  if (isUnifiedUnprefixedHubPath(pathname)) {
+    return {
+      upstreamBase: hubWebUrl,
+      targetPath: safeUrl,
+      name: 'hub-web',
+      domainKind
     };
   }
 
@@ -114,11 +247,12 @@ function buildProxyHeaders(req, upstreamUrl, isHttps, isUpgrade) {
   return headers;
 }
 
-function createUpstreamProxyMiddleware({ portalApiUrl, hubWebUrl }) {
+function createUpstreamProxyMiddleware({ portalApiUrl, hubWebUrl, appEnv = env }) {
   return function upstreamProxyMiddleware(req, res, next) {
-    const target = resolveUpstreamTarget(req.originalUrl || req.url, {
+    const target = resolveUpstreamTarget(req, {
       portalApiUrl,
-      hubWebUrl
+      hubWebUrl,
+      appEnv
     });
     if (!target) {
       return next();
@@ -189,6 +323,9 @@ function createUpstreamProxyMiddleware({ portalApiUrl, hubWebUrl }) {
         if (Array.isArray(proxyRes.headers['set-cookie'])) {
           outHeaders['set-cookie'] = proxyRes.headers['set-cookie'];
         }
+        if (target.domainKind === 'hub') {
+          outHeaders['x-robots-tag'] = 'noindex, nofollow, noarchive';
+        }
         delete outHeaders['transfer-encoding'];
         delete outHeaders.connection;
         delete outHeaders['keep-alive'];
@@ -223,9 +360,9 @@ function createUpstreamProxyMiddleware({ portalApiUrl, hubWebUrl }) {
   };
 }
 
-function attachWebSocketProxy(server, { portalApiUrl, hubWebUrl }) {
+function attachWebSocketProxy(server, { portalApiUrl, hubWebUrl, appEnv = env }) {
   server.on('upgrade', (req, socket, head) => {
-    const target = resolveUpstreamTarget(req.url, { portalApiUrl, hubWebUrl });
+    const target = resolveUpstreamTarget(req, { portalApiUrl, hubWebUrl, appEnv });
     if (!target) {
       socket.destroy();
       return;
@@ -285,6 +422,12 @@ function attachWebSocketProxy(server, { portalApiUrl, hubWebUrl }) {
       socket.on('error', () => {
         if (!proxySocket.destroyed) proxySocket.destroy();
       });
+      proxySocket.on('close', () => {
+        if (!socket.destroyed) socket.destroy();
+      });
+      socket.on('close', () => {
+        if (!proxySocket.destroyed) proxySocket.destroy();
+      });
     });
 
     proxyReq.on('response', (proxyRes) => {
@@ -314,6 +457,13 @@ function attachWebSocketProxy(server, { portalApiUrl, hubWebUrl }) {
   });
 }
 
+function sendNotFound(req, res) {
+  if (req.path === '/api' || req.path.startsWith('/api/')) {
+    return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Endpoint não encontrado.' } });
+  }
+  return res.status(404).type('text/plain').send('Not Found');
+}
+
 function createApp(overrides = {}) {
   const app = express();
   const appEnv = overrides.env || env;
@@ -325,8 +475,18 @@ function createApp(overrides = {}) {
   app.set('trust proxy', appEnv.TRUST_PROXY);
   app.disable('x-powered-by');
 
+  // Classificação host-aware (lp / crm / hub / unified) + noindex obrigatório em CRM e HUB
+  app.use((req, res, next) => {
+    const domainKind = resolveRequestDomainKind(req, appEnv);
+    req.domainKind = domainKind;
+    if (domainKind === 'crm' || domainKind === 'hub') {
+      res.set('X-Robots-Tag', 'noindex, nofollow, noarchive');
+    }
+    next();
+  });
+
   // Reverse proxy de streaming montado ANTES de Helmet e dos body parsers para preservar streams e cookies
-  app.use(createUpstreamProxyMiddleware({ portalApiUrl, hubWebUrl }));
+  app.use(createUpstreamProxyMiddleware({ portalApiUrl, hubWebUrl, appEnv }));
 
   app.use(createSecurityHeadersMiddleware(appEnv));
   app.use(express.json({ limit: '2mb' }));
@@ -336,6 +496,75 @@ function createApp(overrides = {}) {
   app.use('/api', (_req, res, next) => {
     res.set('X-Robots-Tag', 'noindex, nofollow, noarchive');
     next();
+  });
+
+  // Isolamento explícito de rotas por subdomínio antes dos roteadores Express
+  app.use((req, res, next) => {
+    const kind = req.domainKind || 'unified';
+    const p = req.path || '/';
+
+    if (kind === 'crm') {
+      const isAllowedPublicConfig =
+        p === '/api/public/config' && (req.method === 'GET' || req.method === 'HEAD');
+      if (
+        p === '/hub' ||
+        p.startsWith('/hub/') ||
+        p === '/api/v1' ||
+        p.startsWith('/api/v1/') ||
+        p === '/studio' ||
+        p.startsWith('/studio/') ||
+        p === '/universidade' ||
+        p.startsWith('/universidade/') ||
+        ((p === '/api/public' || p.startsWith('/api/public/')) && !isAllowedPublicConfig)
+      ) {
+        return sendNotFound(req, res);
+      }
+    } else if (kind === 'lp') {
+      if (p === '/portal' || p === '/portal/') {
+        const rawHost = String(req.headers['x-forwarded-host'] || req.headers.host || '')
+          .split(',')[0]
+          .trim();
+        const hostname = extractRequestHostname(req);
+        let hubTarget = '';
+        if (hostname && hostname.endsWith('.localhost')) {
+          const proto =
+            String(req.headers['x-forwarded-proto'] || req.protocol || 'http')
+              .split(',')[0]
+              .trim() || 'http';
+          const port = rawHost.includes(':') ? rawHost.slice(rawHost.indexOf(':')) : '';
+          hubTarget = `${proto}://app.localhost${port}`;
+        } else {
+          hubTarget =
+            String(appEnv.HUB_URL || '').trim() ||
+            `https://${String(appEnv.HUB_HOST || 'app.kingsports.com.br').trim()}`;
+        }
+        return res.redirect(302, hubTarget);
+      }
+      if (
+        p === '/admin' ||
+        p.startsWith('/admin/') ||
+        p === '/api/admin' ||
+        p.startsWith('/api/admin/') ||
+        p === '/api/v1' ||
+        p.startsWith('/api/v1/') ||
+        p === '/api/textures' ||
+        p.startsWith('/api/textures/') ||
+        p === '/studio' ||
+        p.startsWith('/studio/') ||
+        p === '/universidade' ||
+        p.startsWith('/universidade/') ||
+        p === '/hub' ||
+        p.startsWith('/hub/')
+      ) {
+        return sendNotFound(req, res);
+      }
+    } else if (kind === 'hub') {
+      if (p !== '/api/health') {
+        return sendNotFound(req, res);
+      }
+    }
+
+    return next();
   });
 
   // Repos (injetáveis para testes automatizados)
@@ -466,21 +695,72 @@ function createApp(overrides = {}) {
   // Diretórios estáticos e Blog SSR + SEO + GEO (llms.txt, robots.txt, sitemap.xml)
   const publicDir = path.resolve(process.cwd(), 'public');
   const adminDir = path.resolve(process.cwd(), 'admin');
+  const adminAssetsDir = path.join(adminDir, 'assets');
+  const publicAssetsDir = path.join(publicDir, 'assets');
   const seoHtmlService = overrides.seoHtmlService || createSeoHtmlService({ publicDir, env: appEnv });
 
-  app.use('/', createBlogPublicRoutes({ blogService, seoHtmlService, env: appEnv }));
+  const blogPublicRouter = createBlogPublicRoutes({ blogService, seoHtmlService, env: appEnv });
+  const adminStatic = express.static(adminDir, { index: 'login.html', maxAge: '5m' });
+  const adminStaticNoIndex = express.static(adminDir, { index: false, maxAge: '5m' });
+  const adminAssetsStatic = express.static(adminAssetsDir, { maxAge: '5m' });
+  const publicAssetsStatic = express.static(publicAssetsDir, { maxAge: '1h' });
+  const publicStatic = express.static(publicDir, { index: 'index.html', maxAge: '1h' });
 
-  app.use('/admin', (_req, res, next) => {
-    res.set('X-Robots-Tag', 'noindex, nofollow, noarchive');
-    next();
+  // Subdomínio CRM Expansão (crm.kingsports.com.br)
+  app.use((req, res, next) => {
+    if (req.domainKind !== 'crm') return next();
+    if ((req.method === 'GET' || req.method === 'HEAD') && req.path === '/') {
+      return res.sendFile(path.join(adminDir, 'login.html'));
+    }
+    if ((req.method === 'GET' || req.method === 'HEAD') && req.path === '/favicon.ico') {
+      return res.sendFile(path.join(publicDir, 'favicon.ico'));
+    }
+    return next();
   });
-  app.use('/admin', express.static(adminDir, { index: 'login.html', maxAge: '5m' }));
-  app.use('/', express.static(publicDir, { index: 'index.html', maxAge: '1h' }));
+  app.use('/admin/assets', (req, res, next) => {
+    if (req.domainKind !== 'crm') return next();
+    return adminAssetsStatic(req, res, next);
+  });
+  app.use('/assets', (req, res, next) => {
+    if (req.domainKind !== 'crm') return next();
+    return adminAssetsStatic(req, res, (err) => {
+      if (err) return next(err);
+      return publicAssetsStatic(req, res, next);
+    });
+  });
+  app.use('/', (req, res, next) => {
+    if (req.domainKind !== 'crm') return next();
+    return adminStaticNoIndex(req, res, next);
+  });
 
-  // Fallback 404 para APIs
+  // Landing + Blog SSR + SEO + GEO (lp.* e modo unificado localhost/dev/test)
+  app.use('/', (req, res, next) => {
+    if (req.domainKind !== 'lp' && req.domainKind !== 'unified') return next();
+    return blogPublicRouter(req, res, next);
+  });
+
+  // CRM Expansão em /admin/* no modo unificado (localhost/dev/test)
+  app.use('/admin', (req, res, next) => {
+    if (req.domainKind !== 'unified') return next();
+    res.set('X-Robots-Tag', 'noindex, nofollow, noarchive');
+    return adminStatic(req, res, next);
+  });
+  app.use('/assets', (req, res, next) => {
+    if (req.domainKind !== 'unified') return next();
+    return adminAssetsStatic(req, res, next);
+  });
+
+  app.use('/', (req, res, next) => {
+    if (req.domainKind !== 'lp' && req.domainKind !== 'unified') return next();
+    return publicStatic(req, res, next);
+  });
+
+  // Fallback 404 para APIs e demais rotas
   app.use('/api/*', (_req, res) => {
     res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Endpoint não encontrado.' } });
   });
+
+  app.use((req, res) => sendNotFound(req, res));
 
   app.use(errorHandler);
 
@@ -499,12 +779,15 @@ if (require.main === module) {
       port: env.PORT,
       node_env: env.NODE_ENV,
       app_url: env.APP_URL,
+      lp_host: env.LP_HOST,
+      crm_host: env.CRM_HOST,
+      hub_host: env.HUB_HOST,
       portal_api_upstream: portalApiUrl,
       hub_web_upstream: hubWebUrl
     });
   });
 
-  attachWebSocketProxy(server, { portalApiUrl, hubWebUrl });
+  attachWebSocketProxy(server, { portalApiUrl, hubWebUrl, appEnv: env });
 
   async function shutdown(signal) {
     logger.info('Shutting down HTTP server', { signal });
@@ -520,4 +803,9 @@ if (require.main === module) {
   process.on('SIGINT', () => shutdown('SIGINT'));
 }
 
-module.exports = { createApp };
+module.exports = {
+  createApp,
+  resolveRequestDomainKind,
+  resolveUpstreamTarget,
+  attachWebSocketProxy
+};

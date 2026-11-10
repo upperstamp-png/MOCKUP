@@ -99,6 +99,22 @@ const EVENT_COLOR_DOT: Record<ScheduleEventItem['color_tag'], string> = {
   slate: 'bg-slate-400',
 };
 
+const TASK_TYPE_LABELS: Record<string, string> = {
+  contato: 'Contato',
+  reuniao: 'Reunião',
+  follow_up: 'Follow-up',
+  vencimento: 'Vencimento',
+  aprovacao_esperada: 'Aprovação esperada',
+  entrega: 'Entrega',
+  banca: 'Banca',
+};
+
+function toDateTimeLocalValue(date: Date): string {
+  if (Number.isNaN(date.getTime())) return '';
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
 export function MyDayTab({ me, onNavigate }: MyDayTabProps) {
   const [period, setPeriod] = useState<string>('month');
   const [data, setData] = useState<MyDayResponse | null>(null);
@@ -110,10 +126,9 @@ export function MyDayTab({ me, onNavigate }: MyDayTabProps) {
   const [taskModalOpen, setTaskModalOpen] = useState(false);
   const [taskTitle, setTaskTitle] = useState('');
   const [taskType, setTaskType] = useState<'contato' | 'reuniao' | 'follow_up' | 'vencimento' | 'aprovacao_esperada' | 'entrega'>('follow_up');
-  const [taskDueAt, setTaskDueAt] = useState(() => {
-    const d = new Date(Date.now() + 3600_000 * 4);
-    return d.toISOString().slice(0, 16);
-  });
+  const [taskDueAt, setTaskDueAt] = useState(() =>
+    toDateTimeLocalValue(new Date(Date.now() + 3600_000 * 4))
+  );
   const [taskAssignedTo, setTaskAssignedTo] = useState<string>(me.user.id);
   const [taskPriority, setTaskPriority] = useState<'low' | 'normal' | 'high' | 'urgent'>('normal');
   const [taskDesc, setTaskDesc] = useState('');
@@ -124,6 +139,8 @@ export function MyDayTab({ me, onNavigate }: MyDayTabProps) {
   const [rescheduleTask, setRescheduleTask] = useState<MyDayResponse['agenda'][number] | null>(null);
   const [rescheduleDue, setRescheduleDue] = useState('');
   const [rescheduleAssignee, setRescheduleAssignee] = useState('');
+  const [savingReschedule, setSavingReschedule] = useState(false);
+  const [rescheduleError, setRescheduleError] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -148,6 +165,11 @@ export function MyDayTab({ me, onNavigate }: MyDayTabProps) {
 
   const handleCreateTask = async (e: React.FormEvent) => {
     e.preventDefault();
+    const dueDt = new Date(taskDueAt);
+    if (!taskDueAt || Number.isNaN(dueDt.getTime())) {
+      setTaskError('Informe uma data/hora válida para o agendamento.');
+      return;
+    }
     setSubmittingTask(true);
     setTaskError(null);
     try {
@@ -157,7 +179,7 @@ export function MyDayTab({ me, onNavigate }: MyDayTabProps) {
           taskType,
           title: taskTitle.trim(),
           description: taskDesc.trim() || null,
-          dueAt: new Date(taskDueAt).toISOString(),
+          dueAt: dueDt.toISOString(),
           assignedTo: taskAssignedTo || me.user.id,
           priority: taskPriority,
         }),
@@ -188,18 +210,33 @@ export function MyDayTab({ me, onNavigate }: MyDayTabProps) {
   const handleSaveReschedule = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!rescheduleTask) return;
+    let dueIso: string | undefined;
+    if (rescheduleDue) {
+      const parsed = new Date(rescheduleDue);
+      if (Number.isNaN(parsed.getTime())) {
+        setRescheduleError('Informe uma data/hora válida.');
+        return;
+      }
+      dueIso = parsed.toISOString();
+    }
+    setSavingReschedule(true);
+    setRescheduleError(null);
     try {
       await portalFetch(`/crm/tasks/${rescheduleTask.id}`, {
         method: 'PATCH',
         body: JSON.stringify({
-          dueAt: rescheduleDue ? new Date(rescheduleDue).toISOString() : undefined,
+          dueAt: dueIso,
           assignedTo: rescheduleAssignee || undefined,
         }),
       });
       setRescheduleTask(null);
       await loadData();
     } catch (err) {
-      setError(err instanceof PortalApiError ? err.message : 'Erro ao reagendar atividade.');
+      setRescheduleError(
+        err instanceof PortalApiError ? err.message : 'Erro ao reagendar atividade.'
+      );
+    } finally {
+      setSavingReschedule(false);
     }
   };
 
@@ -839,7 +876,9 @@ export function MyDayTab({ me, onNavigate }: MyDayTabProps) {
                     <div key={task.id} className="rounded-2xl apple-glass-well p-3.5 space-y-2">
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0">
-                          <span className="text-[10px] uppercase font-bold text-blue-300">{task.task_type.replace(/_/g, ' ')}</span>
+                          <span className="text-[10px] uppercase font-bold text-blue-300">
+                            {TASK_TYPE_LABELS[task.task_type] || task.task_type.replace(/_/g, ' ')}
+                          </span>
                           <p className="text-xs font-bold text-wise-ink">{task.title}</p>
                         </div>
                         <span className="text-[11px] text-wise-mute shrink-0 flex items-center gap-1">
@@ -865,8 +904,9 @@ export function MyDayTab({ me, onNavigate }: MyDayTabProps) {
                             type="button"
                             onClick={() => {
                               setRescheduleTask(task);
-                              setRescheduleDue(new Date(task.due_at).toISOString().slice(0, 16));
+                              setRescheduleDue(toDateTimeLocalValue(new Date(task.due_at)));
                               setRescheduleAssignee(me.user.id);
+                              setRescheduleError(null);
                             }}
                             className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/8 hover:bg-white/15 border border-white/12 text-wise-body text-[11px] font-semibold"
                           >
@@ -1162,10 +1202,18 @@ export function MyDayTab({ me, onNavigate }: MyDayTabProps) {
         open={Boolean(rescheduleTask)}
         title="Reagendar ou reatribuir tarefa"
         subtitle={rescheduleTask?.title}
-        onClose={() => setRescheduleTask(null)}
+        onClose={() => {
+          setRescheduleTask(null);
+          setRescheduleError(null);
+        }}
         maxWidthClass="max-w-md"
       >
         <form onSubmit={handleSaveReschedule} className="space-y-4">
+          {rescheduleError ? (
+            <div className="rounded-xl bg-rose-500/15 border border-rose-400/35 px-3 py-2 text-xs text-rose-100">
+              {rescheduleError}
+            </div>
+          ) : null}
           <div>
             <label className="block text-xs font-semibold text-wise-ink mb-1">Nova data/hora</label>
             <input
@@ -1202,8 +1250,12 @@ export function MyDayTab({ me, onNavigate }: MyDayTabProps) {
             >
               Cancelar
             </button>
-            <button type="submit" className="px-5 py-2 rounded-full apple-glass-cta text-xs font-semibold text-white">
-              Salvar alteração
+            <button
+              type="submit"
+              disabled={savingReschedule}
+              className="px-5 py-2 rounded-full apple-glass-cta text-xs font-semibold text-white disabled:opacity-50"
+            >
+              {savingReschedule ? 'Salvando...' : 'Salvar alteração'}
             </button>
           </div>
         </form>

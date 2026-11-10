@@ -12,7 +12,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/admin/assets/css/admin.css" />
+  <link rel="stylesheet" href="/assets/css/admin.css" />
 </head>
 <body>
   <div class="ad-shell">
@@ -21,27 +21,27 @@
       <div class="ad-topbar">
         <div>
           <h1>Pipeline Kanban Comercial</h1>
-          <p class="ad-topbar-sub">Arraste os cartões entre estágios para salvar imediatamente no Supabase e disparar automações.</p>
+          <p class="ad-topbar-sub">Arraste os cartões ou utilize o seletor rápido de estágio para atualizar em tempo real.</p>
         </div>
         <div class="ad-actions-row">
           <button type="button" id="reload-kanban" class="ad-btn ad-btn-secondary">Atualizar Quadro</button>
-          <a href="/admin/leads.html" class="ad-btn ad-btn-primary">Ver em Lista</a>
+          <a id="leads-list-link" data-crm-page="leads.html" href="#" class="ad-btn ad-btn-primary">Ver em Lista</a>
         </div>
       </div>
 
-      <div id="ad-global-alert"></div>
+      <div id="ad-global-alert" role="alert" aria-live="polite"></div>
       <div id="kanban-board" class="ad-kanban-board">Carregando pipeline...</div>
     </main>
   </div>
 
   <!-- Modal para Venda / Perdido / Desqualificado -->
-  <div class="ad-modal-backdrop" id="stage-modal">
+  <div class="ad-modal-backdrop" id="stage-modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
     <div class="ad-modal">
       <h2 id="modal-title" style="font-family:var(--ad-font-display);font-size:1.5rem;text-transform:uppercase;margin-bottom:14px;">Confirmar Movimentação</h2>
       <form id="stage-modal-form">
         <div class="ad-field" id="modal-value-wrap" style="display:none;">
           <label for="modal-value">Valor Real Contratado (R$)</label>
-          <input type="number" step="0.01" id="modal-value" class="ad-input" value="20000" />
+          <input type="number" min="0" step="0.01" id="modal-value" class="ad-input" value="20000" />
         </div>
         <div class="ad-field" id="modal-reason-wrap" style="display:none;">
           <label for="modal-reason">Motivo (obrigatório)</label>
@@ -51,19 +51,40 @@
           <label for="modal-note">Observação (opcional)</label>
           <textarea id="modal-note" class="ad-textarea" rows="3"></textarea>
         </div>
-        <div style="display:flex;justify-content:flex-end;gap:10px;">
+        <div style="display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap;">
           <button type="button" id="modal-cancel" class="ad-btn ad-btn-secondary">Cancelar</button>
-          <button type="submit" class="ad-btn ad-btn-primary">Confirmar</button>
+          <button type="submit" id="modal-confirm-btn" class="ad-btn ad-btn-primary">Confirmar</button>
         </div>
       </form>
     </div>
   </div>
 
-  <script src="/admin/assets/js/admin-core.js"></script>
+  <script src="/assets/js/admin-core.js"></script>
   <script>
     (function () {
+      'use strict';
+
+      var stagesList = [];
       var stagesMap = {};
       var pendingMove = null;
+      var modalBusy = false;
+
+      var TRACK_LABELS = {
+        comercial: 'Comercial',
+        designer: 'Designer',
+        hibrido: 'Híbrido'
+      };
+
+      function hydrateCrmLinks() {
+        document.querySelectorAll('[data-crm-page]').forEach(function (el) {
+          var pageName = el.getAttribute('data-crm-page');
+          if (pageName) el.setAttribute('href', KingAdmin.crmUrl(pageName));
+        });
+      }
+
+      function sanitizeHexColor(hex) {
+        return /^#[0-9a-fA-F]{3,8}$/.test(String(hex || '').trim()) ? String(hex).trim() : '#0356C5';
+      }
 
       function openStageModal(oppId, targetStage) {
         pendingMove = { oppId: oppId, targetStage: targetStage };
@@ -71,7 +92,17 @@
         document.getElementById('modal-value-wrap').style.display = targetStage.is_won ? 'block' : 'none';
         document.getElementById('modal-reason-wrap').style.display = (targetStage.is_lost || targetStage.is_disqualified) ? 'block' : 'none';
         document.getElementById('modal-reason').required = Boolean(targetStage.is_lost || targetStage.is_disqualified);
+        document.getElementById('modal-reason').value = '';
+        document.getElementById('modal-note').value = '';
+        document.getElementById('modal-value').value = '20000';
         document.getElementById('stage-modal').classList.add('open');
+      }
+
+      function closeStageModal(resetSelects) {
+        if (modalBusy) return;
+        document.getElementById('stage-modal').classList.remove('open');
+        pendingMove = null;
+        if (resetSelects) loadBoard();
       }
 
       async function persistMove(oppId, targetStage, extra) {
@@ -81,56 +112,115 @@
             body: JSON.stringify(Object.assign({ stage_id: targetStage.id }, extra || {}))
           });
           KingAdmin.showToast('Oportunidade movida para ' + targetStage.name + '.');
-          loadBoard();
+          await loadBoard();
         } catch (err) {
-          KingAdmin.showToast(err.message, true);
-          loadBoard();
+          KingAdmin.showToast(err.message || 'Falha ao mover oportunidade.', true);
+          await loadBoard();
         }
       }
 
+      function triggerStageTransition(oppId, targetStageId) {
+        var targetStage = stagesMap[targetStageId];
+        if (!targetStage) return;
+        if (targetStage.is_won || targetStage.is_lost || targetStage.is_disqualified) {
+          openStageModal(oppId, targetStage);
+        } else {
+          persistMove(oppId, targetStage);
+        }
+      }
+
+      function showBoardError(err) {
+        var alertEl = document.getElementById('ad-global-alert');
+        alertEl.innerHTML =
+          '<div class="ad-alert ad-alert-error ad-error-inline">' +
+          '  <div><strong>Não foi possível carregar o pipeline:</strong> ' + KingAdmin.esc((err && err.message) || 'Erro de conexão.') + '</div>' +
+          '  <button type="button" id="retry-kanban-btn" class="ad-btn ad-btn-secondary ad-btn-sm">Tentar novamente</button>' +
+          '</div>';
+        var btn = document.getElementById('retry-kanban-btn');
+        if (btn) btn.addEventListener('click', loadBoard);
+      }
+
       async function loadBoard() {
+        var reloadBtn = document.getElementById('reload-kanban');
+        var prevLabel = reloadBtn.textContent;
+        reloadBtn.disabled = true;
+        reloadBtn.textContent = 'Atualizando...';
+        document.getElementById('ad-global-alert').innerHTML = '';
+
         try {
           var data = await KingAdmin.apiFetch('/api/admin/pipeline');
+          stagesList = Array.isArray(data.stages) ? data.stages : [];
           stagesMap = {};
-          data.stages.forEach(function (s) { stagesMap[s.id] = s; });
+          stagesList.forEach(function (s) { stagesMap[s.id] = s; });
 
+          var columns = Array.isArray(data.columns) ? data.columns : [];
           var board = document.getElementById('kanban-board');
-          board.innerHTML = data.columns.map(function (col) {
-            var cardsHtml = col.cards.map(function (card) {
+
+          board.innerHTML = columns.map(function (col) {
+            var cards = Array.isArray(col.cards) ? col.cards : [];
+            var cardsHtml = cards.map(function (card) {
               var l = card.lead || {};
-              var qual = l.qualification || {};
+              var qual = Array.isArray(l.qualification) ? (l.qualification[0] || {}) : (l.qualification || {});
               var attr = (l.attributions && l.attributions[0]) || {};
+              var detailHref = l.id ? KingAdmin.crmUrl('lead-detalhes.html?id=' + encodeURIComponent(l.id)) : '#';
+              var trackLabel = TRACK_LABELS[qual.intended_track] || qual.intended_track || 'Comercial';
+              var loc = (l.city || l.state) ? ((l.city || '—') + (l.state ? '/' + l.state : '')) : 'UF não inf.';
+              var stageOptionsHtml = stagesList.map(function (s) {
+                var selected = s.id === col.id ? ' selected' : '';
+                return '<option value="' + KingAdmin.esc(s.id) + '"' + selected + '>' + KingAdmin.esc(s.name) + '</option>';
+              }).join('');
+
               return (
                 '<div class="ad-kanban-card" draggable="true" data-opp-id="' + KingAdmin.esc(card.id) + '" data-stage-id="' + KingAdmin.esc(col.id) + '">' +
                 '  <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:6px;">' +
-                '    <a href="/admin/lead-detalhes.html?id=' + encodeURIComponent(l.id) + '" style="font-weight:700;color:#FFFFFF;">' + KingAdmin.esc(l.full_name) + '</a>' +
-                '    <span class="ad-badge ad-badge-blue">' + (l.score_grade || 'C') + ' (' + (l.lead_score || 0) + ')</span>' +
+                '    <a href="' + KingAdmin.esc(detailHref) + '" style="font-weight:700;color:#FFFFFF;">' + KingAdmin.esc(l.full_name || 'Candidato') + '</a>' +
+                '    <span class="ad-badge ad-badge-blue">' + KingAdmin.esc(l.score_grade || 'C') + ' (' + KingAdmin.esc(String(l.lead_score || 0)) + ')</span>' +
                 '  </div>' +
-                '  <div style="font-size:0.8rem;color:#94A3B8;margin-bottom:8px;">' + KingAdmin.esc((l.city || '') + '/' + (l.state || '')) + ' • ' + KingAdmin.esc(qual.intended_track || 'comercial') + '</div>' +
+                '  <div style="font-size:0.8rem;color:#94A3B8;margin-bottom:8px;">' + KingAdmin.esc(loc) + ' • ' + KingAdmin.esc(trackLabel) + '</div>' +
                 '  <div style="display:flex;justify-content:space-between;align-items:center;font-size:0.78rem;">' +
-                '    <strong style="color:#68D8FF;">' + KingAdmin.formatBrl((card.actual_value_cents ?? card.estimated_value_cents ?? 2000000) / 100) + '</strong>' +
+                '    <strong style="color:#68D8FF;">' + KingAdmin.esc(KingAdmin.formatBrl((card.actual_value_cents ?? card.estimated_value_cents ?? 2000000) / 100)) + '</strong>' +
                 '    <span style="color:#AEBBD0;">' + KingAdmin.esc(attr.utm_source || 'direto') + '</span>' +
                 '  </div>' +
+                '  <select class="ad-select ad-kanban-stage-select" aria-label="Mover estágio do card" data-move-opp="' + KingAdmin.esc(card.id) + '" data-current-stage="' + KingAdmin.esc(col.id) + '">' +
+                stageOptionsHtml +
+                '  </select>' +
                 '</div>'
               );
             }).join('');
 
             return (
               '<section class="ad-kanban-col" data-col-stage-id="' + KingAdmin.esc(col.id) + '">' +
-              '  <div class="ad-kanban-head" style="border-bottom-color:' + KingAdmin.esc(col.color_hex || '#0356C5') + ';">' +
+              '  <div class="ad-kanban-head" style="border-bottom-color:' + KingAdmin.esc(sanitizeHexColor(col.color_hex)) + ';">' +
               '    <h3>' + KingAdmin.esc(col.name) + '</h3>' +
-              '    <span class="ad-badge ad-badge-gray">' + col.count + '</span>' +
+              '    <span class="ad-badge ad-badge-gray">' + KingAdmin.esc(String(col.count || 0)) + '</span>' +
               '  </div>' +
-              '  <div style="font-size:0.75rem;color:#94A3B8;">' + KingAdmin.formatBrl((col.total_value_cents || 0) / 100) + '</div>' +
+              '  <div style="font-size:0.75rem;color:#94A3B8;">' + KingAdmin.esc(KingAdmin.formatBrl((col.total_value_cents || 0) / 100)) + '</div>' +
               (cardsHtml || '<p style="font-size:0.78rem;color:#64748B;padding:12px 0;">Sem oportunidades neste estágio.</p>') +
               '</section>'
             );
           }).join('');
 
           bindDragEvents();
+          bindSelectMoves();
         } catch (err) {
-          KingAdmin.renderErrorState('ad-global-alert', err);
+          document.getElementById('kanban-board').innerHTML = '<p style="color:#FECACA;">Pipeline indisponível.</p>';
+          showBoardError(err);
+        } finally {
+          reloadBtn.disabled = false;
+          reloadBtn.textContent = prevLabel;
         }
+      }
+
+      function bindSelectMoves() {
+        document.querySelectorAll('[data-move-opp]').forEach(function (sel) {
+          sel.addEventListener('change', function () {
+            var oppId = sel.getAttribute('data-move-opp');
+            var fromStage = sel.getAttribute('data-current-stage');
+            var toStage = sel.value;
+            if (!oppId || !toStage || toStage === fromStage) return;
+            triggerStageTransition(oppId, toStage);
+          });
+        });
       }
 
       function bindDragEvents() {
@@ -162,45 +252,77 @@
             col.classList.remove('drag-over');
             var targetStageId = col.getAttribute('data-col-stage-id');
             if (!draggedOppId || targetStageId === draggedFromStage) return;
-            var targetStage = stagesMap[targetStageId];
-            if (!targetStage) return;
-            if (targetStage.is_won || targetStage.is_lost || targetStage.is_disqualified) {
-              openStageModal(draggedOppId, targetStage);
-            } else {
-              persistMove(draggedOppId, targetStage);
-            }
+            triggerStageTransition(draggedOppId, targetStageId);
           });
         });
       }
 
       document.getElementById('modal-cancel').addEventListener('click', function () {
-        document.getElementById('stage-modal').classList.remove('open');
-        pendingMove = null;
+        closeStageModal(true);
+      });
+      document.getElementById('stage-modal').addEventListener('click', function (e) {
+        if (e.target === this) closeStageModal(true);
+      });
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && document.getElementById('stage-modal').classList.contains('open')) {
+          closeStageModal(true);
+        }
       });
 
-      document.getElementById('stage-modal-form').addEventListener('submit', function (e) {
+      document.getElementById('stage-modal-form').addEventListener('submit', async function (e) {
         e.preventDefault();
-        if (!pendingMove) return;
+        if (!pendingMove || modalBusy) return;
         var st = pendingMove.targetStage;
+        var oppId = pendingMove.oppId;
         var extra = { note: document.getElementById('modal-note').value.trim() || null };
+
         if (st.is_won) {
-          extra.actual_value_cents = Math.round(Number(document.getElementById('modal-value').value || 20000) * 100);
+          var val = Number(document.getElementById('modal-value').value || 20000);
+          if (!Number.isFinite(val) || val < 0) {
+            KingAdmin.showToast('Informe um valor contratado válido (>= 0).', true);
+            return;
+          }
+          extra.actual_value_cents = Math.round(val * 100);
         }
-        if (st.is_lost) {
-          extra.loss_reason = document.getElementById('modal-reason').value.trim();
+        if (st.is_lost || st.is_disqualified) {
+          var reason = document.getElementById('modal-reason').value.trim();
+          if (!reason) {
+            KingAdmin.showToast('Informe o motivo obrigatório.', true);
+            document.getElementById('modal-reason').focus();
+            return;
+          }
+          if (st.is_lost) extra.loss_reason = reason;
+          if (st.is_disqualified) extra.disqualification_reason = reason;
         }
-        if (st.is_disqualified) {
-          extra.disqualification_reason = document.getElementById('modal-reason').value.trim();
+
+        var confirmBtn = document.getElementById('modal-confirm-btn');
+        modalBusy = true;
+        confirmBtn.disabled = true;
+        confirmBtn.textContent = 'Confirmando...';
+        try {
+          document.getElementById('stage-modal').classList.remove('open');
+          pendingMove = null;
+          await persistMove(oppId, st, extra);
+        } finally {
+          modalBusy = false;
+          confirmBtn.disabled = false;
+          confirmBtn.textContent = 'Confirmar';
         }
-        document.getElementById('stage-modal').classList.remove('open');
-        persistMove(pendingMove.oppId, st, extra);
-        pendingMove = null;
       });
 
       document.getElementById('reload-kanban').addEventListener('click', loadBoard);
-      document.addEventListener('DOMContentLoaded', async function () {
-        if (await KingAdmin.initProtectedPage('pipeline')) loadBoard();
-      });
+
+      async function boot() {
+        hydrateCrmLinks();
+        var user = await KingAdmin.initProtectedPage('pipeline');
+        if (!user) {
+          showBoardError(new Error('Sessão administrativa indisponível.'));
+          return;
+        }
+        loadBoard();
+      }
+
+      document.addEventListener('DOMContentLoaded', boot);
     })();
   </script>
 </body>

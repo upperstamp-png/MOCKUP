@@ -46,6 +46,74 @@ interface NotificationsResponse {
   }>;
 }
 
+const ATTEMPT_STATUS_LABELS: Record<string, string> = {
+  not_configured: 'Não configurada',
+  configured: 'Configurada',
+  failed: 'Falha',
+  skipped: 'Ignorada',
+  success: 'Sucesso',
+  pending: 'Pendente',
+};
+
+const INITIAL_FEE_STATUS_LABELS: Record<string, string> = {
+  defined_pending_payment: 'Definida · Aguardando quitação',
+  paid: 'Quitada',
+  exempt: 'Isenta',
+  not_applicable: 'Não aplicável',
+  pending: 'Pendente',
+};
+
+const MODALITY_LABELS: Record<string, string> = {
+  revenda: 'Revenda',
+  intermediacao: 'Intermediação',
+  pending_definition: 'Pendente de definição',
+};
+
+const ROLE_LABELS: Record<string, string> = {
+  admin: 'Admin',
+  franqueado: 'Franqueado',
+};
+
+const ENTITY_TYPE_LABELS: Record<string, string> = {
+  unit: 'Unidade',
+  order: 'Pedido',
+  art_project: 'Projeto de arte',
+  quote: 'Orçamento',
+  customer: 'Cliente',
+  opportunity: 'Oportunidade',
+  payment: 'Pagamento',
+  receivable: 'Recebível',
+  expense: 'Despesa',
+  support_ticket: 'Chamado SAC',
+  document: 'Documento',
+  announcement: 'Comunicado',
+  user: 'Usuário',
+  banca_evaluation: 'Banca prática',
+  unit_commercial_config: 'Regra comercial',
+};
+
+function formatAuditAction(action: string): string {
+  const known: Record<string, string> = {
+    'unit.create': 'Unidade criada',
+    'unit.enablement.update': 'Habilitação da unidade atualizada',
+    'unit.commercial_config.update': 'Parâmetros comerciais atualizados',
+    'user.create': 'Usuário provisionado',
+    'announcement.create': 'Comunicado publicado',
+    'order.create': 'Pedido criado',
+    'order.release_production': 'Produção liberada',
+    'order.cancel': 'Pedido cancelado',
+    'order.approve_grade': 'Grade aprovada',
+    'art.approve': 'Arte aprovada',
+    'payment.confirm': 'Pagamento confirmado',
+    'payment.reverse': 'Pagamento estornado',
+    'document.approve': 'Documento aprovado',
+    'document.sign': 'Documento assinado',
+    'device.revoke': 'Terminal revogado',
+  };
+  if (known[action]) return known[action];
+  return action.replace(/[._]+/g, ' ');
+}
+
 export function NotificationsTab({
   me,
   onUnreadChange,
@@ -57,6 +125,8 @@ export function NotificationsTab({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
+  const [busyNotifId, setBusyNotifId] = useState<string | null>(null);
+  const [markingAll, setMarkingAll] = useState(false);
 
   const loadNotifications = useCallback(async () => {
     setLoading(true);
@@ -73,19 +143,25 @@ export function NotificationsTab({
 
   useEffect(() => {
     loadNotifications();
-  }, [loadNotifications]);
+  }, [loadNotifications, me.activeUnit.id]);
 
   const handleMarkRead = async (id: string) => {
+    setBusyNotifId(id);
+    setError(null);
     try {
       await portalFetch(`/notifications/${id}/read`, { method: 'POST', body: '{}' });
       await loadNotifications();
       onUnreadChange?.();
     } catch (err) {
       setError(err instanceof PortalApiError ? err.message : 'Erro ao marcar leitura.');
+    } finally {
+      setBusyNotifId(null);
     }
   };
 
   const handleMarkAllRead = async () => {
+    setMarkingAll(true);
+    setError(null);
     try {
       await portalFetch('/notifications/read-all', { method: 'POST', body: '{}' });
       setFeedback('Todas as notificações desta unidade foram marcadas como lidas.');
@@ -93,6 +169,8 @@ export function NotificationsTab({
       onUnreadChange?.();
     } catch (err) {
       setError(err instanceof PortalApiError ? err.message : 'Erro ao limpar notificações.');
+    } finally {
+      setMarkingAll(false);
     }
   };
 
@@ -140,11 +218,12 @@ export function NotificationsTab({
         <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
+            disabled={markingAll}
             onClick={handleMarkAllRead}
-            className="px-4 py-2 rounded-full bg-white/8 hover:bg-white/14 border border-white/15 text-xs font-semibold text-wise-ink inline-flex items-center gap-1.5"
+            className="px-4 py-2 rounded-full bg-white/8 hover:bg-white/14 border border-white/15 text-xs font-semibold text-wise-ink inline-flex items-center gap-1.5 disabled:opacity-50"
           >
             <CheckCheck className="w-3.5 h-3.5" />
-            Marcar todas como lidas
+            {markingAll ? 'Atualizando...' : 'Marcar todas como lidas'}
           </button>
         </div>
       </div>
@@ -192,11 +271,12 @@ export function NotificationsTab({
                     {!n.is_read && (
                       <button
                         type="button"
+                        disabled={busyNotifId === n.id}
                         onClick={() => handleMarkRead(n.id)}
-                        className="px-3 py-1 rounded-full bg-white/10 hover:bg-white/16 border border-white/15 text-[11px] font-semibold text-white shrink-0 inline-flex items-center gap-1"
+                        className="px-3 py-1 rounded-full bg-white/10 hover:bg-white/16 border border-white/15 text-[11px] font-semibold text-white shrink-0 inline-flex items-center gap-1 disabled:opacity-50"
                       >
                         <Check className="w-3 h-3" />
-                        Lida
+                        {busyNotifId === n.id ? '...' : 'Lida'}
                       </button>
                     )}
                   </div>
@@ -259,7 +339,9 @@ export function NotificationsTab({
                   {data.integrationAttempts.slice(0, 6).map((att) => (
                     <div key={att.id} className="text-[11px] text-wise-body bg-white/5 rounded-lg p-2">
                       <span className="font-bold text-wise-ink">{att.provider}</span> · {att.operation} ·{' '}
-                      <span className="text-amber-200">{att.status}</span>
+                      <span className="text-amber-200">
+                        {ATTEMPT_STATUS_LABELS[att.status] || att.status}
+                      </span>
                       <p className="text-wise-mute">{att.detail_message}</p>
                     </div>
                   ))}
@@ -316,6 +398,8 @@ export function UnitSettingsTab({ me }: { me: PortalMeResponse }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
+  const [revokeDeviceTarget, setRevokeDeviceTarget] = useState<{ id: string; device_name: string } | null>(null);
+  const [busyDeviceId, setBusyDeviceId] = useState<string | null>(null);
 
   const loadDevices = useCallback(async () => {
     setLoading(true);
@@ -332,15 +416,21 @@ export function UnitSettingsTab({ me }: { me: PortalMeResponse }) {
 
   useEffect(() => {
     loadDevices();
-  }, [loadDevices]);
+  }, [loadDevices, me.activeUnit.id]);
 
-  const handleRevoke = async (deviceId: string) => {
+  const handleConfirmRevoke = async () => {
+    if (!revokeDeviceTarget) return;
+    setBusyDeviceId(revokeDeviceTarget.id);
+    setError(null);
     try {
-      await portalFetch(`/auth/devices/${deviceId}/revoke`, { method: 'POST', body: '{}' });
+      await portalFetch(`/auth/devices/${revokeDeviceTarget.id}/revoke`, { method: 'POST', body: '{}' });
+      setRevokeDeviceTarget(null);
       setFeedback('Dispositivo e sessões vinculadas revogados.');
       await loadDevices();
     } catch (err) {
       setError(err instanceof PortalApiError ? err.message : 'Erro ao revogar terminal.');
+    } finally {
+      setBusyDeviceId(null);
     }
   };
 
@@ -402,7 +492,9 @@ export function UnitSettingsTab({ me }: { me: PortalMeResponse }) {
                 {formatBrl(data.unit.initial_franchise_fee_cents || 2000000)}
               </p>
               <p className="text-[11px] text-wise-body">
-                Status: {data.unit.initial_fee_status} · Nunca contabilizada como faturamento comercial.
+                Status:{' '}
+                {INITIAL_FEE_STATUS_LABELS[data.unit.initial_fee_status] || data.unit.initial_fee_status} ·
+                Nunca contabilizada como faturamento comercial.
               </p>
             </div>
 
@@ -475,11 +567,12 @@ export function UnitSettingsTab({ me }: { me: PortalMeResponse }) {
                   {dev.is_active && (
                     <button
                       type="button"
-                      onClick={() => handleRevoke(dev.id)}
-                      className="px-3 py-1.5 rounded-full bg-rose-500/15 hover:bg-rose-500/25 border border-rose-400/35 text-xs font-semibold text-rose-200 inline-flex items-center gap-1"
+                      disabled={busyDeviceId === dev.id}
+                      onClick={() => setRevokeDeviceTarget({ id: dev.id, device_name: dev.device_name })}
+                      className="px-3 py-1.5 rounded-full bg-rose-500/15 hover:bg-rose-500/25 border border-rose-400/35 text-xs font-semibold text-rose-200 inline-flex items-center gap-1 disabled:opacity-50"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
-                      Revogar
+                      {busyDeviceId === dev.id ? 'Revogando...' : 'Revogar'}
                     </button>
                   )}
                 </div>
@@ -488,6 +581,37 @@ export function UnitSettingsTab({ me }: { me: PortalMeResponse }) {
           </div>
         </div>
       ) : null}
+
+      <GlassModal
+        open={Boolean(revokeDeviceTarget)}
+        title="Confirmar revogação de terminal"
+        subtitle={revokeDeviceTarget?.device_name}
+        onClose={() => setRevokeDeviceTarget(null)}
+        maxWidthClass="max-w-md"
+      >
+        <div className="space-y-4">
+          <p className="text-xs text-wise-body">
+            Ao revogar este dispositivo, todas as sessões ativas vinculadas a ele serão encerradas imediatamente.
+          </p>
+          <div className="flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => setRevokeDeviceTarget(null)}
+              className="px-4 py-2 rounded-full bg-white/8 text-xs font-semibold text-wise-body"
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              disabled={Boolean(busyDeviceId)}
+              onClick={handleConfirmRevoke}
+              className="px-5 py-2 rounded-full bg-rose-500/80 hover:bg-rose-500 text-xs font-semibold text-white disabled:opacity-50"
+            >
+              {busyDeviceId ? 'Revogando...' : 'Confirmar revogação'}
+            </button>
+          </div>
+        </div>
+      </GlassModal>
     </div>
   );
 }
@@ -555,6 +679,8 @@ export function NetworkAdminTab({ me }: { me: PortalMeResponse }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
+  const [modalError, setModalError] = useState<string | null>(null);
+  const [busyModal, setBusyModal] = useState(false);
 
   // Modals
   const [enableModalUnit, setEnableModalUnit] = useState<NetworkUnit | null>(null);
@@ -647,6 +773,8 @@ export function NetworkAdminTab({ me }: { me: PortalMeResponse }) {
   const handleSaveEnablement = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!enableModalUnit) return;
+    setBusyModal(true);
+    setModalError(null);
     try {
       await portalFetch(`/network-admin/units/${enableModalUnit.id}/enablement`, {
         method: 'PATCH',
@@ -655,20 +783,25 @@ export function NetworkAdminTab({ me }: { me: PortalMeResponse }) {
           trainingCompleted: trainDone,
           bancaApproved: bancaDone,
           implantationApproved: implantDone,
-          implantationNotes: implantNotes || null,
+          implantationNotes: implantNotes.trim() || null,
         }),
       });
       setEnableModalUnit(null);
+      setModalError(null);
       setFeedback('Habilitação da unidade atualizada com auditoria.');
       await loadData();
     } catch (err) {
-      setError(err instanceof PortalApiError ? err.message : 'Erro ao atualizar habilitação.');
+      setModalError(err instanceof PortalApiError ? err.message : 'Erro ao atualizar habilitação.');
+    } finally {
+      setBusyModal(false);
     }
   };
 
   const handleSaveCommercialCfg = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!cfgModalUnit) return;
+    setBusyModal(true);
+    setModalError(null);
     try {
       await portalFetch(`/network-admin/units/${cfgModalUnit.id}/commercial-config`, {
         method: 'PATCH',
@@ -680,74 +813,122 @@ export function NetworkAdminTab({ me }: { me: PortalMeResponse }) {
           factoryTransferBps: cfgTransferBps.trim() ? Number(cfgTransferBps) : null,
           maxDiscountBps: Number(cfgMaxDiscBps) || 500,
           territoryRuleStatus: cfgTerritory,
-          defaultPriceListCode: cfgPriceList || null,
-          notes: cfgNotes || null,
+          defaultPriceListCode: cfgPriceList.trim() || null,
+          notes: cfgNotes.trim() || null,
         }),
       });
       setCfgModalUnit(null);
+      setModalError(null);
       setFeedback('Configuração comercial da unidade atualizada.');
       await loadData();
     } catch (err) {
-      setError(err instanceof PortalApiError ? err.message : 'Erro ao salvar configuração comercial.');
+      setModalError(err instanceof PortalApiError ? err.message : 'Erro ao salvar configuração comercial.');
+    } finally {
+      setBusyModal(false);
     }
   };
 
   const handleCreateUnit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setModalError(null);
+    if (unitCode.trim().length < 3) {
+      setModalError('Informe um código válido para a unidade (mínimo 3 caracteres).');
+      return;
+    }
+    if (unitName.trim().length < 3 || unitCity.trim().length < 2 || unitState.trim().length !== 2) {
+      setModalError('Preencha nome, cidade e UF com 2 letras.');
+      return;
+    }
+    setBusyModal(true);
     try {
       await portalFetch('/network-admin/units', {
         method: 'POST',
-        body: JSON.stringify({ code: unitCode, name: unitName, city: unitCity, state: unitState }),
+        body: JSON.stringify({
+          code: unitCode.trim().toUpperCase(),
+          name: unitName.trim(),
+          city: unitCity.trim(),
+          state: unitState.trim().toUpperCase(),
+        }),
       });
       setNewUnitOpen(false);
+      setModalError(null);
       setUnitCode('');
       setUnitName('');
       setUnitCity('');
       setFeedback('Nova unidade criada em estado onboarding com taxa inicial R$ 20.000,00 e config comercial pendente.');
       await loadData();
     } catch (err) {
-      setError(err instanceof PortalApiError ? err.message : 'Erro ao criar unidade.');
+      setModalError(err instanceof PortalApiError ? err.message : 'Erro ao criar unidade.');
+    } finally {
+      setBusyModal(false);
     }
   };
 
   const handlePublishAnnouncement = async (e: React.FormEvent) => {
     e.preventDefault();
+    setModalError(null);
+    if (annTitle.trim().length < 3 || annBody.trim().length < 5) {
+      setModalError('Preencha título e texto oficial do comunicado.');
+      return;
+    }
+    setBusyModal(true);
     try {
       await portalFetch('/network-admin/announcements', {
         method: 'POST',
-        body: JSON.stringify({ title: annTitle, body: annBody, category: 'operacional', isPinned: annPinned }),
+        body: JSON.stringify({
+          title: annTitle.trim(),
+          body: annBody.trim(),
+          category: 'operacional',
+          isPinned: annPinned,
+        }),
       });
       setAnnOpen(false);
+      setModalError(null);
       setAnnTitle('');
       setAnnBody('');
       setFeedback('Comunicado publicado para toda a rede!');
       await loadData();
     } catch (err) {
-      setError(err instanceof PortalApiError ? err.message : 'Erro ao publicar comunicado.');
+      setModalError(err instanceof PortalApiError ? err.message : 'Erro ao publicar comunicado.');
+    } finally {
+      setBusyModal(false);
     }
   };
 
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
+    setModalError(null);
+    if (!usrUnitId) {
+      setModalError('Selecione uma unidade para vincular o usuário.');
+      return;
+    }
+    if (usrName.trim().length < 2 || !usrEmail.trim().includes('@') || usrPassword.length < 8) {
+      setModalError('Informe nome completo, e-mail válido e senha com no mínimo 8 caracteres.');
+      return;
+    }
+    setBusyModal(true);
     try {
       await portalFetch('/network-admin/users', {
         method: 'POST',
         body: JSON.stringify({
-          fullName: usrName,
-          email: usrEmail,
+          fullName: usrName.trim(),
+          email: usrEmail.trim(),
           password: usrPassword,
           unitId: usrUnitId,
           roleSlug: usrRole,
         }),
       });
       setNewUserOpen(false);
+      setModalError(null);
       setUsrName('');
       setUsrEmail('');
       setUsrPassword('');
       setFeedback('Usuário provisionado no Supabase Auth e vinculado à unidade.');
       await loadData();
     } catch (err) {
-      setError(err instanceof PortalApiError ? err.message : 'Erro ao provisionar usuário.');
+      setModalError(err instanceof PortalApiError ? err.message : 'Erro ao provisionar usuário.');
+    } finally {
+      setBusyModal(false);
     }
   };
 
@@ -768,7 +949,10 @@ export function NetworkAdminTab({ me }: { me: PortalMeResponse }) {
           <div className="flex flex-wrap gap-2">
             <button
               type="button"
-              onClick={() => setAnnOpen(true)}
+              onClick={() => {
+                setModalError(null);
+                setAnnOpen(true);
+              }}
               className="px-4 py-2 rounded-full bg-white/8 hover:bg-white/14 border border-white/15 text-xs font-semibold text-wise-ink inline-flex items-center gap-1.5"
             >
               <Megaphone className="w-3.5 h-3.5" />
@@ -776,7 +960,10 @@ export function NetworkAdminTab({ me }: { me: PortalMeResponse }) {
             </button>
             <button
               type="button"
-              onClick={() => setNewUserOpen(true)}
+              onClick={() => {
+                setModalError(null);
+                setNewUserOpen(true);
+              }}
               className="px-4 py-2 rounded-full bg-white/8 hover:bg-white/14 border border-white/15 text-xs font-semibold text-wise-ink inline-flex items-center gap-1.5"
             >
               <UserPlus className="w-3.5 h-3.5" />
@@ -784,7 +971,10 @@ export function NetworkAdminTab({ me }: { me: PortalMeResponse }) {
             </button>
             <button
               type="button"
-              onClick={() => setNewUnitOpen(true)}
+              onClick={() => {
+                setModalError(null);
+                setNewUnitOpen(true);
+              }}
               className="apple-glass-cta text-white text-xs font-semibold px-4 py-2 rounded-full inline-flex items-center gap-1.5"
             >
               <Plus className="w-3.5 h-3.5" />
@@ -850,7 +1040,7 @@ export function NetworkAdminTab({ me }: { me: PortalMeResponse }) {
                         value={u.config_status || 'not_configured'}
                         customLabel={
                           u.config_status === 'approved'
-                            ? `Config aprovada (${u.commercial_modality})`
+                            ? `Config aprovada (${(u.commercial_modality && MODALITY_LABELS[u.commercial_modality]) || u.commercial_modality || 'Pendente'})`
                             : 'Regra comercial pendente'
                         }
                       />
@@ -867,6 +1057,7 @@ export function NetworkAdminTab({ me }: { me: PortalMeResponse }) {
                       <button
                         type="button"
                         onClick={() => {
+                          setModalError(null);
                           setEnableModalUnit(u);
                           setOpStatus(u.operational_status);
                           setTrainDone(u.training_completed);
@@ -881,6 +1072,7 @@ export function NetworkAdminTab({ me }: { me: PortalMeResponse }) {
                       <button
                         type="button"
                         onClick={() => {
+                          setModalError(null);
                           setCfgModalUnit(u);
                           setCfgStatus((u.config_status as 'not_configured' | 'pending_approval' | 'approved') || 'not_configured');
                           setCfgModality((u.commercial_modality as 'pending_definition' | 'revenda' | 'intermediacao') || 'pending_definition');
@@ -918,7 +1110,7 @@ export function NetworkAdminTab({ me }: { me: PortalMeResponse }) {
                     <div className="flex flex-wrap gap-1 mt-1.5">
                       {usr.memberships?.map((m, i) => (
                         <span key={i} className="px-2 py-0.5 rounded-full bg-white/8 text-[10px] text-wise-body">
-                          {m.unitCode}: {m.roleSlug}
+                          {m.unitCode}: {ROLE_LABELS[m.roleSlug] || m.roleSlug}
                         </span>
                       ))}
                     </div>
@@ -947,8 +1139,12 @@ export function NetworkAdminTab({ me }: { me: PortalMeResponse }) {
                       <td className="py-2 pr-3 whitespace-nowrap">{formatDateBr(log.created_at, { withTime: true })}</td>
                       <td className="py-2 pr-3">{log.unit_code || 'REDE'}</td>
                       <td className="py-2 pr-3">{log.actor_email}</td>
-                      <td className="py-2 pr-3 font-mono text-[11px] text-blue-300">{log.action}</td>
-                      <td className="py-2">{log.entity_type}</td>
+                      <td className="py-2 pr-3 text-[11px] font-semibold text-blue-300">
+                        {formatAuditAction(log.action)}
+                      </td>
+                      <td className="py-2">
+                        {ENTITY_TYPE_LABELS[log.entity_type] || log.entity_type.replace(/_/g, ' ')}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -962,9 +1158,13 @@ export function NetworkAdminTab({ me }: { me: PortalMeResponse }) {
       <GlassModal
         open={Boolean(enableModalUnit)}
         title={enableModalUnit ? `Habilitação · ${enableModalUnit.name}` : ''}
-        onClose={() => setEnableModalUnit(null)}
+        onClose={() => {
+          setEnableModalUnit(null);
+          setModalError(null);
+        }}
       >
         <form onSubmit={handleSaveEnablement} className="space-y-4">
+          {modalError ? <ErrorBanner message={modalError} /> : null}
           <div>
             <label className="block text-xs font-semibold text-wise-ink mb-1">Status operacional da unidade</label>
             <select
@@ -972,11 +1172,11 @@ export function NetworkAdminTab({ me }: { me: PortalMeResponse }) {
               onChange={(e) => setOpStatus(e.target.value as NetworkUnit['operational_status'])}
               className="w-full apple-glass-well rounded-xl px-3 py-2 text-xs text-wise-ink outline-none"
             >
-              <option value="onboarding">Em implantação (onboarding)</option>
-              <option value="pending_approval">Aguardando liberação</option>
-              <option value="active">Ativa para operação</option>
-              <option value="restricted">Restrita</option>
-              <option value="suspended">Suspensa</option>
+              <option value="onboarding" className="bg-[#181818]">Em implantação (onboarding)</option>
+              <option value="pending_approval" className="bg-[#181818]">Aguardando liberação</option>
+              <option value="active" className="bg-[#181818]">Ativa para operação</option>
+              <option value="restricted" className="bg-[#181818]">Restrita</option>
+              <option value="suspended" className="bg-[#181818]">Suspensa</option>
             </select>
           </div>
           <div className="space-y-2 text-xs text-wise-ink">
@@ -1003,11 +1203,22 @@ export function NetworkAdminTab({ me }: { me: PortalMeResponse }) {
             />
           </div>
           <div className="flex justify-end gap-2">
-            <button type="button" onClick={() => setEnableModalUnit(null)} className="px-4 py-2 rounded-full bg-white/8 text-xs font-semibold text-wise-body">
+            <button
+              type="button"
+              onClick={() => {
+                setEnableModalUnit(null);
+                setModalError(null);
+              }}
+              className="px-4 py-2 rounded-full bg-white/8 text-xs font-semibold text-wise-body"
+            >
               Cancelar
             </button>
-            <button type="submit" className="px-5 py-2 rounded-full apple-glass-cta text-xs font-semibold text-white">
-              Salvar Habilitação
+            <button
+              type="submit"
+              disabled={busyModal}
+              className="px-5 py-2 rounded-full apple-glass-cta text-xs font-semibold text-white disabled:opacity-50"
+            >
+              {busyModal ? 'Salvando...' : 'Salvar Habilitação'}
             </button>
           </div>
         </form>
@@ -1018,9 +1229,13 @@ export function NetworkAdminTab({ me }: { me: PortalMeResponse }) {
         open={Boolean(cfgModalUnit)}
         title={cfgModalUnit ? `Parâmetros Comerciais · ${cfgModalUnit.name}` : ''}
         subtitle="Informe apenas percentuais formalmente aprovados em contrato/aditivo (em basis points: 500 = 5%)."
-        onClose={() => setCfgModalUnit(null)}
+        onClose={() => {
+          setCfgModalUnit(null);
+          setModalError(null);
+        }}
       >
         <form onSubmit={handleSaveCommercialCfg} className="space-y-4">
+          {modalError ? <ErrorBanner message={modalError} /> : null}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-semibold text-wise-ink mb-1">Status da configuração</label>
@@ -1029,9 +1244,9 @@ export function NetworkAdminTab({ me }: { me: PortalMeResponse }) {
                 onChange={(e) => setCfgStatus(e.target.value as 'not_configured' | 'pending_approval' | 'approved')}
                 className="w-full apple-glass-well rounded-xl px-3 py-2 text-xs text-wise-ink outline-none"
               >
-                <option value="not_configured">Não configurada</option>
-                <option value="pending_approval">Pendente de aprovação</option>
-                <option value="approved">Aprovada</option>
+                <option value="not_configured" className="bg-[#181818]">Não configurada</option>
+                <option value="pending_approval" className="bg-[#181818]">Pendente de aprovação</option>
+                <option value="approved" className="bg-[#181818]">Aprovada</option>
               </select>
             </div>
             <div>
@@ -1041,9 +1256,9 @@ export function NetworkAdminTab({ me }: { me: PortalMeResponse }) {
                 onChange={(e) => setCfgModality(e.target.value as 'pending_definition' | 'revenda' | 'intermediacao')}
                 className="w-full apple-glass-well rounded-xl px-3 py-2 text-xs text-wise-ink outline-none"
               >
-                <option value="pending_definition">Pendente de definição</option>
-                <option value="revenda">Revenda</option>
-                <option value="intermediacao">Intermediação</option>
+                <option value="pending_definition" className="bg-[#181818]">Pendente de definição</option>
+                <option value="revenda" className="bg-[#181818]">Revenda</option>
+                <option value="intermediacao" className="bg-[#181818]">Intermediação</option>
               </select>
             </div>
           </div>
@@ -1075,10 +1290,10 @@ export function NetworkAdminTab({ me }: { me: PortalMeResponse }) {
                 onChange={(e) => setCfgTerritory(e.target.value)}
                 className="w-full apple-glass-well rounded-xl px-3 py-2 text-xs text-wise-ink outline-none"
               >
-                <option value="not_configured">Não configurada</option>
-                <option value="pending_contract_definition">Pendente de definição contratual</option>
-                <option value="configured_non_exclusive">Configurada sem exclusividade</option>
-                <option value="configured_priority">Configurada com prioridade regional</option>
+                <option value="not_configured" className="bg-[#181818]">Não configurada</option>
+                <option value="pending_contract_definition" className="bg-[#181818]">Pendente de definição contratual</option>
+                <option value="configured_non_exclusive" className="bg-[#181818]">Configurada sem exclusividade</option>
+                <option value="configured_priority" className="bg-[#181818]">Configurada com prioridade regional</option>
               </select>
             </div>
             <div>
@@ -1088,70 +1303,138 @@ export function NetworkAdminTab({ me }: { me: PortalMeResponse }) {
           </div>
 
           <div className="flex justify-end gap-2">
-            <button type="button" onClick={() => setCfgModalUnit(null)} className="px-4 py-2 rounded-full bg-white/8 text-xs font-semibold text-wise-body">
+            <button
+              type="button"
+              onClick={() => {
+                setCfgModalUnit(null);
+                setModalError(null);
+              }}
+              className="px-4 py-2 rounded-full bg-white/8 text-xs font-semibold text-wise-body"
+            >
               Cancelar
             </button>
-            <button type="submit" className="px-5 py-2 rounded-full apple-glass-cta text-xs font-semibold text-white">
-              Salvar Regras
+            <button
+              type="submit"
+              disabled={busyModal}
+              className="px-5 py-2 rounded-full apple-glass-cta text-xs font-semibold text-white disabled:opacity-50"
+            >
+              {busyModal ? 'Salvando...' : 'Salvar Regras'}
             </button>
           </div>
         </form>
       </GlassModal>
 
       {/* Modal Nova Unidade */}
-      <GlassModal open={newUnitOpen} title="Cadastrar Nova Unidade Franqueada" onClose={() => setNewUnitOpen(false)}>
+      <GlassModal
+        open={newUnitOpen}
+        title="Cadastrar Nova Unidade Franqueada"
+        onClose={() => {
+          setNewUnitOpen(false);
+          setModalError(null);
+        }}
+      >
         <form onSubmit={handleCreateUnit} className="space-y-4">
+          {modalError ? <ErrorBanner message={modalError} /> : null}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-semibold text-wise-ink mb-1">Código</label>
-              <input type="text" required value={unitCode} onChange={(e) => setUnitCode(e.target.value)} placeholder="KS-RPO-05" className="w-full apple-glass-well rounded-xl px-3 py-2 text-xs text-wise-ink outline-none" />
+              <input type="text" required minLength={3} value={unitCode} onChange={(e) => setUnitCode(e.target.value)} placeholder="KS-RPO-05" className="w-full apple-glass-well rounded-xl px-3 py-2 text-xs text-wise-ink outline-none" />
             </div>
             <div>
               <label className="block text-xs font-semibold text-wise-ink mb-1">Nome da unidade</label>
-              <input type="text" required value={unitName} onChange={(e) => setUnitName(e.target.value)} placeholder="Franquia Ribeirão Preto" className="w-full apple-glass-well rounded-xl px-3 py-2 text-xs text-wise-ink outline-none" />
+              <input type="text" required minLength={3} value={unitName} onChange={(e) => setUnitName(e.target.value)} placeholder="Franquia Ribeirão Preto" className="w-full apple-glass-well rounded-xl px-3 py-2 text-xs text-wise-ink outline-none" />
             </div>
             <div>
               <label className="block text-xs font-semibold text-wise-ink mb-1">Cidade</label>
-              <input type="text" required value={unitCity} onChange={(e) => setUnitCity(e.target.value)} className="w-full apple-glass-well rounded-xl px-3 py-2 text-xs text-wise-ink outline-none" />
+              <input type="text" required minLength={2} value={unitCity} onChange={(e) => setUnitCity(e.target.value)} className="w-full apple-glass-well rounded-xl px-3 py-2 text-xs text-wise-ink outline-none" />
             </div>
             <div>
               <label className="block text-xs font-semibold text-wise-ink mb-1">UF</label>
-              <input type="text" required maxLength={2} value={unitState} onChange={(e) => setUnitState(e.target.value)} className="w-full apple-glass-well rounded-xl px-3 py-2 text-xs text-wise-ink outline-none" />
+              <input type="text" required minLength={2} maxLength={2} value={unitState} onChange={(e) => setUnitState(e.target.value)} className="w-full apple-glass-well rounded-xl px-3 py-2 text-xs text-wise-ink outline-none" />
             </div>
           </div>
           <div className="flex justify-end gap-2">
-            <button type="button" onClick={() => setNewUnitOpen(false)} className="px-4 py-2 rounded-full bg-white/8 text-xs font-semibold text-wise-body">Cancelar</button>
-            <button type="submit" className="px-5 py-2 rounded-full apple-glass-cta text-xs font-semibold text-white">Criar Unidade</button>
+            <button
+              type="button"
+              onClick={() => {
+                setNewUnitOpen(false);
+                setModalError(null);
+              }}
+              className="px-4 py-2 rounded-full bg-white/8 text-xs font-semibold text-wise-body"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              disabled={busyModal}
+              className="px-5 py-2 rounded-full apple-glass-cta text-xs font-semibold text-white disabled:opacity-50"
+            >
+              {busyModal ? 'Criando...' : 'Criar Unidade'}
+            </button>
           </div>
         </form>
       </GlassModal>
 
       {/* Modal Comunicado */}
-      <GlassModal open={annOpen} title="Publicar Comunicado Oficial da Rede" onClose={() => setAnnOpen(false)}>
+      <GlassModal
+        open={annOpen}
+        title="Publicar Comunicado Oficial da Rede"
+        onClose={() => {
+          setAnnOpen(false);
+          setModalError(null);
+        }}
+      >
         <form onSubmit={handlePublishAnnouncement} className="space-y-4">
-          <input type="text" required value={annTitle} onChange={(e) => setAnnTitle(e.target.value)} placeholder="Título do comunicado" className="w-full apple-glass-well rounded-xl px-3 py-2 text-xs text-wise-ink outline-none" />
-          <textarea required rows={4} value={annBody} onChange={(e) => setAnnBody(e.target.value)} placeholder="Texto oficial..." className="w-full apple-glass-well rounded-xl px-3 py-2 text-xs text-wise-ink outline-none" />
+          {modalError ? <ErrorBanner message={modalError} /> : null}
+          <input type="text" required minLength={3} value={annTitle} onChange={(e) => setAnnTitle(e.target.value)} placeholder="Título do comunicado" className="w-full apple-glass-well rounded-xl px-3 py-2 text-xs text-wise-ink outline-none" />
+          <textarea required minLength={5} rows={4} value={annBody} onChange={(e) => setAnnBody(e.target.value)} placeholder="Texto oficial..." className="w-full apple-glass-well rounded-xl px-3 py-2 text-xs text-wise-ink outline-none" />
           <label className="flex items-center gap-2 text-xs text-wise-ink cursor-pointer">
             <input type="checkbox" checked={annPinned} onChange={(e) => setAnnPinned(e.target.checked)} className="accent-blue-500" />
             Fixar no topo do Meu Dia
           </label>
           <div className="flex justify-end gap-2">
-            <button type="button" onClick={() => setAnnOpen(false)} className="px-4 py-2 rounded-full bg-white/8 text-xs font-semibold text-wise-body">Cancelar</button>
-            <button type="submit" className="px-5 py-2 rounded-full apple-glass-cta text-xs font-semibold text-white">Publicar</button>
+            <button
+              type="button"
+              onClick={() => {
+                setAnnOpen(false);
+                setModalError(null);
+              }}
+              className="px-4 py-2 rounded-full bg-white/8 text-xs font-semibold text-wise-body"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              disabled={busyModal}
+              className="px-5 py-2 rounded-full apple-glass-cta text-xs font-semibold text-white disabled:opacity-50"
+            >
+              {busyModal ? 'Publicando...' : 'Publicar'}
+            </button>
           </div>
         </form>
       </GlassModal>
 
       {/* Modal Novo Usuário */}
-      <GlassModal open={newUserOpen} title="Provisionar Usuário Supabase + Vínculo de Unidade" onClose={() => setNewUserOpen(false)}>
+      <GlassModal
+        open={newUserOpen}
+        title="Provisionar Usuário Supabase + Vínculo de Unidade"
+        onClose={() => {
+          setNewUserOpen(false);
+          setModalError(null);
+        }}
+      >
         <form onSubmit={handleCreateUser} className="space-y-4">
-          <input type="text" required value={usrName} onChange={(e) => setUsrName(e.target.value)} placeholder="Nome completo" className="w-full apple-glass-well rounded-xl px-3 py-2 text-xs text-wise-ink outline-none" />
+          {modalError ? <ErrorBanner message={modalError} /> : null}
+          <input type="text" required minLength={2} value={usrName} onChange={(e) => setUsrName(e.target.value)} placeholder="Nome completo" className="w-full apple-glass-well rounded-xl px-3 py-2 text-xs text-wise-ink outline-none" />
           <input type="email" required value={usrEmail} onChange={(e) => setUsrEmail(e.target.value)} placeholder="E-mail de login" className="w-full apple-glass-well rounded-xl px-3 py-2 text-xs text-wise-ink outline-none" />
           <input type="password" required minLength={8} value={usrPassword} onChange={(e) => setUsrPassword(e.target.value)} placeholder="Senha inicial (mínimo 8 caracteres)" className="w-full apple-glass-well rounded-xl px-3 py-2 text-xs text-wise-ink outline-none" />
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <select value={usrUnitId} onChange={(e) => setUsrUnitId(e.target.value)} className="apple-glass-well rounded-xl px-3 py-2 text-xs text-wise-ink outline-none">
+              {(!overview?.units || overview.units.length === 0) ? (
+                <option value="" className="bg-[#181818]">Nenhuma unidade disponível</option>
+              ) : null}
               {overview?.units.map((u) => (
-                <option key={u.id} value={u.id}>
+                <option key={u.id} value={u.id} className="bg-[#181818]">
                   {u.code} · {u.name}
                 </option>
               ))}
@@ -1162,8 +1445,23 @@ export function NetworkAdminTab({ me }: { me: PortalMeResponse }) {
             </select>
           </div>
           <div className="flex justify-end gap-2">
-            <button type="button" onClick={() => setNewUserOpen(false)} className="px-4 py-2 rounded-full bg-white/8 text-xs font-semibold text-wise-body">Cancelar</button>
-            <button type="submit" className="px-5 py-2 rounded-full apple-glass-cta text-xs font-semibold text-white">Criar Usuário</button>
+            <button
+              type="button"
+              onClick={() => {
+                setNewUserOpen(false);
+                setModalError(null);
+              }}
+              className="px-4 py-2 rounded-full bg-white/8 text-xs font-semibold text-wise-body"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              disabled={busyModal}
+              className="px-5 py-2 rounded-full apple-glass-cta text-xs font-semibold text-white disabled:opacity-50"
+            >
+              {busyModal ? 'Provisionando...' : 'Criar Usuário'}
+            </button>
           </div>
         </form>
       </GlassModal>

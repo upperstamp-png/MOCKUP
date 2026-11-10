@@ -265,6 +265,18 @@
     return eventId;
   }
 
+  function syncConsentCheckboxes() {
+    var existing = getConsent();
+    var prefAnalytics = document.getElementById('ks-pref-analytics');
+    var prefMarketing = document.getElementById('ks-pref-marketing');
+    if (prefAnalytics) {
+      prefAnalytics.checked = existing ? Boolean(existing.analytics) : true;
+    }
+    if (prefMarketing) {
+      prefMarketing.checked = existing ? Boolean(existing.marketing) : true;
+    }
+  }
+
   function injectCookieBanner() {
     if (document.getElementById('ks-cookie-banner')) return;
     var banner = document.createElement('div');
@@ -273,7 +285,10 @@
     banner.setAttribute('role', 'dialog');
     banner.setAttribute('aria-label', 'Preferências de Privacidade e Cookies');
     banner.innerHTML =
-      '<h3>Privacidade &amp; Cookies (LGPD)</h3>' +
+      '<div class="ks-cookie-header">' +
+      '  <h3>Privacidade &amp; Cookies (LGPD)</h3>' +
+      '  <button type="button" class="ks-cookie-close" id="ks-consent-close" aria-label="Fechar preferências de cookies">&times;</button>' +
+      '</div>' +
       '<p>Utilizamos cookies essenciais para o funcionamento do formulário e, mediante seu consentimento, cookies analíticos e de mídia para mensurar campanhas. Leia nossa <a href="/privacidade.html" style="color:#38BDF8;text-decoration:underline;">Política de Privacidade</a>.</p>' +
       '<div class="ks-cookie-actions">' +
       '  <button type="button" class="ks-btn ks-btn-primary ks-btn-sm" id="ks-consent-accept-all">Aceitar todos</button>' +
@@ -288,21 +303,28 @@
       '</div>';
 
     document.body.appendChild(banner);
+    syncConsentCheckboxes();
 
     var existing = getConsent();
     if (!existing) {
       banner.classList.add('visible');
     }
 
+    document.getElementById('ks-consent-close').addEventListener('click', function () {
+      banner.classList.remove('visible');
+    });
     document.getElementById('ks-consent-accept-all').addEventListener('click', function () {
       saveConsent(true, true);
+      syncConsentCheckboxes();
       banner.classList.remove('visible');
     });
     document.getElementById('ks-consent-essential').addEventListener('click', function () {
       saveConsent(false, false);
+      syncConsentCheckboxes();
       banner.classList.remove('visible');
     });
     document.getElementById('ks-consent-toggle-prefs').addEventListener('click', function () {
+      syncConsentCheckboxes();
       document.getElementById('ks-cookie-prefs-panel').classList.toggle('open');
     });
     document.getElementById('ks-consent-save-prefs').addEventListener('click', function () {
@@ -312,13 +334,37 @@
       banner.classList.remove('visible');
     });
 
-    var openBtn = document.getElementById('ks-open-consent-prefs');
-    if (openBtn) {
-      openBtn.addEventListener('click', function () {
-        banner.classList.add('visible');
-        document.getElementById('ks-cookie-prefs-panel').classList.add('open');
+    document.addEventListener('click', function (ev) {
+      var trigger = ev.target && ev.target.closest ? ev.target.closest('#ks-open-consent-prefs, [data-open-consent-prefs]') : null;
+      if (!trigger) return;
+      syncConsentCheckboxes();
+      banner.classList.add('visible');
+      var prefsPanel = document.getElementById('ks-cookie-prefs-panel');
+      if (prefsPanel) prefsPanel.classList.add('open');
+    });
+  }
+
+  function initSharedMobileDrawer() {
+    var btn = document.getElementById('ks-hamburger-btn');
+    var drawer = document.getElementById('ks-mobile-drawer');
+    if (!btn || !drawer || btn.dataset.ksMenuBound === '1') return;
+    btn.dataset.ksMenuBound = '1';
+    btn.addEventListener('click', function () {
+      var open = drawer.classList.toggle('open');
+      btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    });
+    drawer.querySelectorAll('a').forEach(function (link) {
+      link.addEventListener('click', function () {
+        drawer.classList.remove('open');
+        btn.setAttribute('aria-expanded', 'false');
       });
-    }
+    });
+    document.addEventListener('keydown', function (ev) {
+      if (ev.key === 'Escape' && drawer.classList.contains('open')) {
+        drawer.classList.remove('open');
+        btn.setAttribute('aria-expanded', 'false');
+      }
+    });
   }
 
   function bindCtaTracking() {
@@ -334,6 +380,7 @@
 
   async function init() {
     captureAttribution();
+    initSharedMobileDrawer();
     injectCookieBanner();
     bindCtaTracking();
 
@@ -359,6 +406,9 @@
     getSessionId: getSessionId,
     getAttributionSnapshot: getAttributionSnapshot,
     getConsent: getConsent,
+    getPublicConfig: function () {
+      return publicConfig;
+    },
     saveConsent: saveConsent,
     pushEvent: pushEvent,
     trackFormStart: function () {

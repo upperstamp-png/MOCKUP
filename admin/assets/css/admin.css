@@ -22,6 +22,11 @@
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
+html, body {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
 body {
   font-family: var(--ad-font-body);
   background: var(--ad-bg);
@@ -111,6 +116,8 @@ button, input, select, textarea { font-family: inherit; }
 .ad-main {
   flex: 1;
   min-width: 0;
+  max-width: 100%;
+  overflow-x: hidden;
   padding: 28px 32px 60px;
 }
 
@@ -452,6 +459,20 @@ button, input, select, textarea { font-family: inherit; }
   margin-bottom: 5px;
 }
 
+.ad-kanban-stage-select {
+  margin-top: 10px;
+  padding: 6px 8px;
+  font-size: 0.78rem;
+}
+
+.ad-error-inline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
 .ad-mobile-toggle {
   display: none;
 }
@@ -468,4 +489,16 @@ button, input, select, textarea { font-family: inherit; }
   .ad-mobile-toggle { display: inline-flex; }
   .ad-main { padding: 18px 16px 40px; }
   .ad-grid-2, .ad-grid-3 { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 640px) {
+  .ad-card { padding: 16px 14px; min-width: 0; }
+  .ad-kpi-card { min-width: 0; }
+  .ad-topbar h1 { font-size: 1.55rem; }
+  .ad-actions-row { width: 100%; }
+  .ad-actions-row .ad-btn,
+  .ad-actions-row .ad-select,
+  .ad-actions-row .ad-input { width: 100%; max-width: 100%; }
+  .ad-toast { left: 16px; right: 16px; bottom: 16px; }
+  .ad-kanban-col { width: 84vw; max-width: 310px; min-height: 320px; }
 }

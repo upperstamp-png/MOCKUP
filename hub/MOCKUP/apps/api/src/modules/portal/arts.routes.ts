@@ -15,6 +15,8 @@ import {
 } from '../../services/storageService.js';
 import { notifyUnitRoles, recordAuditLog } from '../../services/auditAndNotify.js';
 
+const uuidSchema = z.string().uuid();
+
 const createProjectSchema = z.object({
   customerId: z.string().uuid(),
   opportunityId: z.string().uuid().optional().nullable(),
@@ -90,6 +92,9 @@ export async function portalArtsRoutes(fastify: FastifyInstance): Promise<void> 
     { preHandler: [requirePortalAuth, requirePermission('arts:read')] },
     async (request, reply) => {
       const { id } = request.params as { id: string };
+      if (!uuidSchema.safeParse(id).success) {
+        return reply.status(400).send({ statusCode: 400, code: 'VALIDATION_ERROR', message: 'ID do projeto inválido.' });
+      }
       const projRes = await dbQuery(
         `SELECT ap.*, c.name AS customer_name, p.full_name AS assignee_name
          FROM portal.art_projects ap
@@ -155,6 +160,32 @@ export async function portalArtsRoutes(fastify: FastifyInstance): Promise<void> 
       if (!custRes.rows[0] || custRes.rows[0].unit_id !== ctx.activeUnitId) {
         return reply.status(403).send({ statusCode: 403, code: 'CUSTOMER_UNIT_MISMATCH', message: 'Cliente pertence a outra unidade.' });
       }
+      if (d.opportunityId) {
+        const oppRes = await dbQuery<{ unit_id: string }>(`SELECT unit_id FROM portal.opportunities WHERE id = $1`, [d.opportunityId]);
+        if (!oppRes.rows[0] || oppRes.rows[0].unit_id !== ctx.activeUnitId) {
+          return reply.status(403).send({ statusCode: 403, code: 'OPPORTUNITY_UNIT_MISMATCH', message: 'Oportunidade pertence a outra unidade.' });
+        }
+      }
+      if (d.quoteId) {
+        const qtRes = await dbQuery<{ unit_id: string }>(`SELECT unit_id FROM portal.quotes WHERE id = $1`, [d.quoteId]);
+        if (!qtRes.rows[0] || qtRes.rows[0].unit_id !== ctx.activeUnitId) {
+          return reply.status(403).send({ statusCode: 403, code: 'QUOTE_UNIT_MISMATCH', message: 'Orçamento pertence a outra unidade.' });
+        }
+      }
+      if (d.assigneeUserId) {
+        const memRes = await dbQuery<{ user_id: string }>(
+          `SELECT user_id FROM portal.unit_memberships
+           WHERE unit_id = $1 AND user_id = $2 AND status = 'active'`,
+          [ctx.activeUnitId, d.assigneeUserId]
+        );
+        if (!memRes.rows[0]) {
+          return reply.status(400).send({
+            statusCode: 400,
+            code: 'INVALID_ASSIGNEE',
+            message: 'Responsável informado não pertence como membro ativo desta unidade.',
+          });
+        }
+      }
 
       const inserted = await dbQuery(
         `INSERT INTO portal.art_projects (
@@ -194,6 +225,9 @@ export async function portalArtsRoutes(fastify: FastifyInstance): Promise<void> 
     { preHandler: [requirePortalAuth, requirePermission('arts:write')] },
     async (request, reply) => {
       const { id } = request.params as { id: string };
+      if (!uuidSchema.safeParse(id).success) {
+        return reply.status(400).send({ statusCode: 400, code: 'VALIDATION_ERROR', message: 'ID do projeto inválido.' });
+      }
       const projRes = await dbQuery<{
         id: string;
         unit_id: string;
@@ -220,13 +254,17 @@ export async function portalArtsRoutes(fastify: FastifyInstance): Promise<void> 
         fileBuffer = await part.toBuffer();
         resolvedMime = part.mimetype;
         const fields = part.fields as Record<string, { value?: string }>;
-        uploadInput = uploadVersionSchema.parse({
+        const parsedMultipart = uploadVersionSchema.safeParse({
           artifactKind: fields.artifactKind?.value || 'arte_revisao',
           fileName: part.filename,
           mimeType: part.mimetype,
           previewSummary: fields.previewSummary?.value || null,
           notes: fields.notes?.value || null,
         });
+        if (!parsedMultipart.success) {
+          return reply.status(400).send({ statusCode: 400, code: 'VALIDATION_ERROR', details: parsedMultipart.error.flatten() });
+        }
+        uploadInput = parsedMultipart.data;
       } else {
         const parsed = uploadVersionSchema.safeParse(request.body);
         if (!parsed.success) {
@@ -344,6 +382,9 @@ export async function portalArtsRoutes(fastify: FastifyInstance): Promise<void> 
     { preHandler: [requirePortalAuth, requirePermission('arts:read')] },
     async (request, reply) => {
       const { id, versionId } = request.params as { id: string; versionId: string };
+      if (!uuidSchema.safeParse(id).success || !uuidSchema.safeParse(versionId).success) {
+        return reply.status(400).send({ statusCode: 400, code: 'VALIDATION_ERROR', message: 'Identificador inválido.' });
+      }
       const verRes = await dbQuery<{
         unit_id: string;
         storage_bucket: string | null;
@@ -388,6 +429,9 @@ export async function portalArtsRoutes(fastify: FastifyInstance): Promise<void> 
     { preHandler: [requirePortalAuth, requireAnyPermission(['arts:write', 'arts:review_internal', 'arts:approve'])] },
     async (request, reply) => {
       const { id } = request.params as { id: string };
+      if (!uuidSchema.safeParse(id).success) {
+        return reply.status(400).send({ statusCode: 400, code: 'VALIDATION_ERROR', message: 'ID do projeto inválido.' });
+      }
       const schema = z.object({
         artVersionId: z.string().uuid().optional().nullable(),
         commentType: z.enum(['comment', 'revision_request', 'internal_review']).default('comment'),
@@ -472,6 +516,9 @@ export async function portalArtsRoutes(fastify: FastifyInstance): Promise<void> 
     { preHandler: [requirePortalAuth, requireAnyPermission(['arts:write', 'arts:review_internal'])] },
     async (request, reply) => {
       const { id } = request.params as { id: string };
+      if (!uuidSchema.safeParse(id).success) {
+        return reply.status(400).send({ statusCode: 400, code: 'VALIDATION_ERROR', message: 'ID do projeto inválido.' });
+      }
       const schema = z.object({
         status: z.enum(['briefing_pendente', 'em_criacao', 'revisao_interna', 'enviado_ao_cliente', 'ajustes']),
       });
@@ -499,6 +546,9 @@ export async function portalArtsRoutes(fastify: FastifyInstance): Promise<void> 
     { preHandler: [requirePortalAuth, requirePermission('arts:approve')] },
     async (request, reply) => {
       const { id } = request.params as { id: string };
+      if (!uuidSchema.safeParse(id).success) {
+        return reply.status(400).send({ statusCode: 400, code: 'VALIDATION_ERROR', message: 'ID do projeto inválido.' });
+      }
       const schema = z.object({
         artVersionId: z.string().uuid(),
         approvedByName: z.string().min(2),

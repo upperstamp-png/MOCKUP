@@ -1,5 +1,7 @@
 'use client';
 
+import { useEffect, useState } from 'react';
+
 export class PortalApiError extends Error {
   public readonly statusCode: number;
   public readonly code: string;
@@ -14,24 +16,138 @@ export class PortalApiError extends Error {
   }
 }
 
-const API_BASE = '/api/v1';
+const API_BASE = (process.env.NEXT_PUBLIC_PORTAL_API_BASE || '/api/v1').replace(/\/+$/, '');
 
-export const HUB_BASE_PATH = '/hub';
+function normalizeBasePath(raw?: string): string {
+  const trimmed = (raw || '').trim();
+  if (!trimmed || trimmed === '/') return '';
+  const withoutTrailing = trimmed.replace(/\/+$/, '');
+  return withoutTrailing.startsWith('/') ? withoutTrailing : `/${withoutTrailing}`;
+}
+
+export const HUB_BASE_PATH = normalizeBasePath(process.env.NEXT_PUBLIC_HUB_BASE_PATH);
+
+export function getActiveHubBasePath(): string {
+  return HUB_BASE_PATH;
+}
+
+export function isUnifiedSubpathHost(): boolean {
+  if (typeof window === 'undefined' || !window.location) return false;
+  if (HUB_BASE_PATH === '/hub') return true;
+  const host = (window.location.hostname || '').toLowerCase();
+  if (
+    host.startsWith('app.') ||
+    host.startsWith('hub.') ||
+    host.startsWith('lp.') ||
+    host.startsWith('crm.')
+  ) {
+    return false;
+  }
+  const pathname = window.location.pathname || '';
+  if (pathname === '/hub' || pathname.startsWith('/hub/')) {
+    return true;
+  }
+  const port = window.location.port || '';
+  const isLocalGateway =
+    host === 'localhost' || host === '127.0.0.1' || host === '[::1]';
+  return isLocalGateway ? port !== '3333' : Boolean(port && port !== '3333');
+}
+
+export function useUnifiedHubPrefix(): '' | '/hub' {
+  const [prefix, setPrefix] = useState<'' | '/hub'>(() =>
+    HUB_BASE_PATH === '/hub' ? '/hub' : ''
+  );
+
+  useEffect(() => {
+    setPrefix(isUnifiedSubpathHost() ? '/hub' : '');
+  }, []);
+
+  return prefix;
+}
+
+export function hubHomePath(query?: string): string {
+  const cleanQuery = query ? (query.startsWith('?') ? query : `?${query}`) : '';
+  return hubPath(`/${cleanQuery}`);
+}
+
+export function hubAdminHref(prefix?: '' | '/hub'): string {
+  const effective =
+    typeof prefix === 'string' ? prefix : isUnifiedSubpathHost() ? '/hub' : '';
+  return effective ? `${effective}/admin` : '/admin';
+}
+
+function stripLeadingHubPrefix(pathname: string): string {
+  if (pathname === '/hub') return '/';
+  if (pathname.startsWith('/hub/')) return pathname.slice(4);
+  return pathname;
+}
+
+export function hubPath(subPath = '/'): string {
+  const raw = (subPath || '/').trim();
+  if (
+    raw.startsWith('http://') ||
+    raw.startsWith('https://') ||
+    raw.startsWith('data:') ||
+    raw.startsWith('blob:')
+  ) {
+    return raw;
+  }
+
+  const configuredBase = getActiveHubBasePath();
+  const effectiveBase = configuredBase || (isUnifiedSubpathHost() ? '/hub' : '');
+
+  const match = raw.match(/^([^?#]*)(.*)$/);
+  const rawPath = match ? match[1] : raw;
+  const suffix = match ? match[2] : '';
+
+  const normalizedLeading = rawPath
+    ? rawPath.startsWith('/')
+      ? rawPath
+      : `/${rawPath}`
+    : '/';
+  const cleanPath = stripLeadingHubPrefix(normalizedLeading);
+
+  if (!effectiveBase) {
+    return `${cleanPath}${suffix}`;
+  }
+  if (cleanPath === '/') {
+    return `${effectiveBase}${suffix}`;
+  }
+  return `${effectiveBase}${cleanPath}${suffix}`;
+}
+
+export function hubPublicUrl(subPath = '/'): string {
+  const targetPath = hubPath(subPath);
+  if (targetPath.startsWith('http://') || targetPath.startsWith('https://')) {
+    return targetPath;
+  }
+  if (typeof window !== 'undefined' && window.location?.origin) {
+    return `${window.location.origin}${targetPath}`;
+  }
+  return targetPath;
+}
 
 export function hubAsset(assetPath: string): string {
   if (!assetPath) return assetPath;
+  const trimmed = assetPath.trim();
   if (
-    assetPath.startsWith('http://') ||
-    assetPath.startsWith('https://') ||
-    assetPath.startsWith('data:') ||
-    assetPath.startsWith('blob:') ||
-    assetPath.startsWith(`${HUB_BASE_PATH}/`) ||
-    assetPath === HUB_BASE_PATH
+    trimmed.startsWith('http://') ||
+    trimmed.startsWith('https://') ||
+    trimmed.startsWith('data:') ||
+    trimmed.startsWith('blob:') ||
+    trimmed.startsWith('<')
   ) {
     return assetPath;
   }
-  const normalized = assetPath.startsWith('/') ? assetPath : `/${assetPath}`;
-  return `${HUB_BASE_PATH}${normalized}`;
+
+  const activeBase = getActiveHubBasePath();
+  const normalizedLeading = trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
+  const cleanPath = stripLeadingHubPrefix(normalizedLeading);
+
+  if (!activeBase) {
+    return cleanPath;
+  }
+  return cleanPath === '/' ? activeBase : `${activeBase}${cleanPath}`;
 }
 
 export async function portalFetch<T>(

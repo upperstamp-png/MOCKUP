@@ -3,46 +3,104 @@
 const { env, isSupabaseConfigured } = require('../config/env');
 const { slugify, sanitizeArticleHtml } = require('../utils/crypto');
 const { ConflictError, NotFoundError } = require('../utils/errors');
-const { renderBlogIndexPage, renderBlogArticlePage, renderSitemapXml } = require('./blogRenderer');
+const {
+  renderBlogIndexPage,
+  renderBlogArticlePage,
+  renderSitemapXml,
+  resolveSafeCanonicalUrl
+} = require('./blogRenderer');
+
+function getDefaultBaseUrl() {
+  return String(env.LP_URL || env.APP_URL || 'http://localhost:3000').replace(/\/+$/, '');
+}
+
+function isPostPubliclyVisible(post, nowMs = Date.now()) {
+  if (!post || post.status !== 'published') {
+    return false;
+  }
+  if (post.published_at) {
+    const pubMs = new Date(post.published_at).getTime();
+    if (Number.isNaN(pubMs) || pubMs > nowMs) {
+      return false;
+    }
+  }
+  return true;
+}
 
 function createBlogService({ blogRepo, settingsRepo, isStorageConfigured = isSupabaseConfigured }) {
   return {
-    async renderPublicIndex({ categorySlug = null, baseUrl = env.APP_URL } = {}) {
-      const cleanBase = String(baseUrl || env.APP_URL).replace(/\/+$/, '');
+    async resolvePublicIndex({ categorySlug = null, baseUrl = getDefaultBaseUrl() } = {}) {
+      const cleanBase = String(baseUrl || getDefaultBaseUrl()).replace(/\/+$/, '');
       if (!isStorageConfigured()) {
-        return renderBlogIndexPage({
-          appUrl: cleanBase,
-          posts: [],
-          categories: [],
-          activeCategorySlug: categorySlug,
+        return {
+          html: renderBlogIndexPage({
+            appUrl: cleanBase,
+            posts: [],
+            categories: [],
+            activeCategorySlug: categorySlug,
+            dbUnavailable: true
+          }),
+          canonicalUrl: `${cleanBase}/blog`,
+          activeCategory: null,
+          notFoundCategory: false,
           dbUnavailable: true
-        });
+        };
       }
       const [{ items: posts }, categories] = await Promise.all([
         blogRepo.listPublishedPosts({ categorySlug, limit: 30 }),
         blogRepo.listCategories()
       ]);
-      return renderBlogIndexPage({
-        appUrl: cleanBase,
-        posts,
-        categories,
-        activeCategorySlug: categorySlug
-      });
+      const visiblePosts = (posts || []).filter((p) => isPostPubliclyVisible(p));
+      const safeCategories = categories || [];
+      const activeCategory = categorySlug
+        ? safeCategories.find((c) => c.slug === categorySlug) || null
+        : null;
+      const canonicalUrl = activeCategory
+        ? `${cleanBase}/blog?categoria=${encodeURIComponent(activeCategory.slug)}`
+        : `${cleanBase}/blog`;
+      const notFoundCategory = Boolean(categorySlug && !activeCategory);
+
+      return {
+        html: renderBlogIndexPage({
+          appUrl: cleanBase,
+          posts: visiblePosts,
+          categories: safeCategories,
+          activeCategorySlug: categorySlug
+        }),
+        canonicalUrl,
+        activeCategory,
+        notFoundCategory,
+        dbUnavailable: false
+      };
     },
 
-    async renderPublicArticle(slug, { baseUrl = env.APP_URL } = {}) {
-      const cleanBase = String(baseUrl || env.APP_URL).replace(/\/+$/, '');
+    async renderPublicIndex(opts = {}) {
+      const result = await this.resolvePublicIndex(opts);
+      return result.html;
+    },
+
+    async renderPublicArticle(slug, { baseUrl = getDefaultBaseUrl() } = {}) {
+      const cleanBase = String(baseUrl || getDefaultBaseUrl()).replace(/\/+$/, '');
       if (!isStorageConfigured()) {
         throw new NotFoundError('Artigo não encontrado (banco não configurado).');
       }
       const post = await blogRepo.getPublishedPostBySlug(slug);
-      if (!post) {
+      if (!isPostPubliclyVisible(post)) {
         throw new NotFoundError('Artigo não encontrado.');
       }
       const { items } = await blogRepo.listPublishedPosts({ limit: 4 });
-      const relatedPosts = items.filter((p) => p.id !== post.id).slice(0, 3);
+      const relatedPosts = (items || [])
+        .filter((p) => p.id !== post.id && isPostPubliclyVisible(p))
+        .slice(0, 3);
+      const safeSlug = String(post.slug || '').trim();
+      const canonicalUrl = resolveSafeCanonicalUrl(
+        post.canonical_url,
+        `${cleanBase}/blog/${encodeURIComponent(safeSlug)}`,
+        cleanBase
+      );
       return {
         post,
+        canonicalUrl,
         html: renderBlogArticlePage({
           appUrl: cleanBase,
           post,
@@ -54,7 +112,7 @@ function createBlogService({ blogRepo, settingsRepo, isStorageConfigured = isSup
     async registerArticleView(slug) {
       if (!isStorageConfigured()) return { recorded: false };
       const post = await blogRepo.getPublishedPostBySlug(slug);
-      if (!post) return { recorded: false };
+      if (!isPostPubliclyVisible(post)) return { recorded: false };
       await blogRepo.incrementPostViews(post.id);
       return { recorded: true, post_id: post.id };
     },
@@ -64,16 +122,18 @@ function createBlogService({ blogRepo, settingsRepo, isStorageConfigured = isSup
         return { posts: [], dbUnavailable: true };
       }
       const { items } = await blogRepo.listPublishedPosts({ limit: 50 });
-      return { posts: items || [], dbUnavailable: false };
+      const visiblePosts = (items || []).filter((p) => isPostPubliclyVisible(p));
+      return { posts: visiblePosts, dbUnavailable: false };
     },
 
-    async generateSitemap({ baseUrl = env.APP_URL } = {}) {
-      const cleanBase = String(baseUrl || env.APP_URL).replace(/\/+$/, '');
+    async generateSitemap({ baseUrl = getDefaultBaseUrl() } = {}) {
+      const cleanBase = String(baseUrl || getDefaultBaseUrl()).replace(/\/+$/, '');
       if (!isStorageConfigured()) {
         return renderSitemapXml({ appUrl: cleanBase, posts: [] });
       }
       const { items: posts } = await blogRepo.listPublishedPosts({ limit: 500 });
-      return renderSitemapXml({ appUrl: cleanBase, posts });
+      const visiblePosts = (posts || []).filter((p) => isPostPubliclyVisible(p));
+      return renderSitemapXml({ appUrl: cleanBase, posts: visiblePosts });
     },
 
     async createPostAdmin(input, adminUser) {
@@ -124,6 +184,8 @@ function createBlogService({ blogRepo, settingsRepo, isStorageConfigured = isSup
 
       if (input.status === 'published' && !current.published_at) {
         patch.published_at = new Date().toISOString();
+      } else if (input.status === 'draft' || input.status === 'scheduled') {
+        patch.published_at = null;
       }
 
       const updated = await blogRepo.updatePost(id, patch);
@@ -142,4 +204,4 @@ function createBlogService({ blogRepo, settingsRepo, isStorageConfigured = isSup
   };
 }
 
-module.exports = { createBlogService };
+module.exports = { createBlogService, isPostPubliclyVisible };

@@ -982,8 +982,12 @@ describe('Portal do Franqueado King Sports — Integração API, RLS & Regras de
     assert.equal(JSON.parse(afterDelList.body).items.length, 0);
 
     // 7C. Tarefas (/api/v1/crm/tasks): criação, buckets, edição, conclusão, reabertura e exclusão
-    const spTodayStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo' }).format(new Date());
-    const dueTodaySp = `${spTodayStr}T15:00:00.000Z`;
+    const spTodayStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo' }).format(new Date(now));
+    const dueTodayCandidate = new Date(`${spTodayStr}T23:59:00-03:00`);
+    const dueTodaySp =
+      dueTodayCandidate.getTime() > now + 5000
+        ? dueTodayCandidate.toISOString()
+        : new Date(now + 30_000).toISOString();
     const dueOverdue = new Date(now - 48 * 3600_000).toISOString();
 
     const createTaskTodayRes = await app.inject({
@@ -1124,5 +1128,33 @@ describe('Portal do Franqueado King Sports — Integração API, RLS & Regras de
     });
     assert.equal(afterDelTasksRes.statusCode, 200);
     assert.equal(JSON.parse(afterDelTasksRes.body).items.length, 0);
+
+    // 7D. Validação de IDs malformados deve retornar 400 (nunca 500)
+    const badOrder = await app.inject({
+      method: 'GET',
+      url: '/api/v1/orders/not-a-uuid',
+      headers: { cookie: gestorSp.cookie },
+    });
+    assert.equal(badOrder.statusCode, 400);
+
+    const badArt = await app.inject({
+      method: 'GET',
+      url: '/api/v1/arts/not-a-uuid',
+      headers: { cookie: gestorSp.cookie },
+    });
+    assert.equal(badArt.statusCode, 400);
+
+    const badTicket = await app.inject({
+      method: 'GET',
+      url: '/api/v1/support/tickets/not-a-uuid',
+      headers: { cookie: gestorSp.cookie },
+    });
+    assert.equal(badTicket.statusCode, 400);
+
+    const badSharedQuote = await app.inject({
+      method: 'GET',
+      url: '/api/v1/quotes/shared/short',
+    });
+    assert.equal(badSharedQuote.statusCode, 404);
   });
 });

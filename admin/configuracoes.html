@@ -12,7 +12,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/admin/assets/css/admin.css" />
+  <link rel="stylesheet" href="/assets/css/admin.css" />
 </head>
 <body>
   <div class="ad-shell">
@@ -22,11 +22,11 @@
       <div class="ad-topbar">
         <div>
           <h1>Configurações, Tracking, Metas &amp; Integrações</h1>
-          <p class="ad-topbar-sub">Credenciais criptografadas (AES-256-GCM no backend), testes reais de conectividade e controle de usuários.</p>
+          <p class="ad-topbar-sub">Credenciais criptografadas no servidor, testes reais de conectividade e controle de acesso.</p>
         </div>
       </div>
 
-      <div id="ad-global-alert"></div>
+      <div id="ad-global-alert" role="alert" aria-live="polite"></div>
 
       <!-- Status e Testes Reais de Integrações -->
       <section class="ad-card" style="margin-bottom:18px;">
@@ -35,7 +35,7 @@
           <button type="button" id="refresh-status-btn" class="ad-btn ad-btn-secondary ad-btn-sm">Reverificar</button>
         </div>
         <p style="font-size:0.84rem;color:#94A3B8;margin-bottom:14px;">
-          Cada botão executa uma chamada real de validação no servidor Node.js. Se as chaves não estiverem configuradas, o sistema informa explicitamente o status <strong>not_configured</strong>.
+          Cada botão executa uma verificação real no servidor. Integrações sem credenciais reais reportam explicitamente <strong>Não configurado</strong> (nenhum envio é simulado).
         </p>
         <div class="ad-table-wrap" id="integrations-status-wrap">Verificando...</div>
       </section>
@@ -46,61 +46,61 @@
           <div class="ad-card-title"><span>Tracking Híbrido &amp; Contas de Anúncios</span></div>
           <form id="tracking-settings-form">
             <div class="ad-field">
-              <label>Google Tag Manager Container ID (`tracking.gtm_id`)</label>
+              <label for="s-gtm-id">Google Tag Manager Container ID</label>
               <input type="text" id="s-gtm-id" class="ad-input" placeholder="GTM-XXXXXXX" />
             </div>
             <div class="ad-grid-2">
               <div class="ad-field">
-                <label>GA4 Measurement ID</label>
+                <label for="s-ga4-id">GA4 Measurement ID</label>
                 <input type="text" id="s-ga4-id" class="ad-input" placeholder="G-XXXXXXXXXX" />
               </div>
               <div class="ad-field">
-                <label>GA4 API Secret (criptografado)</label>
+                <label for="s-ga4-secret">GA4 API Secret (criptografado)</label>
                 <input type="password" id="s-ga4-secret" class="ad-input" placeholder="Deixe mascarado para manter atual" autocomplete="off" />
               </div>
             </div>
             <div class="ad-grid-2">
               <div class="ad-field">
-                <label>Google Ads Conversion ID</label>
+                <label for="s-gads-conv-id">Google Ads Conversion ID</label>
                 <input type="text" id="s-gads-conv-id" class="ad-input" placeholder="AW-XXXXXXXXX" />
               </div>
               <div class="ad-field">
-                <label>Google Ads Label (Lead)</label>
+                <label for="s-gads-label">Google Ads Label (Lead)</label>
                 <input type="text" id="s-gads-label" class="ad-input" placeholder="AbCdEfGhIjK" />
               </div>
             </div>
             <div class="ad-grid-2">
               <div class="ad-field">
-                <label>Meta Pixel ID</label>
+                <label for="s-meta-pixel">Meta Pixel ID</label>
                 <input type="text" id="s-meta-pixel" class="ad-input" placeholder="123456789012345" />
               </div>
               <div class="ad-field">
-                <label>Meta Test Event Code (opcional)</label>
+                <label for="s-meta-test">Meta Test Event Code (opcional)</label>
                 <input type="text" id="s-meta-test" class="ad-input" placeholder="TEST12345" />
               </div>
             </div>
             <div class="ad-field">
-              <label>Meta Conversions API Access Token (criptografado)</label>
-              <input type="password" id="s-meta-capi" class="ad-input" placeholder="EAAG..." autocomplete="off" />
+              <label for="s-meta-capi">Meta Conversions API Access Token (criptografado)</label>
+              <input type="password" id="s-meta-capi" class="ad-input" placeholder="Deixe mascarado para manter atual" autocomplete="off" />
             </div>
             <div class="ad-grid-3">
               <div class="ad-field">
-                <label>Meta Ad Account ID</label>
+                <label for="s-meta-ad-acct">Meta Ad Account ID</label>
                 <input type="text" id="s-meta-ad-acct" class="ad-input" placeholder="act_123456789" />
               </div>
               <div class="ad-field">
-                <label>GA4 Property ID (Data API)</label>
+                <label for="s-ga4-prop">GA4 Property ID (Data API)</label>
                 <input type="text" id="s-ga4-prop" class="ad-input" placeholder="123456789" />
               </div>
               <div class="ad-field">
-                <label>Google Ads Customer ID</label>
+                <label for="s-gads-cust">Google Ads Customer ID</label>
                 <input type="text" id="s-gads-cust" class="ad-input" placeholder="1234567890" />
               </div>
             </div>
             <p style="font-size:0.78rem;color:#94A3B8;margin-bottom:12px;">
-              Credenciais OAuth/Service Account (Google Ads Developer Token, Refresh Token e Service Account JSON) devem permanecer exclusivamente no arquivo <code>.env</code> do servidor VPS.
+              Credenciais OAuth e Service Account (Google Ads Developer Token, Refresh Token e Service Account JSON) permanecem exclusivamente nas variáveis de ambiente do servidor.
             </p>
-            <button type="submit" class="ad-btn ad-btn-primary">Salvar Credenciais de Tracking</button>
+            <button type="submit" id="save-tracking-btn" class="ad-btn ad-btn-primary">Salvar Credenciais de Tracking</button>
           </form>
         </section>
 
@@ -109,35 +109,35 @@
           <div class="ad-card-title"><span>Metas Comerciais &amp; Faixas (Verde / Laranja / Vermelho)</span></div>
           <form id="goals-settings-form">
             <div class="ad-field">
-              <label>Prazo SLA para Lead sem 1º Atendimento (minutos)</label>
-              <input type="number" min="5" id="g-sla-min" class="ad-input" value="30" />
+              <label for="g-sla-min">Prazo SLA para Lead sem 1º Atendimento (minutos)</label>
+              <input type="number" min="5" id="g-sla-min" class="ad-input" value="30" required />
             </div>
             <div class="ad-grid-3">
-              <div class="ad-field"><label>CPL Meta (R$)</label><input type="number" step="1" id="g-cpl-target" class="ad-input" /></div>
-              <div class="ad-field"><label>CPL Atenção (R$)</label><input type="number" step="1" id="g-cpl-warn" class="ad-input" /></div>
-              <div class="ad-field"><label>CPL Crítico (R$)</label><input type="number" step="1" id="g-cpl-crit" class="ad-input" /></div>
+              <div class="ad-field"><label for="g-cpl-target">CPL Meta (R$)</label><input type="number" min="0" step="1" id="g-cpl-target" class="ad-input" /></div>
+              <div class="ad-field"><label for="g-cpl-warn">CPL Atenção (R$)</label><input type="number" min="0" step="1" id="g-cpl-warn" class="ad-input" /></div>
+              <div class="ad-field"><label for="g-cpl-crit">CPL Crítico (R$)</label><input type="number" min="0" step="1" id="g-cpl-crit" class="ad-input" /></div>
             </div>
             <div class="ad-grid-3">
-              <div class="ad-field"><label>CPQL Meta (R$)</label><input type="number" step="1" id="g-cpql-target" class="ad-input" /></div>
-              <div class="ad-field"><label>CPQL Atenção (R$)</label><input type="number" step="1" id="g-cpql-warn" class="ad-input" /></div>
-              <div class="ad-field"><label>CPQL Crítico (R$)</label><input type="number" step="1" id="g-cpql-crit" class="ad-input" /></div>
+              <div class="ad-field"><label for="g-cpql-target">CPQL Meta (R$)</label><input type="number" min="0" step="1" id="g-cpql-target" class="ad-input" /></div>
+              <div class="ad-field"><label for="g-cpql-warn">CPQL Atenção (R$)</label><input type="number" min="0" step="1" id="g-cpql-warn" class="ad-input" /></div>
+              <div class="ad-field"><label for="g-cpql-crit">CPQL Crítico (R$)</label><input type="number" min="0" step="1" id="g-cpql-crit" class="ad-input" /></div>
             </div>
             <div class="ad-grid-3">
-              <div class="ad-field"><label>CAC Meta (R$)</label><input type="number" step="1" id="g-cac-target" class="ad-input" /></div>
-              <div class="ad-field"><label>CAC Atenção (R$)</label><input type="number" step="1" id="g-cac-warn" class="ad-input" /></div>
-              <div class="ad-field"><label>CAC Crítico (R$)</label><input type="number" step="1" id="g-cac-crit" class="ad-input" /></div>
+              <div class="ad-field"><label for="g-cac-target">CAC Meta (R$)</label><input type="number" min="0" step="1" id="g-cac-target" class="ad-input" /></div>
+              <div class="ad-field"><label for="g-cac-warn">CAC Atenção (R$)</label><input type="number" min="0" step="1" id="g-cac-warn" class="ad-input" /></div>
+              <div class="ad-field"><label for="g-cac-crit">CAC Crítico (R$)</label><input type="number" min="0" step="1" id="g-cac-crit" class="ad-input" /></div>
             </div>
             <div class="ad-grid-3">
-              <div class="ad-field"><label>Qualificação Meta (%)</label><input type="number" step="1" id="g-qual-target" class="ad-input" /></div>
-              <div class="ad-field"><label>Qualificação Atenção (%)</label><input type="number" step="1" id="g-qual-warn" class="ad-input" /></div>
-              <div class="ad-field"><label>Qualificação Crítico (%)</label><input type="number" step="1" id="g-qual-crit" class="ad-input" /></div>
+              <div class="ad-field"><label for="g-qual-target">Qualificação Meta (%)</label><input type="number" min="0" max="100" step="1" id="g-qual-target" class="ad-input" /></div>
+              <div class="ad-field"><label for="g-qual-warn">Qualificação Atenção (%)</label><input type="number" min="0" max="100" step="1" id="g-qual-warn" class="ad-input" /></div>
+              <div class="ad-field"><label for="g-qual-crit">Qualificação Crítico (%)</label><input type="number" min="0" max="100" step="1" id="g-qual-crit" class="ad-input" /></div>
             </div>
             <div class="ad-grid-3">
-              <div class="ad-field"><label>ROAS Meta (x)</label><input type="number" step="0.1" id="g-roas-target" class="ad-input" /></div>
-              <div class="ad-field"><label>ROAS Atenção (x)</label><input type="number" step="0.1" id="g-roas-warn" class="ad-input" /></div>
-              <div class="ad-field"><label>ROAS Crítico (x)</label><input type="number" step="0.1" id="g-roas-crit" class="ad-input" /></div>
+              <div class="ad-field"><label for="g-roas-target">ROAS Meta (x)</label><input type="number" min="0" step="0.1" id="g-roas-target" class="ad-input" /></div>
+              <div class="ad-field"><label for="g-roas-warn">ROAS Atenção (x)</label><input type="number" min="0" step="0.1" id="g-roas-warn" class="ad-input" /></div>
+              <div class="ad-field"><label for="g-roas-crit">ROAS Crítico (x)</label><input type="number" min="0" step="0.1" id="g-roas-crit" class="ad-input" /></div>
             </div>
-            <button type="submit" class="ad-btn ad-btn-primary">Salvar Metas e SLA</button>
+            <button type="submit" id="save-goals-btn" class="ad-btn ad-btn-primary">Salvar Metas e SLA</button>
           </form>
         </section>
       </div>
@@ -148,87 +148,136 @@
         <form id="landing-settings-form">
           <div class="ad-grid-2">
             <div class="ad-field">
-              <label>Tag Superior do Hero</label>
+              <label for="lc-tag">Tag Superior do Hero</label>
               <input type="text" id="lc-tag" class="ad-input" />
             </div>
             <div class="ad-field">
-              <label>CTA Principal</label>
+              <label for="lc-cta">Texto do Botão Principal (CTA)</label>
               <input type="text" id="lc-cta" class="ad-input" />
             </div>
           </div>
           <div class="ad-field">
-            <label>Headline Principal (H1)</label>
+            <label for="lc-headline">Headline Principal (H1)</label>
             <input type="text" id="lc-headline" class="ad-input" />
           </div>
           <div class="ad-field">
-            <label>Subheadline</label>
+            <label for="lc-subheadline">Subheadline</label>
             <textarea id="lc-subheadline" class="ad-textarea" rows="2"></textarea>
           </div>
           <div class="ad-grid-3">
             <div class="ad-field">
-              <label>Investimento de Referência (R$)</label>
-              <input type="number" id="fi-investment" class="ad-input" />
+              <label for="fi-investment">Taxa Inicial de Franquia Referência (R$)</label>
+              <input type="number" min="0" id="fi-investment" class="ad-input" />
             </div>
             <div class="ad-field">
-              <label>WhatsApp Oficial Expansão (DDI+DDD+Num)</label>
+              <label for="fi-whatsapp">WhatsApp Oficial Expansão (DDI+DDD+Num)</label>
               <input type="text" id="fi-whatsapp" class="ad-input" placeholder="5511999999999" />
             </div>
             <div class="ad-field">
-              <label>E-mail Comercial Expansão</label>
+              <label for="fi-email">E-mail Comercial Expansão</label>
               <input type="email" id="fi-email" class="ad-input" />
             </div>
           </div>
           <div class="ad-field">
-            <label>Nota Jurídica do Investimento</label>
+            <label for="fi-note">Nota Jurídica do Investimento (COF)</label>
             <input type="text" id="fi-note" class="ad-input" />
           </div>
-          <button type="submit" class="ad-btn ad-btn-primary">Atualizar Conteúdo Público</button>
+          <button type="submit" id="save-landing-btn" class="ad-btn ad-btn-primary">Atualizar Conteúdo Público</button>
         </form>
       </section>
 
       <!-- Usuários & Auditoria -->
       <div class="ad-grid-2" style="align-items:start;">
         <section class="ad-card">
-          <div class="ad-card-title"><span>Administradores do CRM (`admin_users`)</span></div>
+          <div class="ad-card-title"><span>Administradores do CRM</span></div>
           <div class="ad-table-wrap" id="users-table-wrap" style="margin-bottom:18px;">Carregando...</div>
           <form id="new-user-form">
-            <h3 style="font-size:0.9rem;margin-bottom:10px;">Cadastrar Novo Usuário (Requer Super Admin)</h3>
+            <h3 style="font-size:0.9rem;margin-bottom:10px;">Cadastrar Novo Administrador</h3>
+            <p id="user-create-note" style="font-size:0.78rem;color:#94A3B8;margin-bottom:10px;">Disponível exclusivamente para perfil Super Administrador.</p>
             <div class="ad-grid-2">
-              <div class="ad-field"><label>Nome completo</label><input type="text" id="u-name" class="ad-input" required /></div>
-              <div class="ad-field"><label>E-mail</label><input type="email" id="u-email" class="ad-input" required /></div>
+              <div class="ad-field"><label for="u-name">Nome completo</label><input type="text" id="u-name" class="ad-input" required minlength="3" /></div>
+              <div class="ad-field"><label for="u-email">E-mail</label><input type="email" id="u-email" class="ad-input" required /></div>
             </div>
             <div class="ad-grid-2">
-              <div class="ad-field"><label>Papel</label><select id="u-role" class="ad-select"></select></div>
-              <div class="ad-field"><label>Senha inicial (mín. 8 dígitos)</label><input type="password" id="u-pass" class="ad-input" minlength="8" /></div>
+              <div class="ad-field"><label for="u-role">Perfil</label><select id="u-role" class="ad-select"></select></div>
+              <div class="ad-field"><label for="u-pass">Senha inicial (mín. 8 dígitos)</label><input type="password" id="u-pass" class="ad-input" minlength="8" /></div>
             </div>
-            <button type="submit" class="ad-btn ad-btn-secondary">Criar Administrador</button>
+            <button type="submit" id="create-user-btn" class="ad-btn ad-btn-secondary">Criar Administrador</button>
           </form>
         </section>
 
         <section class="ad-card">
-          <div class="ad-card-title"><span>Logs de Auditoria Sensíveis (`audit_logs`)</span></div>
+          <div class="ad-card-title"><span>Logs de Auditoria Sensíveis</span></div>
           <div class="ad-table-wrap" id="audit-table-wrap">Carregando auditoria...</div>
         </section>
       </div>
     </main>
   </div>
 
-  <script src="/admin/assets/js/admin-core.js"></script>
+  <script src="/assets/js/admin-core.js"></script>
   <script>
     (function () {
+      'use strict';
+
       var cachedThresholds = {};
       var cachedLanding = {};
       var cachedFranchise = {};
+      var currentAdminUser = null;
+
+      var INTEGRATION_STATUS_META = {
+        connected: { label: 'Conectado', badge: 'ad-badge-green' },
+        configured: { label: 'Configurado', badge: 'ad-badge-green' },
+        partial_missing_secret: { label: 'Parcial (falta Secret)', badge: 'ad-badge-orange' },
+        partial_missing_token: { label: 'Parcial (falta Token)', badge: 'ad-badge-orange' },
+        not_configured: { label: 'Não configurado (not_configured)', badge: 'ad-badge-gray' },
+        error: { label: 'Erro de conexão', badge: 'ad-badge-red' }
+      };
+
+      var AUDIT_ACTION_LABELS = {
+        'settings.updated': 'Configurações atualizadas',
+        'admin_user.created': 'Administrador cadastrado',
+        'automation_rule.updated': 'Regra de automação atualizada',
+        'integration.tested': 'Teste de integração executado',
+        'blog.post_created': 'Artigo publicado/criado',
+        'blog.post_updated': 'Artigo editado',
+        'blog.post_deleted': 'Artigo excluído',
+        'leads.exported_csv': 'Base de leads exportada (CSV)',
+        'lead.updated': 'Lead atualizado',
+        'opportunity.stage_changed': 'Estágio de funil alterado'
+      };
+
+      var ENTITY_TYPE_LABELS = {
+        system_settings: 'Configurações',
+        admin_user: 'Administrador',
+        automation_rule: 'Regra de Automação',
+        integration: 'Integração',
+        blog_post: 'Artigo do Blog',
+        lead: 'Lead',
+        opportunity: 'Oportunidade'
+      };
 
       function statusBadge(st) {
-        if (st === 'connected' || st === 'configured') return '<span class="ad-badge ad-badge-green">' + KingAdmin.esc(st) + '</span>';
-        if (st && st.startsWith('partial')) return '<span class="ad-badge ad-badge-orange">' + KingAdmin.esc(st) + '</span>';
-        if (st === 'not_configured') return '<span class="ad-badge ad-badge-gray">not_configured</span>';
-        return '<span class="ad-badge ad-badge-red">' + KingAdmin.esc(st || 'error') + '</span>';
+        var meta = INTEGRATION_STATUS_META[st] || { label: st || 'Erro', badge: 'ad-badge-red' };
+        return '<span class="ad-badge ' + meta.badge + '">' + KingAdmin.esc(meta.label) + '</span>';
+      }
+
+      function showSettingsError(err, retryFn) {
+        var alertEl = document.getElementById('ad-global-alert');
+        alertEl.innerHTML =
+          '<div class="ad-alert ad-alert-error ad-error-inline">' +
+          '  <div><strong>Não foi possível carregar configurações:</strong> ' + KingAdmin.esc((err && err.message) || 'Erro de conexão.') + '</div>' +
+          '  <button type="button" id="retry-settings-btn" class="ad-btn ad-btn-secondary ad-btn-sm">Tentar novamente</button>' +
+          '</div>';
+        var btn = document.getElementById('retry-settings-btn');
+        if (btn && typeof retryFn === 'function') btn.addEventListener('click', retryFn);
       }
 
       async function loadIntegrationStatuses() {
         var wrap = document.getElementById('integrations-status-wrap');
+        var refreshBtn = document.getElementById('refresh-status-btn');
+        refreshBtn.disabled = true;
+        refreshBtn.textContent = 'Verificando...';
+
         try {
           var data = await KingAdmin.apiFetch('/api/admin/integrations/status');
           var s = data.statuses || {};
@@ -253,8 +302,8 @@
                 '<tr>' +
                 '  <td><strong>' + KingAdmin.esc(r.label) + '</strong></td>' +
                 '  <td>' + statusBadge(st) + '</td>' +
-                '  <td style="font-size:0.8rem;color:#94A3B8;" id="test-msg-' + r.key + '">' + KingAdmin.esc(detail) + '</td>' +
-                '  <td>' + (r.target ? '<button type="button" class="ad-btn ad-btn-secondary ad-btn-sm test-int-btn" data-key="' + r.key + '" data-target="' + r.target + '">Testar Conexão</button>' : 'Injeção em navegador') + '</td>' +
+                '  <td style="font-size:0.8rem;color:#94A3B8;" id="test-msg-' + KingAdmin.esc(r.key) + '">' + KingAdmin.esc(detail) + '</td>' +
+                '  <td>' + (r.target ? '<button type="button" class="ad-btn ad-btn-secondary ad-btn-sm test-int-btn" data-key="' + KingAdmin.esc(r.key) + '" data-target="' + KingAdmin.esc(r.target) + '">Testar Conexão</button>' : 'Injeção em navegador') + '</td>' +
                 '</tr>'
               );
             }).join('') + '</tbody></table>';
@@ -263,33 +312,46 @@
             btn.addEventListener('click', async function () {
               var msgCell = document.getElementById('test-msg-' + btn.dataset.key);
               btn.disabled = true;
-              msgCell.textContent = 'Testando...';
+              btn.textContent = 'Testando...';
+              msgCell.textContent = 'Testando conectividade real...';
               try {
                 var res = await KingAdmin.apiFetch('/api/admin/integrations/' + encodeURIComponent(btn.dataset.target) + '/test', {
                   method: 'POST',
                   body: '{}'
                 });
-                msgCell.textContent = '[' + res.status + '] ' + (res.message || res.reason || (res.ok ? 'Conexão OK' : 'Falha'));
-                KingAdmin.showToast(res.ok ? 'Teste OK: ' + btn.dataset.target : 'Teste retornou: ' + res.status, !res.ok);
+                var stLabel = (INTEGRATION_STATUS_META[res.status] || { label: res.status }).label;
+                msgCell.textContent = '[' + stLabel + '] ' + (res.message || res.reason || (res.ok ? 'Conexão OK' : 'Falha'));
+                KingAdmin.showToast(res.ok ? 'Teste OK: ' + btn.dataset.target : 'Status: ' + stLabel, !res.ok);
               } catch (err) {
                 msgCell.textContent = err.message;
                 KingAdmin.showToast(err.message, true);
               } finally {
                 btn.disabled = false;
+                btn.textContent = 'Testar Conexão';
               }
             });
           });
         } catch (err) {
-          wrap.innerHTML = '<div class="ad-alert ad-alert-error">' + KingAdmin.esc(err.message) + '</div>';
+          wrap.innerHTML =
+            '<div class="ad-alert ad-alert-error ad-error-inline">' +
+            '  <span>' + KingAdmin.esc(err.message || 'Erro ao verificar integrações.') + '</span>' +
+            '  <button type="button" id="retry-int-btn" class="ad-btn ad-btn-secondary ad-btn-sm">Tentar novamente</button>' +
+            '</div>';
+          var retryIntBtn = document.getElementById('retry-int-btn');
+          if (retryIntBtn) retryIntBtn.addEventListener('click', loadIntegrationStatuses);
+        } finally {
+          refreshBtn.disabled = false;
+          refreshBtn.textContent = 'Reverificar';
         }
       }
 
       async function loadAllSettings() {
+        document.getElementById('ad-global-alert').innerHTML = '';
         try {
           var results = await Promise.all([
             KingAdmin.apiFetch('/api/admin/settings'),
-            KingAdmin.apiFetch('/api/admin/users').catch(function () { return { users: [], roles: [] }; }),
-            KingAdmin.apiFetch('/api/admin/audit-logs').catch(function () { return { logs: [] }; })
+            KingAdmin.apiFetch('/api/admin/users').catch(function () { return { users: [], roles: [], forbidden: true }; }),
+            KingAdmin.apiFetch('/api/admin/audit-logs').catch(function () { return { logs: [], forbidden: true }; })
           ]);
 
           var list = results[0].settings || [];
@@ -355,26 +417,38 @@
             return '<option value="' + KingAdmin.esc(r.slug) + '">' + KingAdmin.esc(r.name) + '</option>';
           }).join('');
           document.getElementById('users-table-wrap').innerHTML = users.length
-            ? '<table class="ad-table"><thead><tr><th>Nome</th><th>E-mail</th><th>Papel</th><th>Ativo</th></tr></thead><tbody>' +
+            ? '<table class="ad-table"><thead><tr><th>Nome</th><th>E-mail</th><th>Perfil</th><th>Ativo</th></tr></thead><tbody>' +
               users.map(function (u) {
                 return '<tr><td><strong>' + KingAdmin.esc(u.full_name) + '</strong></td><td>' + KingAdmin.esc(u.email) + '</td><td>' + KingAdmin.esc(u.role ? u.role.name : '—') + '</td><td>' + (u.is_active ? 'Sim' : 'Não') + '</td></tr>';
               }).join('') + '</tbody></table>'
-            : '<p style="color:#94A3B8;">Sem permissão ou nenhum usuário listado.</p>';
+            : '<p style="color:#94A3B8;">Sem permissão para listar ou nenhum administrador cadastrado.</p>';
+
+          var canCreateUsers = currentAdminUser && currentAdminUser.role_slug === 'super_admin';
+          document.getElementById('create-user-btn').disabled = !canCreateUsers;
+          if (!canCreateUsers) {
+            document.getElementById('user-create-note').textContent =
+              'Seu perfil atual não possui permissão de Super Administrador para cadastrar novos usuários.';
+          }
 
           var logs = results[2].logs || [];
           document.getElementById('audit-table-wrap').innerHTML = logs.length
             ? '<table class="ad-table"><thead><tr><th>Data</th><th>Ator</th><th>Ação</th><th>Entidade</th></tr></thead><tbody>' +
               logs.slice(0, 30).map(function (l) {
-                return '<tr><td>' + KingAdmin.esc(KingAdmin.formatDate(l.created_at)) + '</td><td>' + KingAdmin.esc(l.actor_email || 'sistema') + '</td><td><code>' + KingAdmin.esc(l.action) + '</code></td><td>' + KingAdmin.esc(l.entity_type) + '</td></tr>';
+                var actLabel = AUDIT_ACTION_LABELS[l.action] || String(l.action || '—');
+                var entLabel = ENTITY_TYPE_LABELS[l.entity_type] || String(l.entity_type || '—');
+                return '<tr><td>' + KingAdmin.esc(KingAdmin.formatDate(l.created_at)) + '</td><td>' + KingAdmin.esc(l.actor_email || 'sistema') + '</td><td>' + KingAdmin.esc(actLabel) + '</td><td>' + KingAdmin.esc(entLabel) + '</td></tr>';
               }).join('') + '</tbody></table>'
-            : '<p style="color:#94A3B8;">Nenhum log registrado.</p>';
+            : '<p style="color:#94A3B8;">Nenhum log registrado ou acesso restrito.</p>';
         } catch (err) {
-          KingAdmin.renderErrorState('ad-global-alert', err);
+          showSettingsError(err, loadAllSettings);
         }
       }
 
       document.getElementById('tracking-settings-form').addEventListener('submit', async function (e) {
         e.preventDefault();
+        var btn = document.getElementById('save-tracking-btn');
+        btn.disabled = true;
+        btn.textContent = 'Salvando...';
         try {
           await KingAdmin.apiFetch('/api/admin/settings', {
             method: 'PUT',
@@ -397,12 +471,24 @@
           KingAdmin.showToast('Credenciais salvas com criptografia no servidor.');
           loadIntegrationStatuses();
         } catch (err) {
-          KingAdmin.showToast(err.message, true);
+          KingAdmin.showToast(err.message || 'Erro ao salvar credenciais.', true);
+        } finally {
+          btn.disabled = false;
+          btn.textContent = 'Salvar Credenciais de Tracking';
         }
       });
 
       document.getElementById('goals-settings-form').addEventListener('submit', async function (e) {
         e.preventDefault();
+        var slaMin = Number(document.getElementById('g-sla-min').value || 30);
+        if (!Number.isFinite(slaMin) || slaMin < 5) {
+          KingAdmin.showToast('O prazo mínimo de SLA é 5 minutos.', true);
+          return;
+        }
+        var btn = document.getElementById('save-goals-btn');
+        btn.disabled = true;
+        btn.textContent = 'Salvando...';
+
         var updatedThresholds = Object.assign({}, cachedThresholds, {
           cpl_brl: { target: Number(document.getElementById('g-cpl-target').value), warning: Number(document.getElementById('g-cpl-warn').value), critical: Number(document.getElementById('g-cpl-crit').value), direction: 'lower_is_better' },
           cpql_brl: { target: Number(document.getElementById('g-cpql-target').value), warning: Number(document.getElementById('g-cpql-warn').value), critical: Number(document.getElementById('g-cpql-crit').value), direction: 'lower_is_better' },
@@ -415,19 +501,25 @@
             method: 'PUT',
             body: JSON.stringify({
               settings: {
-                'automation.unattended_sla_minutes': Number(document.getElementById('g-sla-min').value || 30),
+                'automation.unattended_sla_minutes': slaMin,
                 'goals.kpi_thresholds': updatedThresholds
               }
             })
           });
           KingAdmin.showToast('Metas e SLA atualizados.');
         } catch (err) {
-          KingAdmin.showToast(err.message, true);
+          KingAdmin.showToast(err.message || 'Erro ao salvar metas.', true);
+        } finally {
+          btn.disabled = false;
+          btn.textContent = 'Salvar Metas e SLA';
         }
       });
 
       document.getElementById('landing-settings-form').addEventListener('submit', async function (e) {
         e.preventDefault();
+        var btn = document.getElementById('save-landing-btn');
+        btn.disabled = true;
+        btn.textContent = 'Atualizando...';
         try {
           await KingAdmin.apiFetch('/api/admin/settings', {
             method: 'PUT',
@@ -451,12 +543,18 @@
           });
           KingAdmin.showToast('Conteúdo público atualizado.');
         } catch (err) {
-          KingAdmin.showToast(err.message, true);
+          KingAdmin.showToast(err.message || 'Erro ao atualizar conteúdo público.', true);
+        } finally {
+          btn.disabled = false;
+          btn.textContent = 'Atualizar Conteúdo Público';
         }
       });
 
       document.getElementById('new-user-form').addEventListener('submit', async function (e) {
         e.preventDefault();
+        var btn = document.getElementById('create-user-btn');
+        btn.disabled = true;
+        btn.textContent = 'Cadastrando...';
         try {
           await KingAdmin.apiFetch('/api/admin/users', {
             method: 'POST',
@@ -470,20 +568,28 @@
           });
           this.reset();
           KingAdmin.showToast('Administrador cadastrado.');
-          loadAllSettings();
+          await loadAllSettings();
         } catch (err) {
-          KingAdmin.showToast(err.message, true);
+          KingAdmin.showToast(err.message || 'Erro ao cadastrar administrador.', true);
+        } finally {
+          btn.disabled = !(currentAdminUser && currentAdminUser.role_slug === 'super_admin');
+          btn.textContent = 'Criar Administrador';
         }
       });
 
       document.getElementById('refresh-status-btn').addEventListener('click', loadIntegrationStatuses);
 
-      document.addEventListener('DOMContentLoaded', async function () {
-        if (await KingAdmin.initProtectedPage('configuracoes')) {
-          loadIntegrationStatuses();
-          loadAllSettings();
+      async function boot() {
+        currentAdminUser = await KingAdmin.initProtectedPage('configuracoes');
+        if (!currentAdminUser) {
+          showSettingsError(new Error('Sessão administrativa indisponível.'), boot);
+          return;
         }
-      });
+        loadIntegrationStatuses();
+        loadAllSettings();
+      }
+
+      document.addEventListener('DOMContentLoaded', boot);
     })();
   </script>
 </body>

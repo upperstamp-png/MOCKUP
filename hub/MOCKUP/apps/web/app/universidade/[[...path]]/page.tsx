@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { FormEvent, useEffect, useRef, useState } from 'react';
 import { createClient, type Session } from '@supabase/supabase-js';
-import { hubAsset } from '@/lib/api-client';
+import { hubAsset, useUnifiedHubPrefix } from '@/lib/api-client';
 import styles from '../university.module.css';
 
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -24,6 +24,8 @@ const modules = (track: Track) => [...track.university_modules].sort((a, b) => a
 const lessons = (track: Track) => modules(track).flatMap(module => [...module.university_lessons].sort((a, b) => a.position - b.position));
 
 export default function University({ params }: { params: { path?: string[] } }) {
+  const hubPrefix = useUnifiedHubPrefix();
+  const homeHref = hubPrefix ? `${hubPrefix}` : '/';
   const [menuOpen, setMenuOpen] = useState(false);
   const [session, setSession] = useState<Session | null>();
   const [role, setRole] = useState('');
@@ -102,10 +104,10 @@ export default function University({ params }: { params: { path?: string[] } }) 
   const next = trackLessons.find(item => !done.has(item.id)) ?? trackLessons[0];
 
   return <div className={styles.shell}>
-    <aside><Link href="/"><img src={hubAsset('/king-sports/logo.png')} alt="King Sports" width={150} height={38} /></Link>
+    <aside><Link href={homeHref}><img src={hubAsset('/king-sports/logo.png')} alt="King Sports" width={150} height={38} /></Link>
       <button type="button" className={styles.mobileMenu} aria-expanded={menuOpen} aria-controls="university-menu" onClick={() => setMenuOpen(open => !open)}>{menuOpen ? 'Fechar menu' : 'Abrir menu'}</button>
       <div id="university-menu" className={styles.sidebarContent} data-open={menuOpen}>
-      <nav onClick={event => { if ((event.target as HTMLElement).closest('a')) setMenuOpen(false); }}><Link href="/">Meu dia</Link><Link href="/universidade">Universidade</Link><Link href="/?area=sandbox">Sandbox e banca</Link>{admin && <Link href="/universidade/gestao">Gestão de conteúdo</Link>}</nav>
+      <nav onClick={event => { if ((event.target as HTMLElement).closest('a')) setMenuOpen(false); }}><Link href={homeHref}>Meu dia</Link><Link href="/universidade">Universidade</Link><Link href={`${homeHref}?area=sandbox`}>Sandbox e banca</Link>{admin && <Link href="/universidade/gestao">Gestão de conteúdo</Link>}</nav>
       {session && <button onClick={async () => { await db?.auth.signOut(); setRole(''); setTracks([]); setProgress([]); }}>Sair da Universidade</button>}
       </div>
     </aside>
@@ -163,7 +165,7 @@ export default function University({ params }: { params: { path?: string[] } }) 
           <h2>Atividades e banca</h2>
           <p>As atividades cadastradas aparecem nas respectivas aulas.</p>
           <p>{banca ? 'Banca: ' + ({ draft: 'rascunho', submitted: 'em avaliação', approved: 'aprovada', retry_required: 'novo envio necessário' }[banca] ?? banca) : 'Nenhuma avaliação da banca registrada no portal autenticado.'}</p>
-          <Link href="/?area=sandbox">Abrir Sandbox e banca</Link>
+          <Link href={`${homeHref}?area=sandbox`}>Abrir Sandbox e banca</Link>
         </section>
       </>}
     </main>

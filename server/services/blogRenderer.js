@@ -1,23 +1,124 @@
 'use strict';
 
-const { escapeHtml } = require('../utils/crypto');
+const { escapeHtml, sanitizeArticleHtml } = require('../utils/crypto');
 const { stripHtmlToPlainText } = require('./geoService');
+
+const ALLOWED_SCHEMA_TYPES = new Set(['Article', 'BlogPosting', 'NewsArticle']);
+const LEGACY_HOSTS = new Set(['franquia.kingsportsoficial.com.br', 'www.franquia.kingsportsoficial.com.br']);
+const DEFAULT_BLOG_IMAGE = '/assets/images/ks-fusion-01.jpg';
+
+function toSafeIsoDate(value, fallbackIso = new Date().toISOString()) {
+  if (!value) return fallbackIso;
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? fallbackIso : parsed.toISOString();
+}
 
 function formatPtDate(iso) {
   if (!iso) return '';
   try {
+    const parsed = new Date(iso);
+    if (Number.isNaN(parsed.getTime())) {
+      return String(iso).slice(0, 10);
+    }
     return new Intl.DateTimeFormat('pt-BR', {
       day: '2-digit',
       month: 'long',
       year: 'numeric'
-    }).format(new Date(iso));
+    }).format(parsed);
   } catch {
     return String(iso).slice(0, 10);
   }
 }
 
 function serializeJsonLd(data) {
-  return JSON.stringify(data).replace(/</g, '\\u003c');
+  return JSON.stringify(data)
+    .replace(/</g, '\\u003c')
+    .replace(/\u2028/g, '\\u2028')
+    .replace(/\u2029/g, '\\u2029');
+}
+
+function serializeInlineJsString(value) {
+  return JSON.stringify(String(value || ''))
+    .replace(/</g, '\\u003c')
+    .replace(/\u2028/g, '\\u2028')
+    .replace(/\u2029/g, '\\u2029');
+}
+
+function sanitizeRenderedArticleHtml(html) {
+  return sanitizeArticleHtml(html)
+    .replace(/<object[\s\S]*?>[\s\S]*?<\/object>/gi, '')
+    .replace(/<embed\b[^>]*\/?>/gi, '')
+    .replace(/<applet[\s\S]*?>[\s\S]*?<\/applet>/gi, '')
+    .replace(/<form[\s\S]*?>[\s\S]*?<\/form>/gi, '')
+    .replace(/<base\b[^>]*\/?>/gi, '')
+    .replace(/<meta\b[^>]*\/?>/gi, '')
+    .replace(/<link\b[^>]*\/?>/gi, '')
+    .replace(/\ssrcdoc\s*=\s*(['"]).*?\1/gi, '')
+    .replace(/\ssrcdoc\s*=\s*[^\s>]+/gi, '')
+    .replace(/vbscript:/gi, '')
+    .replace(/data:\s*text\/html/gi, '');
+}
+
+function isLoopbackHost(hostname) {
+  const clean = String(hostname || '').toLowerCase();
+  return clean === 'localhost' || clean === '127.0.0.1' || clean === '[::1]';
+}
+
+function resolveSafeAssetUrl(rawUrl, fallbackPath = DEFAULT_BLOG_IMAGE) {
+  const trimmed = String(rawUrl || '').trim();
+  if (!trimmed || /[\r\n\t<>]/.test(trimmed) || trimmed.startsWith('//')) {
+    return fallbackPath;
+  }
+  if (trimmed.startsWith('/')) {
+    return trimmed;
+  }
+  try {
+    const parsed = new URL(trimmed);
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+      return fallbackPath;
+    }
+    if (LEGACY_HOSTS.has(parsed.hostname.toLowerCase())) {
+      return `${parsed.pathname || '/'}${parsed.search || ''}`;
+    }
+    return parsed.toString();
+  } catch {
+    return fallbackPath;
+  }
+}
+
+function resolveSafeCanonicalUrl(rawCanonical, fallbackUrl, cleanBase = '') {
+  const trimmed = String(rawCanonical || '').trim();
+  if (!trimmed || /[\r\n\t<>]/.test(trimmed) || trimmed.startsWith('//')) {
+    return fallbackUrl;
+  }
+  const normalizedBase = String(cleanBase || '').replace(/\/+$/, '');
+  if (trimmed.startsWith('/')) {
+    return normalizedBase ? `${normalizedBase}${trimmed}` : fallbackUrl;
+  }
+  try {
+    const parsed = new URL(trimmed);
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+      return fallbackUrl;
+    }
+    let baseHost = '';
+    if (normalizedBase) {
+      try {
+        baseHost = new URL(normalizedBase).hostname.toLowerCase();
+      } catch {
+        baseHost = '';
+      }
+    }
+    const targetHost = parsed.hostname.toLowerCase();
+    if (
+      normalizedBase &&
+      (LEGACY_HOSTS.has(targetHost) || (isLoopbackHost(targetHost) && baseHost && !isLoopbackHost(baseHost)))
+    ) {
+      return `${normalizedBase}${parsed.pathname || '/'}${parsed.search || ''}`;
+    }
+    return parsed.toString();
+  } catch {
+    return fallbackUrl;
+  }
 }
 
 function extractOrigin(canonicalUrl, fallbackAppUrl = '') {
@@ -37,20 +138,27 @@ function renderSharedHead({
   canonicalUrl,
   ogImage,
   ogImageAlt = title,
+  ogTitle = title,
+  ogDescription = description,
   ogType = 'website',
   appUrl = '',
   jsonLd = null,
-  noindex = false
+  noindex = false,
+  robotsDirective = ''
 }) {
   const safeTitle = escapeHtml(title);
   const safeDesc = escapeHtml(description);
+  const safeOgTitle = escapeHtml(ogTitle || title);
+  const safeOgDesc = escapeHtml(ogDescription || description);
   const safeCanonical = escapeHtml(canonicalUrl);
   const safeOgImage = escapeHtml(ogImage);
   const safeOgAlt = escapeHtml(ogImageAlt || title);
   const originUrl = extractOrigin(canonicalUrl, appUrl);
-  const robotsContent = noindex
-    ? 'noindex, nofollow, noarchive'
-    : 'index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1';
+  const robotsContent =
+    robotsDirective ||
+    (noindex
+      ? 'noindex, nofollow, noarchive'
+      : 'index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1');
 
   return `<!DOCTYPE html>
 <html lang="pt-BR">
@@ -77,15 +185,15 @@ function renderSharedHead({
   <link rel="apple-touch-icon" sizes="180x180" href="/assets/images/apple-touch-icon.png" />
   <meta property="og:site_name" content="King Sports Franchising" />
   <meta property="og:type" content="${escapeHtml(ogType)}" />
-  <meta property="og:title" content="${safeTitle}" />
-  <meta property="og:description" content="${safeDesc}" />
+  <meta property="og:title" content="${safeOgTitle}" />
+  <meta property="og:description" content="${safeOgDesc}" />
   <meta property="og:url" content="${safeCanonical}" />
   <meta property="og:image" content="${safeOgImage}" />
   <meta property="og:image:alt" content="${safeOgAlt}" />
   <meta property="og:locale" content="pt_BR" />
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="${safeTitle}" />
-  <meta name="twitter:description" content="${safeDesc}" />
+  <meta name="twitter:title" content="${safeOgTitle}" />
+  <meta name="twitter:description" content="${safeOgDesc}" />
   <meta name="twitter:image" content="${safeOgImage}" />
   <meta name="twitter:image:alt" content="${safeOgAlt}" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -99,7 +207,7 @@ function renderSharedHead({
 
 function renderSiteHeader() {
   return `
-<header class="ks-header">
+<header class="ks-header ks-blog-header">
   <div class="ks-container ks-header-inner">
     <a href="/" class="ks-logo-link" aria-label="King Sports Franchising">
       <img src="/assets/images/logo-king-dark-bg.png" alt="King Sports Franchising" width="136" height="34" />
@@ -111,10 +219,26 @@ function renderSiteHeader() {
       <a href="/#investimento">Investimento</a>
       <a href="/blog" class="active">Blog</a>
     </nav>
-    <a href="/#candidatura" class="ks-btn ks-btn-primary ks-btn-sm" data-track-cta="blog_header_cta">
-      QUERO CONHECER A FRANQUIA
-    </a>
+    <div class="ks-blog-header-actions">
+      <a href="/#candidatura" class="ks-btn ks-btn-primary ks-btn-sm ks-blog-header-cta" data-track-cta="blog_header_cta">
+        QUERO CONHECER A FRANQUIA
+      </a>
+      <button type="button" class="ks-hamburger" id="ks-blog-hamburger-btn" aria-label="Abrir menu" aria-expanded="false" aria-controls="ks-blog-mobile-drawer">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true">
+          <path d="M4 6h16M4 12h16M4 18h16" stroke-linecap="round" />
+        </svg>
+      </button>
+    </div>
   </div>
+  <nav class="ks-mobile-drawer" id="ks-blog-mobile-drawer" aria-label="Menu Mobile">
+    <a href="/">Início (Landing Page)</a>
+    <a href="/#oportunidade">Modelo Home Based</a>
+    <a href="/#comparativo">Compare o Modelo</a>
+    <a href="/#produtos">Produtos &amp; Malhas</a>
+    <a href="/#investimento">Investimento &amp; COF</a>
+    <a href="/blog">Blog Técnico</a>
+    <a href="/#candidatura" class="ks-btn ks-btn-primary ks-btn-sm">QUERO CONHECER A FRANQUIA</a>
+  </nav>
 </header>`;
 }
 
@@ -151,6 +275,29 @@ function renderSiteFooter() {
     <span>Atendimento comercial conforme Lei nº 13.966/2019.</span>
   </div>
 </footer>
+<script>
+  (function() {
+    var btn = document.getElementById('ks-blog-hamburger-btn');
+    var drawer = document.getElementById('ks-blog-mobile-drawer');
+    if (!btn || !drawer) return;
+    btn.addEventListener('click', function() {
+      var isOpen = drawer.classList.toggle('open');
+      btn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+    });
+    drawer.querySelectorAll('a').forEach(function(link) {
+      link.addEventListener('click', function() {
+        drawer.classList.remove('open');
+        btn.setAttribute('aria-expanded', 'false');
+      });
+    });
+    document.addEventListener('keydown', function(evt) {
+      if (evt.key === 'Escape' && drawer.classList.contains('open')) {
+        drawer.classList.remove('open');
+        btn.setAttribute('aria-expanded', 'false');
+      }
+    });
+  })();
+</script>
 <script src="/assets/js/tracking.js" defer></script>`;
 }
 
@@ -159,9 +306,10 @@ function renderBlogIndexPage({ appUrl, posts, categories, activeCategorySlug = n
   const activeCategory = activeCategorySlug
     ? categories.find((c) => c.slug === activeCategorySlug) || null
     : null;
+  const notFoundCategory = Boolean(activeCategorySlug && !activeCategory && !dbUnavailable);
 
-  const canonicalUrl = activeCategorySlug
-    ? `${cleanBase}/blog?categoria=${encodeURIComponent(activeCategorySlug)}`
+  const canonicalUrl = activeCategory
+    ? `${cleanBase}/blog?categoria=${encodeURIComponent(activeCategory.slug)}`
     : `${cleanBase}/blog`;
 
   const title = activeCategory
@@ -232,7 +380,7 @@ function renderBlogIndexPage({ appUrl, posts, categories, activeCategorySlug = n
       itemListElement: posts.map((post, idx) => ({
         '@type': 'ListItem',
         position: idx + 1,
-        url: `${cleanBase}/blog/${post.slug}`,
+        url: `${cleanBase}/blog/${encodeURIComponent(String(post.slug || '').trim())}`,
         name: post.title
       }))
     });
@@ -242,9 +390,11 @@ function renderBlogIndexPage({ appUrl, posts, categories, activeCategorySlug = n
     title,
     description,
     canonicalUrl,
-    ogImage: `${cleanBase}/assets/images/ks-fusion-01.jpg`,
+    ogImage: `${cleanBase}${DEFAULT_BLOG_IMAGE}`,
     ogImageAlt: 'Blog King Sports Franchising — Uniformes Esportivos Personalizados e Franquias',
     appUrl: cleanBase,
+    noindex: notFoundCategory,
+    robotsDirective: notFoundCategory ? 'noindex, follow' : '',
     jsonLd: {
       '@context': 'https://schema.org',
       '@graph': graph
@@ -252,11 +402,11 @@ function renderBlogIndexPage({ appUrl, posts, categories, activeCategorySlug = n
   });
 
   const categoryPills = [
-    `<a href="/blog" class="ks-cat-pill ${!activeCategorySlug ? 'active' : ''}">Todos os artigos</a>`,
+    `<a href="/blog" class="ks-cat-pill ${!activeCategory ? 'active' : ''}">Todos os artigos</a>`,
     ...categories.map(
       (cat) =>
         `<a href="/blog?categoria=${encodeURIComponent(cat.slug)}" class="ks-cat-pill ${
-          activeCategorySlug === cat.slug ? 'active' : ''
+          activeCategory && activeCategory.slug === cat.slug ? 'active' : ''
         }">${escapeHtml(cat.name)}</a>`
     )
   ].join('');
@@ -279,24 +429,27 @@ function renderBlogIndexPage({ appUrl, posts, categories, activeCategorySlug = n
   } else {
     cardsHtml = `<div class="ks-blog-grid">${posts
       .map((post) => {
-        const img = post.cover_image_url || '/assets/images/ks-fusion-01.jpg';
+        const img = resolveSafeAssetUrl(post.cover_image_url, DEFAULT_BLOG_IMAGE);
         const catName = post.category?.name || 'Franchising';
+        const postHref = `/blog/${encodeURIComponent(String(post.slug || '').trim())}`;
+        const rawDate = post.published_at || post.created_at;
+        const safeDatetime = rawDate ? toSafeIsoDate(rawDate, '') : '';
         return `
         <article class="ks-blog-card">
-          <a href="/blog/${escapeHtml(post.slug)}" class="ks-blog-card-img-wrap">
+          <a href="${escapeHtml(postHref)}" class="ks-blog-card-img-wrap">
             <img src="${escapeHtml(img)}" alt="${escapeHtml(post.cover_image_alt || post.title)}" width="1376" height="768" loading="lazy" decoding="async" />
           </a>
           <div class="ks-blog-card-body">
             <div class="ks-blog-meta">
               <span class="ks-badge">${escapeHtml(catName)}</span>
-              <time datetime="${escapeHtml(post.published_at || post.created_at)}">${escapeHtml(
-                formatPtDate(post.published_at || post.created_at)
+              <time datetime="${escapeHtml(safeDatetime || String(rawDate || ''))}">${escapeHtml(
+                formatPtDate(rawDate)
               )}</time>
-              <span>• ${Number(post.reading_time_minutes || 4)} min</span>
+              <span>• ${Math.max(1, Number(post.reading_time_minutes || 4) || 4)} min</span>
             </div>
-            <h2><a href="/blog/${escapeHtml(post.slug)}">${escapeHtml(post.title)}</a></h2>
+            <h2><a href="${escapeHtml(postHref)}">${escapeHtml(post.title)}</a></h2>
             <p>${escapeHtml(post.excerpt || '')}</p>
-            <a href="/blog/${escapeHtml(post.slug)}" class="ks-read-more">Ler artigo completo →</a>
+            <a href="${escapeHtml(postHref)}" class="ks-read-more">Ler artigo completo →</a>
           </div>
         </article>`;
       })
@@ -326,7 +479,7 @@ function renderBlogIndexPage({ appUrl, posts, categories, activeCategorySlug = n
         <h2>Quer operar a marca King Sports na sua região?</h2>
         <p>Conheça a estrutura produtiva de São Paulo, a Maleta King Sports Pro e verifique a disponibilidade para a sua cidade.</p>
       </div>
-      <a href="/?utm_source=blog&utm_medium=index_cta&utm_campaign=expansao_franquia#candidatura" class="ks-btn ks-btn-primary" data-track-cta="blog_index_bottom_cta">
+      <a href="/?utm_source=blog&amp;utm_medium=index_cta&amp;utm_campaign=expansao_franquia#candidatura" class="ks-btn ks-btn-primary" data-track-cta="blog_index_bottom_cta">
         QUERO CONHECER A FRANQUIA
       </a>
     </section>
@@ -338,18 +491,31 @@ function renderBlogIndexPage({ appUrl, posts, categories, activeCategorySlug = n
 
 function renderBlogArticlePage({ appUrl, post, relatedPosts = [] }) {
   const cleanBase = String(appUrl || 'http://localhost:3000').replace(/\/+$/, '');
-  const canonicalUrl = post.canonical_url || `${cleanBase}/blog/${post.slug}`;
-  const ogImage = post.og_image_url || post.cover_image_url || '/assets/images/ks-fusion-01.jpg';
-  const absoluteOgImage = ogImage.startsWith('http') ? ogImage : `${cleanBase}${ogImage}`;
+  const safeSlug = String(post.slug || '').trim();
+  const defaultCanonical = `${cleanBase}/blog/${encodeURIComponent(safeSlug)}`;
+  const canonicalUrl = resolveSafeCanonicalUrl(post.canonical_url, defaultCanonical, cleanBase);
+  const ogImageCandidate = resolveSafeAssetUrl(post.og_image_url || post.cover_image_url, DEFAULT_BLOG_IMAGE);
+  const absoluteOgImage = ogImageCandidate.startsWith('http')
+    ? ogImageCandidate
+    : `${cleanBase}${ogImageCandidate}`;
+  const safeCoverImage = post.cover_image_url ? resolveSafeAssetUrl(post.cover_image_url, '') : '';
+
   const title = post.meta_title || `${post.title} | Blog King Sports`;
   const description = post.meta_description || post.excerpt || post.title;
+  const ogTitle = post.og_title || title;
+  const ogDescription = post.og_description || description;
   const ctaLink = `/?utm_source=blog&utm_medium=article_cta&utm_campaign=${encodeURIComponent(
-    post.slug
-  )}&blog_post=${encodeURIComponent(post.slug)}#candidatura`;
+    safeSlug
+  )}&blog_post=${encodeURIComponent(safeSlug)}#candidatura`;
 
-  const plainText = stripHtmlToPlainText(post.content_html || '');
+  const sanitizedContentHtml = sanitizeRenderedArticleHtml(post.content_html || '');
+  const plainText = stripHtmlToPlainText(sanitizedContentHtml);
   const wordCount = plainText ? plainText.split(/\s+/).filter(Boolean).length : 0;
   const categoryName = post.category?.name || 'Franchising Esportivo';
+  const schemaType = ALLOWED_SCHEMA_TYPES.has(post.schema_type) ? post.schema_type : 'Article';
+  const datePublishedIso = toSafeIsoDate(post.published_at || post.created_at);
+  const dateModifiedIso = toSafeIsoDate(post.updated_at || post.published_at || post.created_at, datePublishedIso);
+  const readingMinutes = Math.max(1, Number(post.reading_time_minutes || 4) || 4);
 
   const breadcrumbItems = [
     { '@type': 'ListItem', position: 1, name: 'Início', item: `${cleanBase}/` },
@@ -396,17 +562,17 @@ function renderBlogArticlePage({ appUrl, post, relatedPosts = [] }) {
         }
       },
       {
-        '@type': post.schema_type || 'Article',
+        '@type': schemaType,
         '@id': `${canonicalUrl}#article`,
         headline: post.title,
         description,
         inLanguage: 'pt-BR',
         articleSection: categoryName,
         wordCount,
-        timeRequired: `PT${Number(post.reading_time_minutes || 4)}M`,
+        timeRequired: `PT${readingMinutes}M`,
         image: [absoluteOgImage],
-        datePublished: post.published_at || post.created_at,
-        dateModified: post.updated_at || post.published_at || post.created_at,
+        datePublished: datePublishedIso,
+        dateModified: dateModifiedIso,
         author: authorEntity,
         publisher: { '@id': `${cleanBase}/#organization` },
         mainEntityOfPage: {
@@ -431,6 +597,8 @@ function renderBlogArticlePage({ appUrl, post, relatedPosts = [] }) {
     canonicalUrl,
     ogImage: absoluteOgImage,
     ogImageAlt: post.cover_image_alt || post.title,
+    ogTitle,
+    ogDescription,
     ogType: 'article',
     appUrl: cleanBase,
     jsonLd
@@ -441,23 +609,24 @@ function renderBlogArticlePage({ appUrl, post, relatedPosts = [] }) {
         <h3>Continue lendo</h3>
         <div class="ks-blog-grid ks-blog-grid-3">
           ${relatedPosts
-            .map(
-              (item) => `
+            .map((item) => {
+              const itemHref = `/blog/${encodeURIComponent(String(item.slug || '').trim())}`;
+              return `
             <article class="ks-blog-card">
               <div class="ks-blog-card-body">
                 <span class="ks-badge">${escapeHtml(item.category?.name || 'Franchising')}</span>
-                <h4><a href="/blog/${escapeHtml(item.slug)}">${escapeHtml(item.title)}</a></h4>
-                <a href="/blog/${escapeHtml(item.slug)}" class="ks-read-more">Ler artigo →</a>
+                <h4><a href="${escapeHtml(itemHref)}">${escapeHtml(item.title)}</a></h4>
+                <a href="${escapeHtml(itemHref)}" class="ks-read-more">Ler artigo →</a>
               </div>
-            </article>`
-            )
+            </article>`;
+            })
             .join('')}
         </div>
       </section>`
     : '';
 
   return `${head}
-<body class="ks-body-dark" data-blog-slug="${escapeHtml(post.slug)}">
+<body class="ks-body-dark" data-blog-slug="${escapeHtml(safeSlug)}">
   ${renderSiteHeader()}
   <main class="ks-article-main">
     <article class="ks-container ks-article-wrap">
@@ -474,25 +643,25 @@ function renderBlogArticlePage({ appUrl, post, relatedPosts = [] }) {
       <header class="ks-article-header">
         <div class="ks-blog-meta">
           <span class="ks-badge">${escapeHtml(categoryName)}</span>
-          <time datetime="${escapeHtml(post.published_at || post.created_at)}">${escapeHtml(
+          <time datetime="${escapeHtml(datePublishedIso)}">${escapeHtml(
             formatPtDate(post.published_at || post.created_at)
           )}</time>
-          <span>• ${Number(post.reading_time_minutes || 4)} min de leitura</span>
+          <span>• ${readingMinutes} min de leitura</span>
         </div>
         <h1>${escapeHtml(post.title)}</h1>
         <p class="ks-article-excerpt">${escapeHtml(post.excerpt || '')}</p>
       </header>
 
       ${
-        post.cover_image_url
+        safeCoverImage
           ? `<figure class="ks-article-cover">
-              <img src="${escapeHtml(post.cover_image_url)}" alt="${escapeHtml(post.cover_image_alt || post.title)}" width="1376" height="768" decoding="async" />
+              <img src="${escapeHtml(safeCoverImage)}" alt="${escapeHtml(post.cover_image_alt || post.title)}" width="1376" height="768" decoding="async" />
             </figure>`
           : ''
       }
 
       <div class="ks-article-content">
-        ${post.content_html}
+        ${sanitizedContentHtml}
       </div>
 
       <aside class="ks-article-cta-box">
@@ -501,7 +670,7 @@ function renderBlogArticlePage({ appUrl, post, relatedPosts = [] }) {
           <h2>${escapeHtml(post.cta_headline || 'Quer levar a estrutura produtiva da King Sports para a sua região?')}</h2>
           <p>Preencha sua candidatura para análise de perfil e disponibilidade regional, sem compromisso inicial.</p>
         </div>
-        <a href="${ctaLink}" class="ks-btn ks-btn-primary" data-track-cta="blog_article_cta">
+        <a href="${escapeHtml(ctaLink)}" class="ks-btn ks-btn-primary" data-track-cta="blog_article_cta">
           ${escapeHtml(post.cta_button_text || 'QUERO CONHECER A FRANQUIA')}
         </a>
       </aside>
@@ -513,7 +682,7 @@ function renderBlogArticlePage({ appUrl, post, relatedPosts = [] }) {
   <script>
     window.addEventListener('DOMContentLoaded', function() {
       if (window.KingTracking && typeof window.KingTracking.trackBlogView === 'function') {
-        window.KingTracking.trackBlogView(${JSON.stringify(post.slug)});
+        window.KingTracking.trackBlogView(${serializeInlineJsString(safeSlug)});
       }
     });
   </script>
@@ -529,6 +698,7 @@ function renderBlogNotFoundPage() {
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Artigo não encontrado | Blog King Sports</title>
   <meta name="robots" content="noindex, nofollow, noarchive" />
+  <meta name="theme-color" content="#02060E" />
   <link rel="icon" href="/favicon.ico" sizes="any" />
   <link rel="icon" type="image/png" sizes="32x32" href="/assets/images/favicon-32x32.png" />
   <link rel="apple-touch-icon" sizes="180x180" href="/assets/images/apple-touch-icon.png" />
@@ -539,7 +709,7 @@ function renderBlogNotFoundPage() {
 </head>
 <body class="ks-body-dark" style="display:grid;place-items:center;min-height:100vh;padding:24px;text-align:center;">
   <main>
-    <h1 style="font-family:var(--ks-font-display);font-size:2.4rem;text-transform:uppercase;margin-bottom:12px;">Artigo não encontrado</h1>
+    <h1 style="font-family:var(--ks-font-display);font-size:clamp(1.8rem,5vw,2.4rem);text-transform:uppercase;margin-bottom:12px;">Artigo não encontrado</h1>
     <p style="color:#AEBBD0;margin-bottom:24px;">O artigo solicitado não existe ou ainda não foi publicado.</p>
     <a href="/blog" class="ks-btn ks-btn-primary">Voltar ao Blog King Sports</a>
   </main>
@@ -549,18 +719,18 @@ function renderBlogNotFoundPage() {
 
 function renderSitemapXml({ appUrl, posts = [], nowIso = new Date().toISOString() }) {
   const cleanBase = String(appUrl || 'http://localhost:3000').replace(/\/+$/, '');
-  const latestPostIso = posts.length
-    ? new Date(
-        Math.max(
-          ...posts.map((p) => new Date(p.updated_at || p.published_at || p.created_at || Date.now()).getTime())
-        )
-      ).toISOString()
-    : nowIso;
+  const safeNowIso = toSafeIsoDate(nowIso);
+  const validPostTimestamps = posts
+    .map((p) => new Date(toSafeIsoDate(p.updated_at || p.published_at || p.created_at, safeNowIso)).getTime())
+    .filter((ms) => Number.isFinite(ms));
+  const latestPostIso = validPostTimestamps.length
+    ? new Date(Math.max(...validPostTimestamps)).toISOString()
+    : safeNowIso;
 
   const staticUrls = [
     {
       loc: `${cleanBase}/`,
-      lastmod: nowIso,
+      lastmod: safeNowIso,
       changefreq: 'weekly',
       priority: '1.0',
       images: [
@@ -591,14 +761,14 @@ function renderSitemapXml({ appUrl, posts = [], nowIso = new Date().toISOString(
     },
     {
       loc: `${cleanBase}/privacidade.html`,
-      lastmod: nowIso,
+      lastmod: safeNowIso,
       changefreq: 'monthly',
       priority: '0.3',
       images: []
     },
     {
       loc: `${cleanBase}/termos.html`,
-      lastmod: nowIso,
+      lastmod: safeNowIso,
       changefreq: 'monthly',
       priority: '0.3',
       images: []
@@ -606,11 +776,11 @@ function renderSitemapXml({ appUrl, posts = [], nowIso = new Date().toISOString(
   ];
 
   const postUrls = posts.map((post) => {
-    const imgPath = post.og_image_url || post.cover_image_url || '/assets/images/ks-fusion-01.jpg';
+    const imgPath = resolveSafeAssetUrl(post.og_image_url || post.cover_image_url, DEFAULT_BLOG_IMAGE);
     const absImg = imgPath.startsWith('http') ? imgPath : `${cleanBase}${imgPath}`;
     return {
-      loc: `${cleanBase}/blog/${post.slug}`,
-      lastmod: new Date(post.updated_at || post.published_at || post.created_at || Date.now()).toISOString(),
+      loc: `${cleanBase}/blog/${encodeURIComponent(String(post.slug || '').trim())}`,
+      lastmod: toSafeIsoDate(post.updated_at || post.published_at || post.created_at, safeNowIso),
       changefreq: 'weekly',
       priority: '0.8',
       images: [
@@ -652,5 +822,8 @@ module.exports = {
   renderBlogIndexPage,
   renderBlogArticlePage,
   renderBlogNotFoundPage,
-  renderSitemapXml
+  renderSitemapXml,
+  resolveSafeCanonicalUrl,
+  resolveSafeAssetUrl,
+  sanitizeRenderedArticleHtml
 };

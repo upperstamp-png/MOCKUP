@@ -21,7 +21,7 @@ import { useMockupStore, GarmentPart } from '@/features/studio/store/mockupStore
 import { useHistoryStore } from '@/features/studio/store/historyStore';
 import { useSessionStore } from '@/features/studio/store/sessionStore';
 import { getCustomUniformPatterns } from '@/lib/texture-manager';
-import { formatBrl, hubAsset, portalFetch, PortalApiError } from '@/lib/api-client';
+import { formatBrl, hubAsset, portalFetch, PortalApiError, useUnifiedHubPrefix } from '@/lib/api-client';
 import type { PortalMeResponse } from '@/components/portal/PortalTypes';
 import { LoadingCard, StatusPill } from '@/components/portal/UiPrimitives';
 import {
@@ -165,6 +165,8 @@ interface StudioProductOption {
 
 function StudioContent() {
   const router = useRouter();
+  const hubPrefix = useUnifiedHubPrefix();
+  const homeHref = hubPrefix ? `${hubPrefix}` : '/';
   const searchParams = useSearchParams();
   const initialModelParam = searchParams.get('model');
   const artProjectParam = searchParams.get('artProjectId') || searchParams.get('reopen');
@@ -577,7 +579,7 @@ function StudioContent() {
           )}
 
           <Link
-            href="/?tab=studio"
+            href={`${homeHref}?tab=studio`}
             className="text-xs font-semibold text-wise-ink-deep bg-white/8 hover:bg-white/15 border border-white/15 rounded-full px-3 py-1 transition-colors"
           >
             Artes &amp; Aprovações ↗
@@ -669,7 +671,7 @@ function StudioContent() {
                   </>
                 )}
                 <Link
-                  href="/?tab=catalog"
+                  href={`${homeHref}?tab=catalog`}
                   className="mt-3 inline-flex items-center gap-1 rounded-full bg-white/8 hover:bg-white/15 border border-white/15 px-3 py-1.5 text-xs font-semibold text-wise-ink-deep transition-colors"
                 >
                   Ver tabela e medidas completas ↗

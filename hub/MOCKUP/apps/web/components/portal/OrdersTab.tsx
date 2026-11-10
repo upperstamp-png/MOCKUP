@@ -68,6 +68,15 @@ interface OrderDetailResponse {
   };
 }
 
+const ART_STATUS_LABELS: Record<string, string> = {
+  briefing_pendente: 'Briefing pendente',
+  em_criacao: 'Em criação',
+  revisao_interna: 'Revisão interna',
+  enviado_ao_cliente: 'Enviado ao cliente',
+  ajustes: 'Ajustes solicitados',
+  aprovado: 'Aprovado',
+};
+
 export interface InitialQuoteConversion {
   id: string;
   customer_id: string;
@@ -106,6 +115,7 @@ export function OrdersTab({
 
   // Detail modal
   const [detail, setDetail] = useState<OrderDetailResponse | null>(null);
+  const [detailError, setDetailError] = useState<string | null>(null);
   const [gradeRows, setGradeRows] = useState<
     Array<{ sizeCode: string; playerName: string; playerNumber: string; shieldOrSponsorNotes: string; quantity: number }>
   >([]);
@@ -114,6 +124,26 @@ export function OrdersTab({
   const [deliveryStreet, setDeliveryStreet] = useState('');
   const [overrideModal, setOverrideModal] = useState(false);
   const [overrideReason, setOverrideReason] = useState('');
+  const [overrideError, setOverrideError] = useState<string | null>(null);
+
+  // Approve Grade / Cancel Order Modals (replacing window.prompt)
+  const [gradeApproveOpen, setGradeApproveOpen] = useState(false);
+  const [gradeApproverName, setGradeApproverName] = useState(me.user.fullName || '');
+  const [gradeApproveError, setGradeApproveError] = useState<string | null>(null);
+  const [approvingGrade, setApprovingGrade] = useState(false);
+
+  const [cancelOrderOpen, setCancelOrderOpen] = useState(false);
+  const [cancelReason, setCancelReason] = useState('');
+  const [cancelError, setCancelError] = useState<string | null>(null);
+  const [cancelingOrder, setCancelingOrder] = useState(false);
+
+  // Action busy flags
+  const [savingDetails, setSavingDetails] = useState(false);
+  const [savingGrade, setSavingGrade] = useState(false);
+  const [releasingProd, setReleasingProd] = useState(false);
+  const [factoryAccepting, setFactoryAccepting] = useState(false);
+  const [advancingPcp, setAdvancingPcp] = useState(false);
+  const [savingShipment, setSavingShipment] = useState(false);
 
   // Factory / PCP actions state
   const [pcpStage, setPcpStage] = useState('sublimation');
@@ -133,6 +163,8 @@ export function OrdersTab({
   const [newCity, setNewCity] = useState(me.activeUnit.city);
   const [newStreet, setNewStreet] = useState('');
   const [newEventDate, setNewEventDate] = useState('');
+  const [creatingOrder, setCreatingOrder] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
 
   const canCreate = me.activeRole.permissions.includes('orders:create');
   const isFactoryOrNetwork = me.activeRole.scope === 'factory' || me.activeRole.scope === 'network';
@@ -176,6 +208,7 @@ export function OrdersTab({
 
   const openDetail = useCallback(async (id: string) => {
     setError(null);
+    setDetailError(null);
     try {
       const d = await portalFetch<OrderDetailResponse>(`/orders/${id}`);
       setDetail(d);
@@ -206,31 +239,72 @@ export function OrdersTab({
 
   const handleCreateOrder = async (e: React.FormEvent) => {
     e.preventDefault();
+    setCreateError(null);
     setError(null);
-    try {
-      const items = initialQuote
-        ? initialQuote.items.map((it) => ({
-            productId: it.product_id,
-            productSku: it.product_sku,
-            productName: it.product_name,
-            sizeBreakdown: { M: Math.ceil(it.quantity / 2), G: Math.floor(it.quantity / 2) },
-            quantity: it.quantity,
-            unitPriceCents: it.unit_sale_price_cents,
-          }))
-        : (() => {
-            const p = products.find((x) => x.id === newProductId)!;
-            return [
-              {
-                productId: p.id,
-                productSku: p.sku,
-                productName: p.name,
-                sizeBreakdown: { M: Math.ceil(newQty / 2), G: Math.floor(newQty / 2) },
-                quantity: newQty,
-                unitPriceCents: Math.round((Number(newPriceReais.replace(',', '.')) || 0) * 100),
-              },
-            ];
-          })();
 
+    if (!initialQuote) {
+      if (!newCustomerId) {
+        setCreateError('Cadastre e selecione um cliente antes de criar o pedido.');
+        return;
+      }
+      if (!newProductId) {
+        setCreateError('Selecione um produto disponível do catálogo.');
+        return;
+      }
+    }
+    if (newCity.trim().length < 2 || newStreet.trim().length < 3) {
+      setCreateError('Informe a cidade e o endereço completo de entrega.');
+      return;
+    }
+
+    let items: Array<{
+      productId: string | null;
+      productSku: string;
+      productName: string;
+      sizeBreakdown: Record<string, number>;
+      quantity: number;
+      unitPriceCents: number;
+    }>;
+
+    if (initialQuote) {
+      items = initialQuote.items.map((it) => ({
+        productId: it.product_id,
+        productSku: it.product_sku,
+        productName: it.product_name,
+        sizeBreakdown: { M: Math.ceil(it.quantity / 2), G: Math.floor(it.quantity / 2) },
+        quantity: it.quantity,
+        unitPriceCents: it.unit_sale_price_cents,
+      }));
+    } else {
+      const p = products.find((x) => x.id === newProductId);
+      if (!p) {
+        setCreateError('Produto selecionado não encontrado no catálogo disponível.');
+        return;
+      }
+      const qty = Math.trunc(Number(newQty));
+      const unitPriceCents = Math.round((Number(newPriceReais.replace(',', '.')) || 0) * 100);
+      if (!Number.isFinite(qty) || qty < 1) {
+        setCreateError('Informe uma quantidade válida (mínimo 1 peça).');
+        return;
+      }
+      if (!Number.isFinite(unitPriceCents) || unitPriceCents <= 0) {
+        setCreateError('Informe um valor unitário maior que zero.');
+        return;
+      }
+      items = [
+        {
+          productId: p.id,
+          productSku: p.sku,
+          productName: p.name,
+          sizeBreakdown: { M: Math.ceil(qty / 2), G: Math.floor(qty / 2) },
+          quantity: qty,
+          unitPriceCents,
+        },
+      ];
+    }
+
+    setCreatingOrder(true);
+    try {
       const created = await portalFetch<{ order: { id: string; order_number: string }; releaseGate: { blockers: string[] } }>(
         '/orders',
         {
@@ -255,12 +329,16 @@ export function OrdersTab({
       await loadList();
       await openDetail(created.order.id);
     } catch (err) {
-      setError(err instanceof PortalApiError ? err.message : 'Erro ao criar pedido.');
+      setCreateError(err instanceof PortalApiError ? err.message : 'Erro ao criar pedido.');
+    } finally {
+      setCreatingOrder(false);
     }
   };
 
   const handleSaveOrderDetails = async () => {
     if (!detail) return;
+    setSavingDetails(true);
+    setDetailError(null);
     setError(null);
     try {
       await portalFetch(`/orders/${detail.order.id}`, {
@@ -269,8 +347,8 @@ export function OrdersTab({
           artProjectId: linkArtId || null,
           deliveryAddress: {
             ...detail.order.delivery_address,
-            city: deliveryCity,
-            street: deliveryStreet,
+            city: deliveryCity.trim(),
+            street: deliveryStreet.trim(),
           },
         }),
       });
@@ -278,12 +356,16 @@ export function OrdersTab({
       await openDetail(detail.order.id);
       await loadList();
     } catch (err) {
-      setError(err instanceof PortalApiError ? err.message : 'Erro ao atualizar dados do pedido.');
+      setDetailError(err instanceof PortalApiError ? err.message : 'Erro ao atualizar dados do pedido.');
+    } finally {
+      setSavingDetails(false);
     }
   };
 
   const handleSaveGrade = async () => {
     if (!detail) return;
+    setSavingGrade(true);
+    setDetailError(null);
     setError(null);
     try {
       await portalFetch(`/orders/${detail.order.id}/personalizations`, {
@@ -293,37 +375,54 @@ export function OrdersTab({
       setFeedback('Grade salva! Como houve alteração na grade, registre a aprovação nominal da grade.');
       await openDetail(detail.order.id);
     } catch (err) {
-      setError(err instanceof PortalApiError ? err.message : 'Erro ao salvar grade.');
+      setDetailError(err instanceof PortalApiError ? err.message : 'Erro ao salvar grade.');
+    } finally {
+      setSavingGrade(false);
     }
   };
 
-  const handleApproveGrade = async () => {
+  const handleConfirmApproveGrade = async (e: React.FormEvent) => {
+    e.preventDefault();
     if (!detail) return;
-    const approver = window.prompt('Nome completo de quem conferiu e aprovou a grade nominal:', me.user.fullName);
-    if (!approver || approver.trim().length < 2) return;
+    if (gradeApproverName.trim().length < 2) {
+      setGradeApproveError('Informe o nome completo de quem conferiu e aprovou a grade (mínimo 2 caracteres).');
+      return;
+    }
+    setApprovingGrade(true);
+    setGradeApproveError(null);
     try {
       await portalFetch(`/orders/${detail.order.id}/approve-grade`, {
         method: 'POST',
         body: JSON.stringify({
-          approvedByName: approver.trim(),
+          approvedByName: gradeApproverName.trim(),
           acceptanceEvidence: 'Conferência completa de tamanhos, nomes e números no Portal King Sports',
         }),
       });
+      setGradeApproveOpen(false);
       setFeedback('Grade e personalizações formalmente aprovadas.');
       await openDetail(detail.order.id);
       await loadList();
     } catch (err) {
-      setError(err instanceof PortalApiError ? err.message : 'Erro ao aprovar grade.');
+      setGradeApproveError(err instanceof PortalApiError ? err.message : 'Erro ao aprovar grade.');
+    } finally {
+      setApprovingGrade(false);
     }
   };
 
   const handleReleaseProduction = async (override = false) => {
     if (!detail) return;
+    if (override && overrideReason.trim().length < 4) {
+      setOverrideError('Descreva a justificativa obrigatória para exceção auditada (mínimo 4 caracteres).');
+      return;
+    }
+    setReleasingProd(true);
+    setDetailError(null);
+    setOverrideError(null);
     setError(null);
     try {
       await portalFetch(`/orders/${detail.order.id}/release-production`, {
         method: 'POST',
-        body: JSON.stringify({ override, overrideReason: override ? overrideReason : undefined }),
+        body: JSON.stringify({ override, overrideReason: override ? overrideReason.trim() : undefined }),
       });
       setOverrideModal(false);
       setOverrideReason('');
@@ -332,16 +431,27 @@ export function OrdersTab({
       await loadList();
     } catch (err) {
       if (err instanceof PortalApiError && err.statusCode === 422) {
-        setError('Gatekeeper bloqueou a liberação para fábrica: resolva os itens pendentes destacados abaixo.');
+        const msg = 'Gatekeeper bloqueou a liberação para fábrica: resolva os itens pendentes destacados abaixo.';
+        if (override) {
+          setOverrideError(msg);
+        } else {
+          setDetailError(msg);
+        }
         await openDetail(detail.order.id);
       } else {
-        setError(err instanceof PortalApiError ? err.message : 'Erro ao solicitar liberação.');
+        const msg = err instanceof PortalApiError ? err.message : 'Erro ao solicitar liberação.';
+        if (override) setOverrideError(msg);
+        else setDetailError(msg);
       }
+    } finally {
+      setReleasingProd(false);
     }
   };
 
   const handleFactoryAccept = async () => {
     if (!detail) return;
+    setFactoryAccepting(true);
+    setDetailError(null);
     try {
       await portalFetch(`/orders/${detail.order.id}/factory-accept`, {
         method: 'POST',
@@ -350,13 +460,17 @@ export function OrdersTab({
       setFeedback('Aceite fabril e capacidade confirmados pelo PCP São Paulo.');
       await openDetail(detail.order.id);
     } catch (err) {
-      setError(err instanceof PortalApiError ? err.message : 'Erro ao registrar aceite fabril.');
+      setDetailError(err instanceof PortalApiError ? err.message : 'Erro ao registrar aceite fabril.');
+    } finally {
+      setFactoryAccepting(false);
     }
   };
 
   const handleAdvancePcpStage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!detail) return;
+    setAdvancingPcp(true);
+    setDetailError(null);
     try {
       await portalFetch(`/orders/${detail.order.id}/production-stage`, {
         method: 'POST',
@@ -367,45 +481,64 @@ export function OrdersTab({
       await openDetail(detail.order.id);
       await loadList();
     } catch (err) {
-      setError(err instanceof PortalApiError ? err.message : 'Erro ao avançar etapa.');
+      setDetailError(err instanceof PortalApiError ? err.message : 'Erro ao avançar etapa.');
+    } finally {
+      setAdvancingPcp(false);
     }
   };
 
   const handleRegisterShipment = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!detail) return;
+    if (shipStatus === 'delivered' && shipReceiver.trim().length < 2) {
+      setDetailError('Informe o nome completo de quem recebeu a entrega para concluir.');
+      return;
+    }
+    setSavingShipment(true);
+    setDetailError(null);
     try {
       await portalFetch(`/orders/${detail.order.id}/shipment`, {
         method: 'POST',
         body: JSON.stringify({
           status: shipStatus,
-          carrierName: shipCarrier,
-          trackingCode: shipTracking || null,
-          receiverName: shipStatus === 'delivered' ? shipReceiver : null,
+          carrierName: shipCarrier.trim() || null,
+          trackingCode: shipTracking.trim() || null,
+          receiverName: shipStatus === 'delivered' ? shipReceiver.trim() : null,
         }),
       });
       setFeedback('Movimentação logística atualizada.');
       await openDetail(detail.order.id);
       await loadList();
     } catch (err) {
-      setError(err instanceof PortalApiError ? err.message : 'Erro ao atualizar logística.');
+      setDetailError(err instanceof PortalApiError ? err.message : 'Erro ao atualizar logística.');
+    } finally {
+      setSavingShipment(false);
     }
   };
 
-  const handleCancelOrder = async () => {
+  const handleConfirmCancelOrder = async (e: React.FormEvent) => {
+    e.preventDefault();
     if (!detail) return;
-    const reason = window.prompt('Informe o motivo obrigatório do cancelamento (pedido sairá do faturamento ativo):');
-    if (!reason || reason.trim().length < 4) return;
+    if (cancelReason.trim().length < 4) {
+      setCancelError('Informe o motivo obrigatório do cancelamento (mínimo 4 caracteres).');
+      return;
+    }
+    setCancelingOrder(true);
+    setCancelError(null);
     try {
       await portalFetch(`/orders/${detail.order.id}/cancel`, {
         method: 'POST',
-        body: JSON.stringify({ reason: reason.trim() }),
+        body: JSON.stringify({ reason: cancelReason.trim() }),
       });
+      setCancelOrderOpen(false);
+      setCancelReason('');
       setDetail(null);
       setFeedback('Pedido cancelado preservando histórico e auditoria.');
       await loadList();
     } catch (err) {
-      setError(err instanceof PortalApiError ? err.message : 'Não foi possível cancelar o pedido.');
+      setCancelError(err instanceof PortalApiError ? err.message : 'Não foi possível cancelar o pedido.');
+    } finally {
+      setCancelingOrder(false);
     }
   };
 
@@ -446,7 +579,10 @@ export function OrdersTab({
           {canCreate ? (
             <button
               type="button"
-              onClick={() => setCreateOpen(true)}
+              onClick={() => {
+                setCreateError(null);
+                setCreateOpen(true);
+              }}
               className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full apple-glass-cta text-xs font-semibold text-white"
             >
               <Plus className="w-4 h-4" /> Novo pedido
@@ -540,9 +676,20 @@ export function OrdersTab({
         open={createOpen}
         title={initialQuote ? `Converter Orçamento em Pedido` : 'Criar novo pedido'}
         subtitle="Pedido nasce confirmado comercialmente e passa pelo Gatekeeper antes de entrar em produção na fábrica SP."
-        onClose={() => setCreateOpen(false)}
+        onClose={() => {
+          setCreateOpen(false);
+          setCreateError(null);
+        }}
       >
         <form onSubmit={handleCreateOrder} className="space-y-4">
+          {createError ? <ErrorBanner message={createError} /> : null}
+          {!initialQuote && (customers.length === 0 || products.length === 0) ? (
+            <div className="rounded-2xl bg-amber-500/15 border border-amber-400/35 px-3.5 py-2.5 text-xs text-amber-100">
+              {customers.length === 0
+                ? 'Cadastre pelo menos um cliente no CRM Comercial antes de criar um pedido.'
+                : 'Nenhum produto disponível para venda encontrado no catálogo.'}
+            </div>
+          ) : null}
           {initialQuote ? (
             <div className="rounded-2xl bg-blue-500/10 border border-blue-400/30 p-3 text-xs space-y-1">
               <p className="font-bold text-blue-100">Cliente: {initialQuote.customer_name}</p>
@@ -559,6 +706,9 @@ export function OrdersTab({
                     onChange={(e) => setNewCustomerId(e.target.value)}
                     className="w-full apple-glass-well rounded-xl px-3 py-2.5 text-xs text-wise-ink outline-none"
                   >
+                    {customers.length === 0 ? (
+                      <option value="" className="bg-[#181818]">Nenhum cliente cadastrado</option>
+                    ) : null}
                     {customers.map((c) => (
                       <option key={c.id} value={c.id} className="bg-[#181818]">{c.name}</option>
                     ))}
@@ -572,6 +722,9 @@ export function OrdersTab({
                     onChange={(e) => setNewProductId(e.target.value)}
                     className="w-full apple-glass-well rounded-xl px-3 py-2.5 text-xs text-wise-ink outline-none"
                   >
+                    {products.length === 0 ? (
+                      <option value="" className="bg-[#181818]">Nenhum produto disponível</option>
+                    ) : null}
                     {products.map((p) => (
                       <option key={p.id} value={p.id} className="bg-[#181818]">{p.name} ({p.sku})</option>
                     ))}
@@ -612,7 +765,9 @@ export function OrdersTab({
               >
                 <option value="" className="bg-[#181818]">Vincular depois</option>
                 {arts.map((a) => (
-                  <option key={a.id} value={a.id} className="bg-[#181818]">{a.title} ({a.status})</option>
+                  <option key={a.id} value={a.id} className="bg-[#181818]">
+                    {a.title} ({ART_STATUS_LABELS[a.status] || a.status})
+                  </option>
                 ))}
               </select>
             </div>
@@ -652,11 +807,22 @@ export function OrdersTab({
           </div>
 
           <div className="flex justify-end gap-2">
-            <button type="button" onClick={() => setCreateOpen(false)} className="px-4 py-2 rounded-full bg-white/8 text-xs font-semibold text-wise-body">
+            <button
+              type="button"
+              onClick={() => {
+                setCreateOpen(false);
+                setCreateError(null);
+              }}
+              className="px-4 py-2 rounded-full bg-white/8 text-xs font-semibold text-wise-body"
+            >
               Cancelar
             </button>
-            <button type="submit" className="px-5 py-2 rounded-full apple-glass-cta text-xs font-semibold text-white">
-              Confirmar pedido
+            <button
+              type="submit"
+              disabled={creatingOrder || (!initialQuote && (customers.length === 0 || products.length === 0))}
+              className="px-5 py-2 rounded-full apple-glass-cta text-xs font-semibold text-white disabled:opacity-50"
+            >
+              {creatingOrder ? 'Criando pedido...' : 'Confirmar pedido'}
             </button>
           </div>
         </form>
@@ -671,11 +837,15 @@ export function OrdersTab({
             ? `${detail.order.customer_name} (${detail.order.unit_name}) · Total ${formatBrl(detail.order.total_cents)}`
             : ''
         }
-        onClose={() => setDetail(null)}
+        onClose={() => {
+          setDetail(null);
+          setDetailError(null);
+        }}
         maxWidthClass="max-w-4xl"
       >
         {detail ? (
           <div className="space-y-5 max-h-[75vh] overflow-y-auto pr-1">
+            {detailError ? <ErrorBanner message={detailError} /> : null}
             {/* 5 Status Pills */}
             <div className="flex flex-wrap gap-2 items-center justify-between">
               <div className="flex flex-wrap gap-1.5">
@@ -690,7 +860,11 @@ export function OrdersTab({
               ['not_released', 'blocked'].includes(detail.order.production_status) ? (
                 <button
                   type="button"
-                  onClick={handleCancelOrder}
+                  onClick={() => {
+                    setCancelReason('');
+                    setCancelError(null);
+                    setCancelOrderOpen(true);
+                  }}
                   className="px-3 py-1.5 rounded-full bg-rose-500/15 hover:bg-rose-500/25 border border-rose-400/35 text-xs font-semibold text-rose-200"
                 >
                   Cancelar pedido
@@ -709,16 +883,21 @@ export function OrdersTab({
                   <div className="flex flex-wrap items-center gap-2">
                     <button
                       type="button"
+                      disabled={releasingProd}
                       onClick={() => handleReleaseProduction(false)}
-                      className="px-4 py-1.5 rounded-full apple-glass-cta text-xs font-semibold text-white"
+                      className="px-4 py-1.5 rounded-full apple-glass-cta text-xs font-semibold text-white disabled:opacity-50"
                     >
-                      Liberar para Produção SP
+                      {releasingProd ? 'Validando...' : 'Liberar para Produção SP'}
                     </button>
                     {canOverride && !detail.releaseGate.canRelease ? (
                       <button
                         type="button"
-                        onClick={() => setOverrideModal(true)}
-                        className="px-3.5 py-1.5 rounded-full bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/40 text-amber-100 text-xs font-semibold"
+                        disabled={releasingProd}
+                        onClick={() => {
+                          setOverrideError(null);
+                          setOverrideModal(true);
+                        }}
+                        className="px-3.5 py-1.5 rounded-full bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/40 text-amber-100 text-xs font-semibold disabled:opacity-50"
                       >
                         Exceção Auditada (PCP/Rede)
                       </button>
@@ -764,7 +943,7 @@ export function OrdersTab({
                     <option value="" className="bg-[#181818]">Selecione projeto de arte</option>
                     {arts.map((a) => (
                       <option key={a.id} value={a.id} className="bg-[#181818]">
-                        {a.title} ({a.status})
+                        {a.title} ({ART_STATUS_LABELS[a.status] || a.status})
                       </option>
                     ))}
                   </select>
@@ -785,10 +964,11 @@ export function OrdersTab({
                 </div>
                 <button
                   type="button"
+                  disabled={savingDetails}
                   onClick={handleSaveOrderDetails}
-                  className="px-4 py-1.5 rounded-full bg-white/10 hover:bg-white/18 border border-white/15 text-xs font-semibold text-white"
+                  className="px-4 py-1.5 rounded-full bg-white/10 hover:bg-white/18 border border-white/15 text-xs font-semibold text-white disabled:opacity-50"
                 >
-                  Atualizar vínculo e entrega
+                  {savingDetails ? 'Salvando...' : 'Atualizar vínculo e entrega'}
                 </button>
               </div>
             ) : null}
@@ -823,17 +1003,22 @@ export function OrdersTab({
                       </button>
                       <button
                         type="button"
+                        disabled={savingGrade}
                         onClick={handleSaveGrade}
-                        className="px-3 py-1.5 rounded-full bg-blue-500/20 border border-blue-400/40 text-xs font-semibold text-blue-100"
+                        className="px-3 py-1.5 rounded-full bg-blue-500/20 border border-blue-400/40 text-xs font-semibold text-blue-100 disabled:opacity-50"
                       >
-                        Salvar grade
+                        {savingGrade ? 'Salvando grade...' : 'Salvar grade'}
                       </button>
                     </>
                   ) : null}
                   {!detail.order.grade_approved && detail.order.commercial_status !== 'canceled' ? (
                     <button
                       type="button"
-                      onClick={handleApproveGrade}
+                      onClick={() => {
+                        setGradeApproverName(me.user.fullName || '');
+                        setGradeApproveError(null);
+                        setGradeApproveOpen(true);
+                      }}
                       className="px-3.5 py-1.5 rounded-full apple-glass-cta text-xs font-semibold text-white"
                     >
                       Aprovar Grade
@@ -908,10 +1093,11 @@ export function OrdersTab({
                 {!detail.order.factory_accepted && canAdvanceFactory ? (
                   <button
                     type="button"
+                    disabled={factoryAccepting}
                     onClick={handleFactoryAccept}
-                    className="px-4 py-2 rounded-full apple-glass-cta text-xs font-semibold text-white"
+                    className="px-4 py-2 rounded-full apple-glass-cta text-xs font-semibold text-white disabled:opacity-50"
                   >
-                    Confirmar Aceite Fabril &amp; Capacidade PCP
+                    {factoryAccepting ? 'Confirmando...' : 'Confirmar Aceite Fabril & Capacidade PCP'}
                   </button>
                 ) : null}
 
@@ -936,8 +1122,12 @@ export function OrdersTab({
                       placeholder="Observação do setor SP..."
                       className="sm:col-span-2 apple-glass-well rounded-xl px-3 py-2 text-xs text-wise-ink outline-none"
                     />
-                    <button type="submit" className="px-4 py-2 rounded-full apple-glass-cta text-xs font-semibold text-white">
-                      Avançar etapa
+                    <button
+                      type="submit"
+                      disabled={advancingPcp}
+                      className="px-4 py-2 rounded-full apple-glass-cta text-xs font-semibold text-white disabled:opacity-50"
+                    >
+                      {advancingPcp ? 'Salvando...' : 'Avançar etapa'}
                     </button>
                   </form>
                 ) : null}
@@ -976,8 +1166,12 @@ export function OrdersTab({
                       placeholder={shipStatus === 'delivered' ? 'Recebedor *' : 'Recebedor (se entregue)'}
                       className="apple-glass-well rounded-xl px-2.5 py-2 text-xs text-wise-ink outline-none"
                     />
-                    <button type="submit" className="px-3 py-2 rounded-full bg-white/15 hover:bg-white/25 text-xs font-semibold text-white">
-                      Salvar envio
+                    <button
+                      type="submit"
+                      disabled={savingShipment}
+                      className="px-3 py-2 rounded-full bg-white/15 hover:bg-white/25 text-xs font-semibold text-white disabled:opacity-50"
+                    >
+                      {savingShipment ? 'Salvando...' : 'Salvar envio'}
                     </button>
                   </form>
                 ) : null}
@@ -1006,11 +1200,14 @@ export function OrdersTab({
                   <Truck className="w-3.5 h-3.5" /> Expedição &amp; Recebimentos
                 </h4>
                 {detail.shipments.map((sh) => (
-                  <div key={sh.id} className="rounded-xl bg-black/30 p-2 text-[11px]">
+                  <div key={sh.id} className="rounded-xl bg-black/30 p-2 text-[11px] space-y-1">
                     <p className="font-bold text-wise-ink">
                       {sh.carrier_name || 'Expedição SP'} · {sh.tracking_code || 'Sem rastreio'}
                     </p>
-                    <p className="text-wise-body">Status: {sh.status} {sh.receiver_name ? `· Recebido por ${sh.receiver_name}` : ''}</p>
+                    <div className="flex flex-wrap items-center gap-2 text-wise-body">
+                      <StatusPill value={sh.status} />
+                      {sh.receiver_name ? <span>· Recebido por {sh.receiver_name}</span> : null}
+                    </div>
                   </div>
                 ))}
                 {detail.receivables.map((rec) => (
@@ -1030,10 +1227,14 @@ export function OrdersTab({
         open={overrideModal}
         title="Liberar produção com exceção auditada"
         subtitle="Apenas Fábrica (PCP) ou Administração da Rede. O motivo será gravado em log de auditoria."
-        onClose={() => setOverrideModal(false)}
+        onClose={() => {
+          setOverrideModal(false);
+          setOverrideError(null);
+        }}
         maxWidthClass="max-w-md"
       >
         <div className="space-y-4">
+          {overrideError ? <ErrorBanner message={overrideError} /> : null}
           <textarea
             rows={3}
             value={overrideReason}
@@ -1042,18 +1243,120 @@ export function OrdersTab({
             className="w-full apple-glass-well rounded-xl px-3.5 py-2.5 text-xs text-wise-ink outline-none"
           />
           <div className="flex justify-end gap-2">
-            <button type="button" onClick={() => setOverrideModal(false)} className="px-4 py-2 rounded-full bg-white/8 text-xs font-semibold text-wise-body">
+            <button
+              type="button"
+              onClick={() => {
+                setOverrideModal(false);
+                setOverrideError(null);
+              }}
+              className="px-4 py-2 rounded-full bg-white/8 text-xs font-semibold text-wise-body"
+            >
               Cancelar
             </button>
             <button
               type="button"
+              disabled={releasingProd}
               onClick={() => handleReleaseProduction(true)}
-              className="px-5 py-2 rounded-full bg-amber-500 text-slate-950 font-bold text-xs"
+              className="px-5 py-2 rounded-full bg-amber-500 text-slate-950 font-bold text-xs disabled:opacity-50"
             >
-              Autorizar e Liberar PCP
+              {releasingProd ? 'Liberando...' : 'Autorizar e Liberar PCP'}
             </button>
           </div>
         </div>
+      </GlassModal>
+
+      {/* Modal Aprovação Nominal da Grade */}
+      <GlassModal
+        open={gradeApproveOpen}
+        title="Confirmar aprovação formal da grade"
+        subtitle="Registre o nome completo de quem conferiu todos os tamanhos, nomes e números antes de liberar para a Fábrica SP."
+        onClose={() => {
+          setGradeApproveOpen(false);
+          setGradeApproveError(null);
+        }}
+        maxWidthClass="max-w-md"
+      >
+        <form onSubmit={handleConfirmApproveGrade} className="space-y-4">
+          {gradeApproveError ? <ErrorBanner message={gradeApproveError} /> : null}
+          <div>
+            <label className="block text-xs font-semibold text-wise-ink mb-1">Nome completo de quem aprovou a grade *</label>
+            <input
+              type="text"
+              required
+              minLength={2}
+              value={gradeApproverName}
+              onChange={(e) => setGradeApproverName(e.target.value)}
+              placeholder="Ex: Carlos Oliveira / Cliente"
+              className="w-full apple-glass-well rounded-xl px-3.5 py-2.5 text-xs text-wise-ink outline-none"
+            />
+          </div>
+          <div className="flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                setGradeApproveOpen(false);
+                setGradeApproveError(null);
+              }}
+              className="px-4 py-2 rounded-full bg-white/8 text-xs font-semibold text-wise-body"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              disabled={approvingGrade}
+              className="px-5 py-2 rounded-full apple-glass-cta text-xs font-semibold text-white disabled:opacity-50"
+            >
+              {approvingGrade ? 'Registrando...' : 'Registrar aprovação'}
+            </button>
+          </div>
+        </form>
+      </GlassModal>
+
+      {/* Modal Cancelar Pedido */}
+      <GlassModal
+        open={cancelOrderOpen}
+        title="Cancelar pedido antes da produção"
+        subtitle="O histórico do pedido e dos recebíveis associados será preservado com registro de auditoria."
+        onClose={() => {
+          setCancelOrderOpen(false);
+          setCancelError(null);
+        }}
+        maxWidthClass="max-w-md"
+      >
+        <form onSubmit={handleConfirmCancelOrder} className="space-y-4">
+          {cancelError ? <ErrorBanner message={cancelError} /> : null}
+          <div>
+            <label className="block text-xs font-semibold text-wise-ink mb-1">Motivo do cancelamento *</label>
+            <textarea
+              required
+              minLength={4}
+              rows={3}
+              value={cancelReason}
+              onChange={(e) => setCancelReason(e.target.value)}
+              placeholder="Descreva o motivo comercial ou operacional do cancelamento..."
+              className="w-full apple-glass-well rounded-xl px-3.5 py-2.5 text-xs text-wise-ink outline-none"
+            />
+          </div>
+          <div className="flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                setCancelOrderOpen(false);
+                setCancelError(null);
+              }}
+              className="px-4 py-2 rounded-full bg-white/8 text-xs font-semibold text-wise-body"
+            >
+              Voltar
+            </button>
+            <button
+              type="submit"
+              disabled={cancelingOrder}
+              className="px-5 py-2 rounded-full bg-rose-500/80 hover:bg-rose-500 text-xs font-semibold text-white disabled:opacity-50"
+            >
+              {cancelingOrder ? 'Cancelando...' : 'Confirmar cancelamento'}
+            </button>
+          </div>
+        </form>
       </GlassModal>
     </div>
   );

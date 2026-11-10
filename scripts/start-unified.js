@@ -97,31 +97,81 @@ function killChildTree(entry, signal = 'SIGTERM') {
   }
 }
 
+function addOriginIfValid(set, rawUrl) {
+  if (!rawUrl || typeof rawUrl !== 'string') return;
+  try {
+    set.add(new URL(rawUrl.trim()).origin);
+  } catch {
+    // Ignora URL malformado
+  }
+}
+
 function main() {
   if (!isDev) {
     assertProductionBuildExists();
   }
 
   const modeEnv = isDev ? 'development' : process.env.NODE_ENV || 'production';
-  const unifiedOrigins = new Set(
-    String(process.env.CORS_ORIGIN || '')
-      .split(',')
-      .map((s) => s.trim())
-      .filter(Boolean)
-  );
-  unifiedOrigins.add(`http://127.0.0.1:${GATEWAY_PORT}`);
-  unifiedOrigins.add(`http://localhost:${GATEWAY_PORT}`);
-  unifiedOrigins.add(`http://127.0.0.1:${HUB_WEB_PORT}`);
-  unifiedOrigins.add(`http://localhost:${HUB_WEB_PORT}`);
-  if (process.env.APP_URL) {
-    try {
-      unifiedOrigins.add(new URL(process.env.APP_URL).origin);
-    } catch {
-      // Ignora APP_URL malformado
+  const lpHost = process.env.LP_HOST || 'lp.kinsports.com.br';
+  const lpHostAliases = process.env.LP_HOST_ALIASES || 'lp.kingsports.com.br,www.kingsports.com.br';
+  const crmHost = process.env.CRM_HOST || 'crm.kingsports.com.br';
+  const hubHost = process.env.HUB_HOST || 'app.kingsports.com.br';
+
+  const defaultLocalBase = `http://localhost:${GATEWAY_PORT}`;
+  const resolvedLpUrl = process.env.LP_URL || (isDev ? defaultLocalBase : `https://${lpHost}`);
+  const resolvedCrmUrl =
+    process.env.CRM_URL || (isDev ? `${defaultLocalBase}/admin` : `https://${crmHost}`);
+  const resolvedHubUrl =
+    process.env.HUB_URL || (isDev ? `${defaultLocalBase}/hub` : `https://${hubHost}`);
+  const resolvedAppUrl = process.env.APP_URL || resolvedLpUrl;
+
+  let resolvedCorsOrigin;
+  if (String(process.env.CORS_ORIGIN || '').trim() === '*') {
+    resolvedCorsOrigin = '*';
+  } else {
+    const unifiedOrigins = new Set(
+      String(process.env.CORS_ORIGIN || '')
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean)
+    );
+    unifiedOrigins.add(`http://127.0.0.1:${GATEWAY_PORT}`);
+    unifiedOrigins.add(`http://localhost:${GATEWAY_PORT}`);
+    unifiedOrigins.add(`http://127.0.0.1:${HUB_WEB_PORT}`);
+    unifiedOrigins.add(`http://localhost:${HUB_WEB_PORT}`);
+    unifiedOrigins.add(`http://app.localhost:${GATEWAY_PORT}`);
+    unifiedOrigins.add(`http://hub.localhost:${GATEWAY_PORT}`);
+    unifiedOrigins.add(`http://crm.localhost:${GATEWAY_PORT}`);
+    unifiedOrigins.add(`http://lp.localhost:${GATEWAY_PORT}`);
+    unifiedOrigins.add('https://app.kingsports.com.br');
+    unifiedOrigins.add('https://crm.kingsports.com.br');
+    unifiedOrigins.add('https://lp.kinsports.com.br');
+    unifiedOrigins.add('https://lp.kingsports.com.br');
+    unifiedOrigins.add(`https://${hubHost.split(':')[0]}`);
+    unifiedOrigins.add(`https://${crmHost.split(':')[0]}`);
+    unifiedOrigins.add(`https://${lpHost.split(':')[0]}`);
+    for (const alias of lpHostAliases.split(',').map((s) => s.trim()).filter(Boolean)) {
+      unifiedOrigins.add(`https://${alias.split(':')[0]}`);
     }
+    addOriginIfValid(unifiedOrigins, resolvedAppUrl);
+    addOriginIfValid(unifiedOrigins, resolvedLpUrl);
+    addOriginIfValid(unifiedOrigins, resolvedCrmUrl);
+    addOriginIfValid(unifiedOrigins, resolvedHubUrl);
+    resolvedCorsOrigin = Array.from(unifiedOrigins).join(',');
   }
-  const resolvedCorsOrigin = Array.from(unifiedOrigins).join(',');
-  const baseEnv = { ...process.env, CORS_ORIGIN: resolvedCorsOrigin };
+
+  const baseEnv = {
+    ...process.env,
+    APP_URL: resolvedAppUrl,
+    LP_HOST: lpHost,
+    LP_HOST_ALIASES: lpHostAliases,
+    CRM_HOST: crmHost,
+    HUB_HOST: hubHost,
+    LP_URL: resolvedLpUrl,
+    CRM_URL: resolvedCrmUrl,
+    HUB_URL: resolvedHubUrl,
+    CORS_ORIGIN: resolvedCorsOrigin
+  };
 
   const specs = isDev
     ? [

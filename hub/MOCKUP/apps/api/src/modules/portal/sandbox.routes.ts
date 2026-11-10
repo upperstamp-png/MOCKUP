@@ -14,6 +14,8 @@ import {
   uploadPrivatePortalFile,
 } from '../../services/storageService.js';
 
+const uuidSchema = z.string().uuid();
+
 export async function portalSandboxRoutes(fastify: FastifyInstance): Promise<void> {
   // GET /api/v1/sandbox/overview
   fastify.get(
@@ -67,6 +69,7 @@ export async function portalSandboxRoutes(fastify: FastifyInstance): Promise<voi
         await client.query(`DELETE FROM portal.expenses WHERE unit_id = $1 AND is_sandbox = TRUE`, [ctx.activeUnitId]);
         await client.query(`DELETE FROM portal.shipments WHERE unit_id = $1 AND is_sandbox = TRUE`, [ctx.activeUnitId]);
         await client.query(`DELETE FROM portal.production_events WHERE unit_id = $1 AND is_sandbox = TRUE`, [ctx.activeUnitId]);
+        await client.query(`DELETE FROM portal.schedule_events WHERE unit_id = $1 AND is_sandbox = TRUE`, [ctx.activeUnitId]);
         await client.query(`DELETE FROM portal.orders WHERE unit_id = $1 AND is_sandbox = TRUE`, [ctx.activeUnitId]);
         await client.query(`DELETE FROM portal.art_projects WHERE unit_id = $1 AND is_sandbox = TRUE`, [ctx.activeUnitId]);
         await client.query(`DELETE FROM portal.quotes WHERE unit_id = $1 AND is_sandbox = TRUE`, [ctx.activeUnitId]);
@@ -190,6 +193,9 @@ export async function portalSandboxRoutes(fastify: FastifyInstance): Promise<voi
     { preHandler: [requirePortalAuth, requireAnyPermission(['sandbox:access', 'sandbox:review'])] },
     async (request, reply) => {
       const { id } = request.params as { id: string };
+      if (!z.string().uuid().safeParse(id).success) {
+        return reply.status(400).send({ statusCode: 400, code: 'VALIDATION_ERROR', message: 'ID inválido.' });
+      }
       const res = await dbQuery<{ unit_id: string; video_storage_path: string | null }>(
         `SELECT unit_id, video_storage_path FROM portal.banca_evaluations WHERE id = $1`,
         [id]
@@ -217,6 +223,9 @@ export async function portalSandboxRoutes(fastify: FastifyInstance): Promise<voi
     { preHandler: [requirePortalAuth, requirePermission('sandbox:review')] },
     async (request, reply) => {
       const { id } = request.params as { id: string };
+      if (!uuidSchema.safeParse(id).success) {
+        return reply.status(400).send({ statusCode: 400, code: 'VALIDATION_ERROR', message: 'ID da banca inválido.' });
+      }
       const schema = z.object({
         salesScore: z.number().min(0).max(10),
         artScore: z.number().min(0).max(10),

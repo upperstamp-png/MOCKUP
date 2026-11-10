@@ -13,12 +13,17 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, error: 'Filename is required' }, { status: 400 });
     }
 
+    const safeFileName = path.basename(String(filename));
+    if (!safeFileName || safeFileName.includes('..')) {
+      return NextResponse.json({ success: false, error: 'Invalid filename' }, { status: 400 });
+    }
+
     const localTexturesDir = 'C:\\Users\\user\\Documents\\mockup\\textures';
     const publicTexturesDir = path.join(process.cwd(), 'public', 'textures');
 
-    let filePath = path.join(localTexturesDir, filename);
+    let filePath = path.join(localTexturesDir, safeFileName);
     if (!fs.existsSync(filePath)) {
-      filePath = path.join(publicTexturesDir, filename);
+      filePath = path.join(publicTexturesDir, safeFileName);
     }
 
     if (!fs.existsSync(filePath)) {
@@ -44,24 +49,33 @@ export async function POST(req: Request) {
       });
     });
 
-    const baseName = filename.replace(/\.[^/.]+$/, '');
+    const baseName = safeFileName.replace(/\.[^/.]+$/, '');
     const svgFilename = `${baseName}.svg`;
 
     const destUserSvg = path.join(localTexturesDir, svgFilename);
     const destPublicSvg = path.join(publicTexturesDir, svgFilename);
 
     try {
-      fs.writeFileSync(destUserSvg, svg);
+      if (!fs.existsSync(publicTexturesDir)) {
+        fs.mkdirSync(publicTexturesDir, { recursive: true });
+      }
       fs.writeFileSync(destPublicSvg, svg);
     } catch (writeErr) {
-      console.warn('Erro ao salvar cópia em disco:', writeErr);
+      console.warn('Erro ao salvar SVG em public/textures:', writeErr);
+    }
+    try {
+      if (fs.existsSync(localTexturesDir)) {
+        fs.writeFileSync(destUserSvg, svg);
+      }
+    } catch (writeErr) {
+      console.warn('Erro ao salvar cópia local do SVG:', writeErr);
     }
 
     return NextResponse.json({
       success: true,
       svg,
       svgFilename,
-      url: `/hub/textures/${svgFilename}`,
+      url: `/textures/${svgFilename}`,
       message: 'Textura PNG vetorizada com sucesso em SVG com fundo transparente!',
     });
   } catch (error: any) {

@@ -6,16 +6,52 @@ const { UnauthorizedError, ForbiddenError, ServiceNotConfiguredError } = require
 const SESSION_COOKIE = 'ks_session';
 const REFRESH_COOKIE = 'ks_refresh';
 
-function getCookieOptions(env, maxAgeMs) {
-  const isHttpsApp = String(env.APP_URL || '').startsWith('https://');
-  return {
+function getCookieOptions(env, maxAgeMs, req = null) {
+  const safeEnv = env || {};
+  const isHttpsConfigured =
+    String(safeEnv.CRM_URL || '').startsWith('https://') ||
+    String(safeEnv.APP_URL || '').startsWith('https://');
+  const forwardedProto = req
+    ? String(req.headers?.['x-forwarded-proto'] || '')
+        .split(',')[0]
+        .trim()
+        .toLowerCase()
+    : '';
+  const isHttpsReq = Boolean(req && (req.secure || forwardedProto === 'https'));
+  const rawHost = req
+    ? String(req.headers?.['x-forwarded-host'] || req.headers?.host || '')
+        .split(',')[0]
+        .trim()
+        .toLowerCase()
+    : '';
+  const hostname = rawHost.startsWith('[')
+    ? rawHost.slice(0, rawHost.indexOf(']') + 1)
+    : rawHost.split(':')[0].trim();
+  const isLocalHttpHost =
+    Boolean(hostname) &&
+    (hostname === 'localhost' ||
+      hostname === '127.0.0.1' ||
+      hostname === '[::1]' ||
+      hostname.endsWith('.localhost')) &&
+    !isHttpsReq;
+
+  const shouldSecure = Boolean(
+    safeEnv.COOKIE_SECURE ||
+      (safeEnv.NODE_ENV === 'production' && (isHttpsReq || (!isLocalHttpHost && isHttpsConfigured)))
+  );
+  const cookieDomain = String(safeEnv.COOKIE_DOMAIN || '').trim();
+
+  const opts = {
     httpOnly: true,
-    secure: Boolean(env.COOKIE_SECURE || (env.NODE_ENV === 'production' && isHttpsApp)),
+    secure: shouldSecure,
     sameSite: 'lax',
     path: '/',
-    maxAge: maxAgeMs,
-    ...(env.COOKIE_DOMAIN ? { domain: env.COOKIE_DOMAIN } : {})
+    ...(cookieDomain ? { domain: cookieDomain } : {})
   };
+  if (typeof maxAgeMs === 'number') {
+    opts.maxAge = maxAgeMs;
+  }
+  return opts;
 }
 
 function createAuthMiddleware({ settingsRepo, env, authVerifier = null }) {
@@ -64,13 +100,13 @@ function createAuthMiddleware({ settingsRepo, env, authVerifier = null }) {
         res.cookie(
           SESSION_COOKIE,
           refreshedSession.access_token,
-          getCookieOptions(env, (refreshedSession.expires_in || 3600) * 1000)
+          getCookieOptions(env, (refreshedSession.expires_in || 3600) * 1000, req)
         );
         if (refreshedSession.refresh_token) {
           res.cookie(
             REFRESH_COOKIE,
             refreshedSession.refresh_token,
-            getCookieOptions(env, 1000 * 60 * 60 * 24 * 14)
+            getCookieOptions(env, 1000 * 60 * 60 * 24 * 14, req)
           );
         }
       }

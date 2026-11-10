@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { FormEvent, useEffect, useState } from 'react';
-import { formatBrl, formatDateBr, PortalApiError, portalFetch } from '@/lib/api-client';
+import { formatBrl, formatDateBr, PortalApiError, portalFetch, useUnifiedHubPrefix } from '@/lib/api-client';
 import styles from './crm.module.css';
 
 const stages = [['novo','Novo lead'],['contato_iniciado','Em atendimento'],['qualificacao','Qualificado / briefing'],['orcamento','Proposta enviada'],['negociacao','Negociação'],['ganho','Ganho'],['perdido','Perdido']] as const;
@@ -18,7 +18,22 @@ type Page<T> = { items: T[]; pagination?: { total: number }; summary?: { stage: 
 const json = (body: unknown, method = 'POST'): RequestInit => ({ method, body: JSON.stringify(body) });
 const stageLabel = (id: string) => stages.find(([value]) => value === id)?.[1] ?? id;
 const field = (data: FormData, key: string) => String(data.get(key) ?? '').trim();
-const timestamp = (value: string) => value ? new Date(value).toISOString() : null;
+const QUOTE_STATUS_LABELS: Record<string, string> = {
+  draft: 'Rascunho',
+  sent: 'Enviada',
+  approved: 'Aprovada',
+  converted: 'Convertida em pedido',
+  rejected: 'Rejeitada',
+  canceled: 'Cancelada',
+};
+const timestamp = (value: string) => {
+  if (!value) return null;
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    throw new Error('Informe uma data/hora válida.');
+  }
+  return parsed.toISOString();
+};
 const isLate = (value?: string) => !!value && new Date(value).getTime() < Date.now();
 const errorMessage = (error: unknown) => error instanceof PortalApiError && error.statusCode === 401
   ? 'Sua sessão expirou. Entre novamente.' : error instanceof Error ? error.message : 'Não foi possível concluir a operação.';
@@ -29,6 +44,8 @@ function cents(value: string) {
 }
 
 export default function Crm() {
+  const hubPrefix = useUnifiedHubPrefix();
+  const homeHref = hubPrefix ? `${hubPrefix}` : '/';
   const [session, setSession] = useState<Session | null>();
   const [tab, setTab] = useState<Tab>('Oportunidades');
   const [mode, setMode] = useState<'kanban' | 'list'>('kanban');
@@ -190,7 +207,7 @@ export default function Crm() {
   }
 
   return <main className={styles.crm}>
-    <header className={styles.header}><div><Link href="/">← Meu dia</Link><h1>CRM comercial</h1>{session && <p>{session.activeUnit.name} · {session.user.fullName}</p>}</div>
+    <header className={styles.header}><div><Link href={homeHref}>← Meu dia</Link><h1>CRM comercial</h1>{session && <p>{session.activeUnit.name} · {session.user.fullName}</p>}</div>
       {write && <div className={styles.actions}><button onClick={() => { setDuplicateNames([]); setEditor('customer'); }}>Novo contato</button><button onClick={() => { setCustomerChoices([]); setCustomerQuery(''); setEditor('opportunity'); }}>Nova oportunidade</button></div>}
     </header>
     {error && <p className={styles.late} role="alert">{error}</p>}{notice && <p role="status">{notice}</p>}
@@ -278,5 +295,5 @@ export default function Crm() {
 }
 
 function QuoteList({ quotes }: { quotes: Quote[] }) {
-  return quotes.length ? <div className={styles.list}>{quotes.map(item => <article key={item.id} className={styles.card}><h3>{item.quote_number}</h3><p>{item.customer_name} · {item.status} · {formatBrl(item.total_cents)}</p><a href={'/api/v1/quotes/' + item.id + '/print'} target="_blank" rel="noreferrer">Abrir proposta para imprimir</a></article>)}</div> : <p>Nenhuma proposta cadastrada.</p>;
+  return quotes.length ? <div className={styles.list}>{quotes.map(item => <article key={item.id} className={styles.card}><h3>{item.quote_number}</h3><p>{item.customer_name} · {QUOTE_STATUS_LABELS[item.status] || item.status} · {formatBrl(item.total_cents)}</p><a href={'/api/v1/quotes/' + item.id + '/print'} target="_blank" rel="noreferrer">Abrir proposta para imprimir</a></article>)}</div> : <p>Nenhuma proposta cadastrada.</p>;
 }

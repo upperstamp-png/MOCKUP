@@ -383,6 +383,7 @@ export function AgendaCalendarTab({
   const [modalOpen, setModalOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<ScheduleEventApi | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [busyEventId, setBusyEventId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [modalError, setModalError] = useState<string | null>(null);
 
@@ -562,20 +563,37 @@ export function AgendaCalendarTab({
     setModalError(null);
 
     try {
-      const startIso = formAllDay
-        ? new Date(`${formStartAt.slice(0, 10)}T00:00:00`).toISOString()
-        : new Date(formStartAt).toISOString();
-      const endIso = formEndAt
-        ? formAllDay
-          ? new Date(`${formEndAt.slice(0, 10)}T23:59:59`).toISOString()
-          : new Date(formEndAt).toISOString()
-        : null;
+      const startDt = formAllDay
+        ? new Date(`${formStartAt.slice(0, 10)}T00:00:00`)
+        : new Date(formStartAt);
+      if (!formStartAt || Number.isNaN(startDt.getTime())) {
+        setModalError('Informe uma data/hora inicial válida.');
+        setSaving(false);
+        return;
+      }
 
-      if (endIso && new Date(endIso).getTime() < new Date(startIso).getTime()) {
+      const endDt = formEndAt
+        ? formAllDay
+          ? new Date(`${formEndAt.slice(0, 10)}T23:59:59`)
+          : new Date(formEndAt)
+        : formAllDay
+          ? new Date(`${formStartAt.slice(0, 10)}T23:59:59`)
+          : new Date(startDt.getTime() + 60 * 60 * 1000);
+
+      if (Number.isNaN(endDt.getTime())) {
+        setModalError('Informe uma data/hora final válida.');
+        setSaving(false);
+        return;
+      }
+
+      if (endDt.getTime() < startDt.getTime()) {
         setModalError('A data/hora de término não pode ser anterior ao início.');
         setSaving(false);
         return;
       }
+
+      const startIso = startDt.toISOString();
+      const endIso = endDt.toISOString();
 
       const payload = {
         eventType: formEventType,
@@ -617,6 +635,7 @@ export function AgendaCalendarTab({
 
   const handleQuickStatus = async (ev: ScheduleEventApi, nextStatus: ScheduleEventStatus) => {
     if (!canWriteAgenda) return;
+    setBusyEventId(ev.id);
     setError(null);
     try {
       await portalFetch(`/schedule/${ev.id}`, {
@@ -636,6 +655,8 @@ export function AgendaCalendarTab({
       await loadAll();
     } catch (err) {
       setError(err instanceof PortalApiError ? err.message : 'Não foi possível atualizar o status.');
+    } finally {
+      setBusyEventId(null);
     }
   };
 
@@ -1940,8 +1961,9 @@ export function AgendaCalendarTab({
                             {ev.status === 'scheduled' ? (
                               <button
                                 type="button"
+                                disabled={busyEventId === ev.id}
                                 onClick={() => handleQuickStatus(ev, 'confirmed')}
-                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#2676ff]/20 hover:bg-[#2676ff]/35 border border-[#2676ff]/50 text-blue-100 text-[11px] font-semibold"
+                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#2676ff]/20 hover:bg-[#2676ff]/35 border border-[#2676ff]/50 text-blue-100 text-[11px] font-semibold disabled:opacity-50"
                               >
                                 <CheckCircle2 className="w-3 h-3" />
                                 Confirmar
@@ -1951,8 +1973,9 @@ export function AgendaCalendarTab({
                             {ev.status !== 'completed' && ev.status !== 'canceled' ? (
                               <button
                                 type="button"
+                                disabled={busyEventId === ev.id}
                                 onClick={() => handleQuickStatus(ev, 'completed')}
-                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-400/40 text-emerald-100 text-[11px] font-semibold"
+                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-400/40 text-emerald-100 text-[11px] font-semibold disabled:opacity-50"
                               >
                                 <CheckCircle2 className="w-3 h-3" />
                                 {completeLabel}
@@ -1972,10 +1995,11 @@ export function AgendaCalendarTab({
                               <div className="inline-flex items-center gap-1">
                                 <button
                                   type="button"
+                                  disabled={saving}
                                   onClick={() => handleDeleteEvent(ev.id)}
-                                  className="px-2.5 py-1 rounded-full bg-rose-500/30 hover:bg-rose-500/45 border border-rose-400/50 text-rose-100 text-[11px] font-bold"
+                                  className="px-2.5 py-1 rounded-full bg-rose-500/30 hover:bg-rose-500/45 border border-rose-400/50 text-rose-100 text-[11px] font-bold disabled:opacity-50"
                                 >
-                                  Confirmar exclusão
+                                  {saving ? 'Excluindo...' : 'Confirmar exclusão'}
                                 </button>
                                 <button
                                   type="button"
@@ -2070,8 +2094,9 @@ export function AgendaCalendarTab({
                 {editingEvent.status === 'scheduled' ? (
                   <button
                     type="button"
+                    disabled={busyEventId === editingEvent.id}
                     onClick={() => handleQuickStatus(editingEvent, 'confirmed')}
-                    className="px-3 py-1 rounded-full bg-[#2676ff]/20 hover:bg-[#2676ff]/35 border border-[#2676ff]/50 text-[11px] font-semibold text-blue-100"
+                    className="px-3 py-1 rounded-full bg-[#2676ff]/20 hover:bg-[#2676ff]/35 border border-[#2676ff]/50 text-[11px] font-semibold text-blue-100 disabled:opacity-50"
                   >
                     Confirmar
                   </button>
@@ -2079,8 +2104,9 @@ export function AgendaCalendarTab({
                 {editingEvent.status !== 'completed' && editingEvent.status !== 'canceled' ? (
                   <button
                     type="button"
+                    disabled={busyEventId === editingEvent.id}
                     onClick={() => handleQuickStatus(editingEvent, 'completed')}
-                    className="px-3 py-1 rounded-full bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-400/40 text-[11px] font-semibold text-emerald-100"
+                    className="px-3 py-1 rounded-full bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-400/40 text-[11px] font-semibold text-emerald-100 disabled:opacity-50"
                   >
                     Concluir
                   </button>

@@ -6,8 +6,12 @@ import { AlertCircle, Loader2, RefreshCw, X } from 'lucide-react';
 const STATUS_MAP: Record<string, { label: string; cls: string }> = {
   // Comercial / Oportunidade
   draft: { label: 'Rascunho', cls: 'bg-slate-500/20 text-slate-200 border-slate-400/30' },
+  scheduled: { label: 'Agendado', cls: 'bg-sky-500/20 text-sky-200 border-sky-400/35' },
   confirmed: { label: 'Confirmado', cls: 'bg-blue-500/20 text-blue-200 border-blue-400/35' },
+  completed: { label: 'Concluído', cls: 'bg-emerald-500/20 text-emerald-200 border-emerald-400/35' },
   canceled: { label: 'Cancelado', cls: 'bg-rose-500/20 text-rose-200 border-rose-400/35' },
+  submitted: { label: 'Enviado para avaliação', cls: 'bg-blue-500/20 text-blue-200 border-blue-400/35' },
+  retry_required: { label: 'Nova tentativa necessária', cls: 'bg-amber-500/25 text-amber-100 border-amber-400/45' },
   novo: { label: 'Novo', cls: 'bg-sky-500/20 text-sky-200 border-sky-400/35' },
   contato_iniciado: { label: 'Contato iniciado', cls: 'bg-indigo-500/20 text-indigo-200 border-indigo-400/35' },
   qualificacao: { label: 'Qualificação', cls: 'bg-cyan-500/20 text-cyan-200 border-cyan-400/35' },
@@ -57,22 +61,33 @@ const STATUS_MAP: Record<string, { label: string; cls: string }> = {
   finished: { label: 'Produção concluída', cls: 'bg-emerald-500/20 text-emerald-100 border-emerald-400/35' },
 
   // Logística
+  preparing: { label: 'Em preparação', cls: 'bg-sky-500/20 text-sky-200 border-sky-400/35' },
   ready_to_dispatch: { label: 'Pronto p/ expedição', cls: 'bg-sky-500/20 text-sky-200 border-sky-400/35' },
   dispatched: { label: 'Despachado', cls: 'bg-blue-500/25 text-blue-100 border-blue-400/40' },
   in_transit: { label: 'Em trânsito', cls: 'bg-indigo-500/20 text-indigo-100 border-indigo-400/35' },
   delivered: { label: 'Entregue', cls: 'bg-emerald-500/25 text-emerald-100 border-emerald-400/40' },
+  delayed: { label: 'Atrasado', cls: 'bg-rose-500/25 text-rose-100 border-rose-400/45' },
   issue_reported: { label: 'Ocorrência entrega', cls: 'bg-rose-500/25 text-rose-100 border-rose-400/40' },
 
-  // SAC / Documentos / Unidade
+  // SAC / Documentos / Unidade / Configuração
   open: { label: 'Aberto', cls: 'bg-blue-500/20 text-blue-200 border-blue-400/35' },
   in_progress: { label: 'Em tratativa', cls: 'bg-sky-500/20 text-sky-200 border-sky-400/35' },
   waiting_unit: { label: 'Aguarda Unidade', cls: 'bg-amber-500/25 text-amber-100 border-amber-400/45' },
   resolved: { label: 'Resolvido', cls: 'bg-emerald-500/20 text-emerald-200 border-emerald-400/35' },
   closed: { label: 'Encerrado', cls: 'bg-slate-500/20 text-slate-300 border-slate-400/30' },
   signed: { label: 'Assinado', cls: 'bg-emerald-500/25 text-emerald-100 border-emerald-400/40' },
+  modelo: { label: 'Modelo de referência', cls: 'bg-slate-500/20 text-slate-200 border-slate-400/35' },
+  minuta: { label: 'Minuta', cls: 'bg-amber-500/20 text-amber-200 border-amber-400/35' },
+  assinado: { label: 'Assinado', cls: 'bg-emerald-500/25 text-emerald-100 border-emerald-400/40' },
   in_review: { label: 'Em análise', cls: 'bg-amber-500/20 text-amber-200 border-amber-400/35' },
   onboarding: { label: 'Em implantação', cls: 'bg-amber-500/25 text-amber-100 border-amber-400/45' },
   pending_approval: { label: 'Aguardando liberação', cls: 'bg-amber-500/20 text-amber-100 border-amber-400/40' },
+  restricted: { label: 'Restrita', cls: 'bg-amber-500/25 text-amber-100 border-amber-400/45' },
+  suspended: { label: 'Suspensa', cls: 'bg-rose-500/25 text-rose-200 border-rose-400/45' },
+  not_configured: { label: 'Não configurada', cls: 'bg-slate-500/20 text-slate-300 border-slate-400/30' },
+  pending_definition: { label: 'Pendente de definição', cls: 'bg-amber-500/20 text-amber-200 border-amber-400/35' },
+  revenda: { label: 'Revenda', cls: 'bg-blue-500/20 text-blue-200 border-blue-400/35' },
+  intermediacao: { label: 'Intermediação', cls: 'bg-indigo-500/20 text-indigo-200 border-indigo-400/35' },
   legal_review: { label: 'Revisão Jurídica (P03)', cls: 'bg-rose-500/25 text-rose-100 border-rose-400/45' },
   available: { label: 'Disponível', cls: 'bg-emerald-500/20 text-emerald-200 border-emerald-400/35' },
 };

@@ -12,7 +12,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/admin/assets/css/admin.css" />
+  <link rel="stylesheet" href="/assets/css/admin.css" />
 </head>
 <body>
   <div class="ad-shell">
@@ -21,20 +21,23 @@
     <main class="ad-main">
       <div class="ad-topbar">
         <div>
-          <h1>Gestão do Blog SEO (`blog_posts`)</h1>
+          <h1>Gestão do Blog SEO</h1>
           <p class="ad-topbar-sub">Crie, agende e otimize artigos editoriais integrados aos CTAs da franquia.</p>
         </div>
         <div class="ad-actions-row">
-          <a href="/blog" target="_blank" class="ad-btn ad-btn-secondary">Abrir Blog Público</a>
+          <a id="open-blog-link" data-ks-lp-path="/blog" href="#" target="_blank" rel="noopener noreferrer" class="ad-btn ad-btn-secondary">Abrir Blog Público</a>
           <button type="button" id="new-post-btn" class="ad-btn ad-btn-primary">+ Novo Artigo</button>
         </div>
       </div>
 
-      <div id="ad-global-alert"></div>
+      <div id="ad-global-alert" role="alert" aria-live="polite"></div>
 
       <div class="ad-grid-2" style="align-items:start;">
         <section class="ad-card">
-          <div class="ad-card-title"><span>Artigos Cadastrados</span></div>
+          <div class="ad-card-title">
+            <span>Artigos Cadastrados</span>
+            <span id="posts-count-badge" class="ad-badge ad-badge-gray">Carregando...</span>
+          </div>
           <div class="ad-table-wrap" id="posts-table-wrap">Carregando artigos...</div>
         </section>
 
@@ -46,22 +49,22 @@
           <form id="post-form">
             <input type="hidden" id="p-id" />
             <div class="ad-field">
-              <label>Título (H1)</label>
-              <input type="text" id="p-title" class="ad-input" required placeholder="Como funciona o modelo home based de uniformes esportivos" />
+              <label for="p-title">Título (H1)</label>
+              <input type="text" id="p-title" class="ad-input" required minlength="4" placeholder="Como funciona o modelo home based de uniformes esportivos" />
             </div>
             <div class="ad-grid-2">
               <div class="ad-field">
-                <label>Slug (URL amigável — opcional)</label>
+                <label for="p-slug">Slug (URL amigável — opcional)</label>
                 <input type="text" id="p-slug" class="ad-input" placeholder="gerado-automaticamente-se-vazio" />
               </div>
               <div class="ad-field">
-                <label>Categoria</label>
+                <label for="p-category">Categoria</label>
                 <select id="p-category" class="ad-select"></select>
               </div>
             </div>
             <div class="ad-grid-3">
               <div class="ad-field">
-                <label>Status</label>
+                <label for="p-status">Status</label>
                 <select id="p-status" class="ad-select">
                   <option value="draft">Rascunho</option>
                   <option value="published">Publicado</option>
@@ -70,40 +73,40 @@
                 </select>
               </div>
               <div class="ad-field">
-                <label>Agendar para</label>
+                <label for="p-scheduled">Agendar para</label>
                 <input type="datetime-local" id="p-scheduled" class="ad-input" />
               </div>
               <div class="ad-field">
-                <label>Leitura (min)</label>
+                <label for="p-reading">Leitura (min)</label>
                 <input type="number" min="1" max="60" id="p-reading" class="ad-input" value="5" />
               </div>
             </div>
             <div class="ad-grid-2">
               <div class="ad-field">
-                <label>URL da Imagem de Capa</label>
+                <label for="p-cover">URL da Imagem de Capa</label>
                 <input type="text" id="p-cover" class="ad-input" value="/assets/images/ks-fusion-01.jpg" />
               </div>
               <div class="ad-field">
-                <label>Alt Text da Imagem</label>
+                <label for="p-cover-alt">Alt Text da Imagem</label>
                 <input type="text" id="p-cover-alt" class="ad-input" placeholder="Descrição acessível da imagem" />
               </div>
             </div>
             <div class="ad-field">
-              <label>Resumo (Excerpt)</label>
+              <label for="p-excerpt">Resumo (Excerpt)</label>
               <textarea id="p-excerpt" class="ad-textarea" rows="2"></textarea>
             </div>
             <div class="ad-field">
-              <label>Conteúdo HTML (H2, H3, parágrafos, listas)</label>
-              <textarea id="p-content" class="ad-textarea" rows="10" required placeholder="<h2>Introdução</h2><p>Texto completo...</p>"></textarea>
+              <label for="p-content">Conteúdo HTML (H2, H3, parágrafos, listas — mín. 20 caracteres)</label>
+              <textarea id="p-content" class="ad-textarea" rows="10" required minlength="20" placeholder="<h2>Introdução</h2><p>Texto completo...</p>"></textarea>
             </div>
 
             <div class="ad-grid-2">
               <div class="ad-field">
-                <label>SEO Meta Title</label>
+                <label for="p-meta-title">SEO Meta Title</label>
                 <input type="text" id="p-meta-title" class="ad-input" />
               </div>
               <div class="ad-field">
-                <label>Schema Type</label>
+                <label for="p-schema">Schema Type</label>
                 <select id="p-schema" class="ad-select">
                   <option value="Article">Article</option>
                   <option value="BlogPosting">BlogPosting</option>
@@ -112,41 +115,76 @@
               </div>
             </div>
             <div class="ad-field">
-              <label>SEO Meta Description</label>
+              <label for="p-meta-desc">SEO Meta Description</label>
               <textarea id="p-meta-desc" class="ad-textarea" rows="2"></textarea>
             </div>
             <div class="ad-field">
-              <label>Canonical URL (opcional)</label>
+              <label for="p-canonical">Canonical URL (opcional)</label>
               <input type="text" id="p-canonical" class="ad-input" />
             </div>
             <div class="ad-grid-2">
               <div class="ad-field">
-                <label>Headline do CTA ao final do artigo</label>
+                <label for="p-cta-head">Headline do CTA ao final do artigo</label>
                 <input type="text" id="p-cta-head" class="ad-input" value="Quer empreender com uniformes esportivos na sua região?" />
               </div>
               <div class="ad-field">
-                <label>Texto do Botão CTA</label>
+                <label for="p-cta-btn">Texto do Botão CTA</label>
                 <input type="text" id="p-cta-btn" class="ad-input" value="QUERO CONHECER A FRANQUIA" />
               </div>
             </div>
 
-            <button type="submit" class="ad-btn ad-btn-primary">Salvar Artigo</button>
+            <button type="submit" id="save-post-btn" class="ad-btn ad-btn-primary">Salvar Artigo</button>
           </form>
         </section>
       </div>
     </main>
   </div>
 
-  <script src="/admin/assets/js/admin-core.js"></script>
+  <!-- Modal Confirmação Exclusão de Artigo -->
+  <div class="ad-modal-backdrop" id="delete-post-modal" role="dialog" aria-modal="true" aria-labelledby="delete-modal-title">
+    <div class="ad-modal" style="max-width:440px;">
+      <h2 id="delete-modal-title" style="font-family:var(--ad-font-display);font-size:1.45rem;text-transform:uppercase;margin-bottom:10px;">Excluir Artigo</h2>
+      <p id="delete-modal-copy" style="color:#CBD5E1;font-size:0.9rem;margin-bottom:18px;">Deseja realmente excluir este artigo do Blog SEO?</p>
+      <div style="display:flex;justify-content:flex-end;gap:10px;">
+        <button type="button" id="cancel-delete-post" class="ad-btn ad-btn-secondary">Cancelar</button>
+        <button type="button" id="confirm-delete-post" class="ad-btn ad-btn-danger">Excluir Artigo</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/assets/js/admin-core.js"></script>
   <script>
     (function () {
+      'use strict';
+
       var cachedPosts = [];
+      var pendingDeleteId = null;
+      var deletingBusy = false;
+
+      function toDateTimeLocal(iso) {
+        if (!iso) return '';
+        var d = new Date(iso);
+        if (isNaN(d.getTime())) return '';
+        var pad = function (n) { return String(n).padStart(2, '0'); };
+        return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + 'T' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+      }
 
       function statusBadge(st) {
         if (st === 'published') return '<span class="ad-badge ad-badge-green">Publicado</span>';
         if (st === 'scheduled') return '<span class="ad-badge ad-badge-blue">Agendado</span>';
         if (st === 'archived') return '<span class="ad-badge ad-badge-gray">Arquivado</span>';
         return '<span class="ad-badge ad-badge-orange">Rascunho</span>';
+      }
+
+      function showBlogError(err) {
+        var alertEl = document.getElementById('ad-global-alert');
+        alertEl.innerHTML =
+          '<div class="ad-alert ad-alert-error ad-error-inline">' +
+          '  <div><strong>Não foi possível carregar o Blog CMS:</strong> ' + KingAdmin.esc((err && err.message) || 'Erro de conexão.') + '</div>' +
+          '  <button type="button" id="retry-blog-btn" class="ad-btn ad-btn-secondary ad-btn-sm">Tentar novamente</button>' +
+          '</div>';
+        var btn = document.getElementById('retry-blog-btn');
+        if (btn) btn.addEventListener('click', loadBlog);
       }
 
       function clearEditor() {
@@ -166,7 +204,7 @@
         document.getElementById('p-slug').value = post.slug || '';
         document.getElementById('p-category').value = post.category_id || '';
         document.getElementById('p-status').value = post.status || 'draft';
-        document.getElementById('p-scheduled').value = post.scheduled_for ? String(post.scheduled_for).slice(0, 16) : '';
+        document.getElementById('p-scheduled').value = post.scheduled_for ? toDateTimeLocal(post.scheduled_for) : '';
         document.getElementById('p-reading').value = post.reading_time_minutes || 4;
         document.getElementById('p-cover').value = post.cover_image_url || '';
         document.getElementById('p-cover-alt').value = post.cover_image_alt || '';
@@ -178,9 +216,25 @@
         document.getElementById('p-schema').value = post.schema_type || 'Article';
         document.getElementById('p-cta-head').value = post.cta_headline || '';
         document.getElementById('p-cta-btn').value = post.cta_button_text || '';
+        document.getElementById('p-title').focus();
+      }
+
+      function openDeleteModal(post) {
+        pendingDeleteId = post.id;
+        document.getElementById('delete-modal-copy').textContent =
+          'Deseja realmente excluir o artigo "' + (post.title || 'Sem título') + '"? Esta ação não pode ser desfeita.';
+        document.getElementById('delete-post-modal').classList.add('open');
+      }
+
+      function closeDeleteModal() {
+        if (deletingBusy) return;
+        pendingDeleteId = null;
+        document.getElementById('delete-post-modal').classList.remove('open');
       }
 
       async function loadBlog() {
+        document.getElementById('ad-global-alert').innerHTML = '';
+        KingAdmin.syncCrossUrlElements();
         try {
           var res = await Promise.all([
             KingAdmin.apiFetch('/api/admin/blog/categories'),
@@ -189,6 +243,7 @@
           var cats = res[0].categories || [];
           cachedPosts = res[1].posts || [];
 
+          document.getElementById('posts-count-badge').textContent = cachedPosts.length + ' artigo(s)';
           document.getElementById('p-category').innerHTML =
             '<option value="">Sem categoria</option>' +
             cats.map(function (c) { return '<option value="' + KingAdmin.esc(c.id) + '">' + KingAdmin.esc(c.name) + '</option>'; }).join('');
@@ -197,20 +252,26 @@
           wrap.innerHTML = cachedPosts.length
             ? '<table class="ad-table"><thead><tr><th>Artigo</th><th>Status</th><th>Views</th><th>Leads</th><th>Ações</th></tr></thead><tbody>' +
               cachedPosts.map(function (p) {
+                var publicHref = KingAdmin.lpUrl('/blog/' + encodeURIComponent(p.slug));
                 return (
                   '<tr>' +
                   '  <td><strong>' + KingAdmin.esc(p.title) + '</strong><div style="font-size:0.75rem;color:#94A3B8;">/blog/' + KingAdmin.esc(p.slug) + '</div></td>' +
                   '  <td>' + statusBadge(p.status) + '</td>' +
-                  '  <td>' + (p.views_count || 0) + '</td>' +
-                  '  <td>' + (p.leads_count || 0) + '</td>' +
+                  '  <td>' + KingAdmin.esc(String(p.views_count || 0)) + '</td>' +
+                  '  <td>' + KingAdmin.esc(String(p.leads_count || 0)) + '</td>' +
                   '  <td style="white-space:nowrap;">' +
-                  '    <button type="button" class="ad-btn ad-btn-secondary ad-btn-sm edit-post-btn" data-id="' + KingAdmin.esc(p.id) + '">Editar</button> ' +
-                  '    <button type="button" class="ad-btn ad-btn-danger ad-btn-sm del-post-btn" data-id="' + KingAdmin.esc(p.id) + '">Excluir</button>' +
+                  '    <div style="display:flex;gap:6px;flex-wrap:wrap;">' +
+                  (p.status === 'published'
+                    ? '<a href="' + KingAdmin.esc(publicHref) + '" target="_blank" rel="noopener noreferrer" class="ad-btn ad-btn-secondary ad-btn-sm">Ver</a>'
+                    : '') +
+                  '      <button type="button" class="ad-btn ad-btn-secondary ad-btn-sm edit-post-btn" data-id="' + KingAdmin.esc(p.id) + '">Editar</button>' +
+                  '      <button type="button" class="ad-btn ad-btn-danger ad-btn-sm del-post-btn" data-id="' + KingAdmin.esc(p.id) + '">Excluir</button>' +
+                  '    </div>' +
                   '  </td>' +
                   '</tr>'
                 );
               }).join('') + '</tbody></table>'
-            : '<p style="color:#94A3B8;">Nenhum artigo cadastrado.</p>';
+            : '<p style="color:#94A3B8;">Nenhum artigo cadastrado ainda.</p>';
 
           document.querySelectorAll('.edit-post-btn').forEach(function (btn) {
             btn.addEventListener('click', function () {
@@ -220,21 +281,49 @@
           });
 
           document.querySelectorAll('.del-post-btn').forEach(function (btn) {
-            btn.addEventListener('click', async function () {
-              if (!window.confirm('Deseja realmente excluir este artigo?')) return;
-              try {
-                await KingAdmin.apiFetch('/api/admin/blog/posts/' + encodeURIComponent(btn.dataset.id), { method: 'DELETE' });
-                KingAdmin.showToast('Artigo removido.');
-                loadBlog();
-              } catch (err) {
-                KingAdmin.showToast(err.message, true);
-              }
+            btn.addEventListener('click', function () {
+              var found = cachedPosts.find(function (x) { return x.id === btn.dataset.id; });
+              if (found) openDeleteModal(found);
             });
           });
         } catch (err) {
-          KingAdmin.renderErrorState('ad-global-alert', err);
+          document.getElementById('posts-count-badge').textContent = 'Indisponível';
+          showBlogError(err);
         }
       }
+
+      document.getElementById('cancel-delete-post').addEventListener('click', closeDeleteModal);
+      document.getElementById('delete-post-modal').addEventListener('click', function (e) {
+        if (e.target === this) closeDeleteModal();
+      });
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && document.getElementById('delete-post-modal').classList.contains('open')) {
+          closeDeleteModal();
+        }
+      });
+
+      document.getElementById('confirm-delete-post').addEventListener('click', async function () {
+        if (!pendingDeleteId || deletingBusy) return;
+        var btn = this;
+        deletingBusy = true;
+        btn.disabled = true;
+        btn.textContent = 'Excluindo...';
+        try {
+          var targetId = pendingDeleteId;
+          await KingAdmin.apiFetch('/api/admin/blog/posts/' + encodeURIComponent(targetId), { method: 'DELETE' });
+          if (document.getElementById('p-id').value === targetId) clearEditor();
+          KingAdmin.showToast('Artigo removido.');
+          deletingBusy = false;
+          closeDeleteModal();
+          await loadBlog();
+        } catch (err) {
+          KingAdmin.showToast(err.message || 'Erro ao excluir artigo.', true);
+        } finally {
+          deletingBusy = false;
+          btn.disabled = false;
+          btn.textContent = 'Excluir Artigo';
+        }
+      });
 
       document.getElementById('new-post-btn').addEventListener('click', clearEditor);
       document.getElementById('reset-editor-btn').addEventListener('click', clearEditor);
@@ -242,19 +331,36 @@
       document.getElementById('post-form').addEventListener('submit', async function (e) {
         e.preventDefault();
         var id = document.getElementById('p-id').value;
+        var title = document.getElementById('p-title').value.trim();
+        var contentHtml = document.getElementById('p-content').value;
+        var status = document.getElementById('p-status').value;
         var scheduledVal = document.getElementById('p-scheduled').value;
 
+        if (title.length < 4) {
+          KingAdmin.showToast('O título precisa ter ao menos 4 caracteres.', true);
+          return;
+        }
+        if (contentHtml.trim().length < 20) {
+          KingAdmin.showToast('O conteúdo HTML precisa ter ao menos 20 caracteres.', true);
+          return;
+        }
+        if (status === 'scheduled' && (!scheduledVal || isNaN(new Date(scheduledVal).getTime()))) {
+          KingAdmin.showToast('Informe uma data válida em "Agendar para".', true);
+          document.getElementById('p-scheduled').focus();
+          return;
+        }
+
         var payload = {
-          title: document.getElementById('p-title').value.trim(),
+          title: title,
           slug: document.getElementById('p-slug').value.trim() || undefined,
           category_id: document.getElementById('p-category').value || null,
-          status: document.getElementById('p-status').value,
+          status: status,
           scheduled_for: scheduledVal ? new Date(scheduledVal).toISOString() : null,
           reading_time_minutes: Number(document.getElementById('p-reading').value || 4),
           cover_image_url: document.getElementById('p-cover').value.trim() || null,
           cover_image_alt: document.getElementById('p-cover-alt').value.trim() || null,
           excerpt: document.getElementById('p-excerpt').value.trim(),
-          content_html: document.getElementById('p-content').value,
+          content_html: contentHtml,
           meta_title: document.getElementById('p-meta-title').value.trim() || null,
           meta_description: document.getElementById('p-meta-desc').value.trim() || null,
           canonical_url: document.getElementById('p-canonical').value.trim() || null,
@@ -262,6 +368,10 @@
           cta_headline: document.getElementById('p-cta-head').value.trim() || null,
           cta_button_text: document.getElementById('p-cta-btn').value.trim() || null
         };
+
+        var saveBtn = document.getElementById('save-post-btn');
+        saveBtn.disabled = true;
+        saveBtn.textContent = 'Salvando...';
 
         try {
           if (id) {
@@ -278,15 +388,25 @@
             KingAdmin.showToast('Artigo criado com sucesso.');
             clearEditor();
           }
-          loadBlog();
+          await loadBlog();
         } catch (err) {
-          KingAdmin.showToast(err.message, true);
+          KingAdmin.showToast(err.message || 'Erro ao salvar artigo.', true);
+        } finally {
+          saveBtn.disabled = false;
+          saveBtn.textContent = 'Salvar Artigo';
         }
       });
 
-      document.addEventListener('DOMContentLoaded', async function () {
-        if (await KingAdmin.initProtectedPage('blog')) loadBlog();
-      });
+      async function boot() {
+        var user = await KingAdmin.initProtectedPage('blog');
+        if (!user) {
+          showBlogError(new Error('Sessão administrativa indisponível.'));
+          return;
+        }
+        loadBlog();
+      }
+
+      document.addEventListener('DOMContentLoaded', boot);
     })();
   </script>
 </body>

@@ -91,6 +91,21 @@ export async function portalDashboardRoutes(fastify: FastifyInstance): Promise<v
         ),
       ]);
 
+      const docStatusLabels: Record<string, string> = {
+        pending: 'Pendente',
+        in_review: 'Em análise',
+        approved: 'Aprovado',
+        signed: 'Assinado',
+        rejected: 'Rejeitado',
+      };
+      const unitStatusLabels: Record<string, string> = {
+        onboarding: 'Em implantação',
+        pending_approval: 'Aguardando aprovação',
+        active: 'Ativa',
+        restricted: 'Restrita',
+        suspended: 'Suspensa',
+      };
+
       const unit = unitRes.rows[0];
       const implantationTasks: Array<{ key: string; label: string; tab: string; detail: string }> = [];
       if (!unit.training_completed) {
@@ -114,7 +129,7 @@ export async function portalDashboardRoutes(fastify: FastifyInstance): Promise<v
           key: `doc_${doc.id}`,
           label: `Regularizar documento obrigatório: ${doc.title}`,
           tab: 'documents',
-          detail: `Status atual: ${doc.status}`,
+          detail: `Status atual: ${docStatusLabels[doc.status] || doc.status}`,
         });
       }
       if (!unit.implantation_approved || unit.operational_status !== 'active') {
@@ -122,7 +137,7 @@ export async function portalDashboardRoutes(fastify: FastifyInstance): Promise<v
           key: 'unit_enablement',
           label: 'Habilitação operacional final da franqueadora',
           tab: 'settings',
-          detail: unit.implantation_notes || `Status da unidade: ${unit.operational_status}`,
+          detail: unit.implantation_notes || `Status da unidade: ${unitStatusLabels[unit.operational_status] || unit.operational_status}`,
         });
       }
 
@@ -275,7 +290,7 @@ export async function portalDashboardRoutes(fastify: FastifyInstance): Promise<v
            WHERE se.unit_id = $1
              AND se.is_sandbox = $2
              AND se.status IN ('scheduled', 'confirmed')
-             AND se.end_at >= NOW() - INTERVAL '1 day'
+             AND COALESCE(se.end_at, se.start_at) >= NOW() - INTERVAL '1 day'
            ORDER BY se.start_at ASC
            LIMIT 12`,
           [unitId, isSandbox]

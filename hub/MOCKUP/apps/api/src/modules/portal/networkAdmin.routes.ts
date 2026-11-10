@@ -84,6 +84,9 @@ export async function portalNetworkAdminRoutes(fastify: FastifyInstance): Promis
     },
     async (request, reply) => {
       const { id } = request.params as { id: string };
+      if (!z.string().uuid().safeParse(id).success) {
+        return reply.status(400).send({ statusCode: 400, code: 'VALIDATION_ERROR', message: 'ID de unidade inválido.' });
+      }
       const schema = z.object({
         operationalStatus: z.enum(['onboarding', 'pending_approval', 'active', 'restricted', 'suspended']).optional(),
         trainingCompleted: z.boolean().optional(),
@@ -96,6 +99,10 @@ export async function portalNetworkAdminRoutes(fastify: FastifyInstance): Promis
         return reply.status(400).send({ statusCode: 400, code: 'VALIDATION_ERROR', details: parsed.error.flatten() });
       }
       const d = parsed.data;
+      const unitExists = await dbQuery<{ id: string }>(`SELECT id FROM portal.units WHERE id = $1`, [id]);
+      if (!unitExists.rows[0]) {
+        return reply.status(404).send({ statusCode: 404, code: 'NOT_FOUND', message: 'Unidade não encontrada.' });
+      }
       const up = await dbQuery(
         `UPDATE portal.units SET
            operational_status = COALESCE($1, operational_status),
@@ -141,6 +148,9 @@ export async function portalNetworkAdminRoutes(fastify: FastifyInstance): Promis
     },
     async (request, reply) => {
       const { id } = request.params as { id: string };
+      if (!z.string().uuid().safeParse(id).success) {
+        return reply.status(400).send({ statusCode: 400, code: 'VALIDATION_ERROR', message: 'ID de unidade inválido.' });
+      }
       const schema = z.object({
         configStatus: z.enum(['not_configured', 'pending_approval', 'approved']),
         commercialModality: z.enum(['pending_definition', 'revenda', 'intermediacao']),
@@ -160,6 +170,10 @@ export async function portalNetworkAdminRoutes(fastify: FastifyInstance): Promis
         return reply.status(400).send({ statusCode: 400, code: 'VALIDATION_ERROR', details: parsed.error.flatten() });
       }
       const d = parsed.data;
+      const unitExists = await dbQuery<{ id: string }>(`SELECT id FROM portal.units WHERE id = $1`, [id]);
+      if (!unitExists.rows[0]) {
+        return reply.status(404).send({ statusCode: 404, code: 'NOT_FOUND', message: 'Unidade não encontrada.' });
+      }
       const up = await dbQuery(
         `INSERT INTO portal.unit_commercial_configs (
            unit_id, config_status, commercial_modality, royalty_bps, marketing_fund_bps,
@@ -235,19 +249,43 @@ export async function portalNetworkAdminRoutes(fastify: FastifyInstance): Promis
         return reply.status(400).send({ statusCode: 400, code: 'VALIDATION_ERROR', details: parsed.error.flatten() });
       }
       const d = parsed.data;
-      const unit = await withTransaction(async (client) => {
-        const res = await client.query<{ id: string }>(
-          `INSERT INTO portal.units (code, name, city, state, cnpj, unit_type, operational_status)
-           VALUES ($1,$2,$3,$4,$5,'franchise','onboarding') RETURNING *`,
-          [d.code.trim().toUpperCase(), d.name.trim(), d.city.trim(), d.state.toUpperCase(), d.cnpj || null]
-        );
-        await client.query(
-          `INSERT INTO portal.unit_commercial_configs (unit_id, config_status, commercial_modality)
-           VALUES ($1,'not_configured','pending_definition')`,
-          [res.rows[0].id]
-        );
-        return res.rows[0];
-      });
+      let unit;
+      try {
+        unit = await withTransaction(async (client) => {
+          const res = await client.query<{ id: string }>(
+            `INSERT INTO portal.units (code, name, city, state, cnpj, unit_type, operational_status)
+             VALUES ($1,$2,$3,$4,$5,'franchise','onboarding') RETURNING *`,
+            [d.code.trim().toUpperCase(), d.name.trim(), d.city.trim(), d.state.toUpperCase(), d.cnpj || null]
+          );
+          await client.query(
+            `INSERT INTO portal.unit_commercial_configs (unit_id, config_status, commercial_modality)
+             VALUES ($1,'not_configured','pending_definition')`,
+            [res.rows[0].id]
+          );
+          await recordAuditLog(
+            {
+              unitId: res.rows[0].id,
+              action: 'network.unit_created',
+              entityType: 'unit',
+              entityId: res.rows[0].id,
+              afterState: res.rows[0],
+              request,
+            },
+            client
+          );
+          return res.rows[0];
+        });
+      } catch (err) {
+        const pgErr = err as { code?: string };
+        if (pgErr?.code === '23505') {
+          return reply.status(409).send({
+            statusCode: 409,
+            code: 'UNIT_CODE_DUPLICATE',
+            message: 'Código de unidade já cadastrado.',
+          });
+        }
+        throw err;
+      }
       return reply.status(201).send({ unit });
     }
   );
@@ -346,6 +384,15 @@ export async function portalNetworkAdminRoutes(fastify: FastifyInstance): Promis
       const d = parsed.data;
       const emailLower = d.email.trim().toLowerCase();
 
+      const unitRes = await dbQuery<{ id: string }>(`SELECT id FROM portal.units WHERE id = $1`, [d.unitId]);
+      if (!unitRes.rows[0]) {
+        return reply.status(400).send({
+          statusCode: 400,
+          code: 'UNIT_NOT_FOUND',
+          message: 'Unidade selecionada não encontrada.',
+        });
+      }
+
       const { data: createdAuth, error: authErr } = await supabaseAdmin.auth.admin.createUser({
         email: emailLower,
         password: d.password,
@@ -360,18 +407,34 @@ export async function portalNetworkAdminRoutes(fastify: FastifyInstance): Promis
         });
       }
 
-      await withTransaction(async (client) => {
-        await client.query(
-          `INSERT INTO portal.profiles (id, full_name, email, default_unit_id, is_active)
-           VALUES ($1,$2,$3,$4,TRUE)`,
-          [createdAuth.user.id, d.fullName.trim(), emailLower, d.unitId]
-        );
-        await client.query(
-          `INSERT INTO portal.unit_memberships (user_id, unit_id, role_slug, status, is_primary)
-           VALUES ($1,$2,$3,'active',TRUE)`,
-          [createdAuth.user.id, d.unitId, d.roleSlug]
-        );
-      });
+      try {
+        await withTransaction(async (client) => {
+          await client.query(
+            `INSERT INTO portal.profiles (id, full_name, email, default_unit_id, is_active)
+             VALUES ($1,$2,$3,$4,TRUE)`,
+            [createdAuth.user.id, d.fullName.trim(), emailLower, d.unitId]
+          );
+          await client.query(
+            `INSERT INTO portal.unit_memberships (user_id, unit_id, role_slug, status, is_primary)
+             VALUES ($1,$2,$3,'active',TRUE)`,
+            [createdAuth.user.id, d.unitId, d.roleSlug]
+          );
+          await recordAuditLog(
+            {
+              unitId: d.unitId,
+              action: 'network.user_provisioned',
+              entityType: 'profile',
+              entityId: createdAuth.user.id,
+              afterState: { email: emailLower, roleSlug: d.roleSlug, unitId: d.unitId },
+              request,
+            },
+            client
+          );
+        });
+      } catch (err) {
+        await supabaseAdmin.auth.admin.deleteUser(createdAuth.user.id).catch(() => undefined);
+        throw err;
+      }
 
       return reply.status(201).send({ userId: createdAuth.user.id, email: emailLower });
     }

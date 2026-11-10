@@ -13,6 +13,8 @@ import {
   uploadPrivatePortalFile,
 } from '../../services/storageService.js';
 
+const uuidSchema = z.string().uuid();
+
 export async function portalSupportRoutes(fastify: FastifyInstance): Promise<void> {
   // GET /api/v1/support/tickets
   fastify.get(
@@ -67,6 +69,9 @@ export async function portalSupportRoutes(fastify: FastifyInstance): Promise<voi
     { preHandler: [requirePortalAuth, requirePermission('tickets:read')] },
     async (request, reply) => {
       const { id } = request.params as { id: string };
+      if (!uuidSchema.safeParse(id).success) {
+        return reply.status(400).send({ statusCode: 400, code: 'VALIDATION_ERROR', message: 'ID do chamado inválido.' });
+      }
       const ctx = request.portal!;
       const tRes = await dbQuery(
         `SELECT st.*, u.code AS unit_code, u.name AS unit_name, o.order_number, c.name AS customer_name
@@ -120,6 +125,18 @@ export async function portalSupportRoutes(fastify: FastifyInstance): Promise<voi
 
       const ctx = request.portal!;
       const d = parsed.data;
+      if (d.orderId) {
+        const ordRes = await dbQuery<{ unit_id: string }>(`SELECT unit_id FROM portal.orders WHERE id = $1`, [d.orderId]);
+        if (!ordRes.rows[0] || ordRes.rows[0].unit_id !== ctx.activeUnitId) {
+          return reply.status(403).send({ statusCode: 403, code: 'ORDER_UNIT_MISMATCH', message: 'Pedido inválido ou pertencente a outra unidade.' });
+        }
+      }
+      if (d.customerId) {
+        const custRes = await dbQuery<{ unit_id: string }>(`SELECT unit_id FROM portal.customers WHERE id = $1`, [d.customerId]);
+        if (!custRes.rows[0] || custRes.rows[0].unit_id !== ctx.activeUnitId) {
+          return reply.status(403).send({ statusCode: 403, code: 'CUSTOMER_UNIT_MISMATCH', message: 'Cliente inválido ou pertencente a outra unidade.' });
+        }
+      }
 
       let attachmentMeta: Array<{ fileName: string; storagePath: string; mimeType: string }> = [];
       if (d.attachment?.dataUrl) {
@@ -208,6 +225,9 @@ export async function portalSupportRoutes(fastify: FastifyInstance): Promise<voi
     { preHandler: [requirePortalAuth, requirePermission('tickets:write')] },
     async (request, reply) => {
       const { id } = request.params as { id: string };
+      if (!uuidSchema.safeParse(id).success) {
+        return reply.status(400).send({ statusCode: 400, code: 'VALIDATION_ERROR', message: 'ID do chamado inválido.' });
+      }
       const schema = z.object({
         body: z.string().min(2),
         isInternal: z.boolean().optional().default(false),
@@ -294,6 +314,9 @@ export async function portalSupportRoutes(fastify: FastifyInstance): Promise<voi
     { preHandler: [requirePortalAuth, requirePermission('tickets:write')] },
     async (request, reply) => {
       const { id } = request.params as { id: string };
+      if (!uuidSchema.safeParse(id).success) {
+        return reply.status(400).send({ statusCode: 400, code: 'VALIDATION_ERROR', message: 'ID do chamado inválido.' });
+      }
       const existing = await dbQuery<{ unit_id: string }>(`SELECT unit_id FROM portal.support_tickets WHERE id = $1`, [id]);
       if (!existing.rows[0]) {
         return reply.status(404).send({ statusCode: 404, code: 'NOT_FOUND', message: 'Chamado não encontrado.' });
@@ -334,6 +357,9 @@ export async function portalSupportRoutes(fastify: FastifyInstance): Promise<voi
         return reply.status(400).send({ statusCode: 400, code: 'PATH_REQUIRED', message: 'Informe o caminho do anexo.' });
       }
       const pathUnitId = q.path.split('/')[0];
+      if (!uuidSchema.safeParse(pathUnitId).success) {
+        return reply.status(400).send({ statusCode: 400, code: 'INVALID_ATTACHMENT_PATH', message: 'Caminho de anexo inválido.' });
+      }
       if (!assertUnitOwnership(request, reply, pathUnitId)) return;
 
       const signedUrl = await createAuthorizedSignedUrl({

@@ -72,6 +72,15 @@ interface ArtApprovalItem {
   superseded_at: string | null;
 }
 
+const ART_STATUS_LABELS: Record<string, string> = {
+  briefing_pendente: 'Briefing pendente',
+  em_criacao: 'Em criação',
+  revisao_interna: 'Revisão interna',
+  enviado_ao_cliente: 'Enviado ao cliente',
+  ajustes: 'Ajustes solicitados',
+  aprovado: 'Aprovado',
+};
+
 export function StudioArtsTab({
   me,
   initialEntityId,
@@ -92,6 +101,8 @@ export function StudioArtsTab({
   const [newCustomerId, setNewCustomerId] = useState('');
   const [newTitle, setNewTitle] = useState('');
   const [newBriefing, setNewBriefing] = useState('');
+  const [creatingProject, setCreatingProject] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
 
   // Project Detail
   const [detail, setDetail] = useState<{
@@ -100,6 +111,8 @@ export function StudioArtsTab({
     comments: ArtCommentItem[];
     approvals: ArtApprovalItem[];
   } | null>(null);
+  const [detailError, setDetailError] = useState<string | null>(null);
+  const [updatingStatus, setUpdatingStatus] = useState(false);
 
   // Upload Version Form
   const [artifactKind, setArtifactKind] = useState<'mockup_ilustrativo' | 'arte_revisao' | 'arquivo_producao_rip'>('arte_revisao');
@@ -110,6 +123,7 @@ export function StudioArtsTab({
   // Comment / Revision Request Form
   const [commentType, setCommentType] = useState<'comment' | 'revision_request'>('comment');
   const [commentBody, setCommentBody] = useState('');
+  const [commenting, setCommenting] = useState(false);
 
   // Approval Form
   const [approveOpen, setApproveOpen] = useState(false);
@@ -118,6 +132,8 @@ export function StudioArtsTab({
   const [approvedByContact, setApprovedByContact] = useState('');
   const [identificationMethod, setIdentificationMethod] = useState('Aprovação formal no Portal + WhatsApp do cliente');
   const [acceptanceEvidence, setAcceptanceEvidence] = useState('');
+  const [approving, setApproving] = useState(false);
+  const [approveError, setApproveError] = useState<string | null>(null);
 
   const canWrite = me.activeRole.permissions.includes('arts:write');
   const canApprove = me.activeRole.permissions.includes('arts:approve');
@@ -144,6 +160,7 @@ export function StudioArtsTab({
 
   const openDetail = useCallback(async (id: string) => {
     setError(null);
+    setDetailError(null);
     try {
       const res = await portalFetch<{
         project: ArtProjectSummary;
@@ -168,6 +185,16 @@ export function StudioArtsTab({
 
   const handleCreateProject = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!newCustomerId) {
+      setCreateError('Cadastre e selecione um cliente antes de criar um projeto de arte.');
+      return;
+    }
+    if (newTitle.trim().length < 3) {
+      setCreateError('Informe um título com pelo menos 3 caracteres.');
+      return;
+    }
+    setCreatingProject(true);
+    setCreateError(null);
     setError(null);
     try {
       const res = await portalFetch<{ project: { id: string } }>('/arts', {
@@ -185,7 +212,9 @@ export function StudioArtsTab({
       await loadList();
       await openDetail(res.project.id);
     } catch (err) {
-      setError(err instanceof PortalApiError ? err.message : 'Erro ao criar projeto de arte.');
+      setCreateError(err instanceof PortalApiError ? err.message : 'Erro ao criar projeto de arte.');
+    } finally {
+      setCreatingProject(false);
     }
   };
 
@@ -193,6 +222,7 @@ export function StudioArtsTab({
     e.preventDefault();
     if (!detail) return;
     setUploadingVer(true);
+    setDetailError(null);
     setError(null);
     try {
       let dataUrl: string | undefined;
@@ -226,7 +256,7 @@ export function StudioArtsTab({
       await openDetail(detail.project.id);
       await loadList();
     } catch (err) {
-      setError(err instanceof PortalApiError ? err.message : 'Erro ao publicar versão de arte.');
+      setDetailError(err instanceof PortalApiError ? err.message : 'Erro ao publicar versão de arte.');
     } finally {
       setUploadingVer(false);
     }
@@ -234,19 +264,26 @@ export function StudioArtsTab({
 
   const handleDownloadVersion = async (versionId: string) => {
     if (!detail) return;
+    setDetailError(null);
     try {
       const res = await portalFetch<{ signedUrl: string; fileName: string }>(
         `/arts/${detail.project.id}/versions/${versionId}/download`
       );
       window.open(res.signedUrl, '_blank', 'noopener,noreferrer');
     } catch (err) {
-      setError(err instanceof PortalApiError ? err.message : 'Não foi possível gerar download autorizado.');
+      setDetailError(err instanceof PortalApiError ? err.message : 'Não foi possível gerar download autorizado.');
     }
   };
 
   const handleComment = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!detail) return;
+    if (commentBody.trim().length < 2) {
+      setDetailError('Descreva o comentário ou ajuste com pelo menos 2 caracteres.');
+      return;
+    }
+    setCommenting(true);
+    setDetailError(null);
     try {
       const res = await portalFetch<{ invalidatedApprovals: number }>(
         `/arts/${detail.project.id}/comments`,
@@ -268,13 +305,25 @@ export function StudioArtsTab({
       await openDetail(detail.project.id);
       await loadList();
     } catch (err) {
-      setError(err instanceof PortalApiError ? err.message : 'Erro ao registrar comentário.');
+      setDetailError(err instanceof PortalApiError ? err.message : 'Erro ao registrar comentário.');
+    } finally {
+      setCommenting(false);
     }
   };
 
   const handleApproveVersion = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!detail || !approveVersionId) return;
+    if (approvedByName.trim().length < 2) {
+      setApproveError('Informe o nome completo do aprovador (mínimo 2 caracteres).');
+      return;
+    }
+    if (identificationMethod.trim().length < 3 || acceptanceEvidence.trim().length < 3) {
+      setApproveError('Informe o método de identificação e a evidência formal do aceite.');
+      return;
+    }
+    setApproving(true);
+    setApproveError(null);
     try {
       const res = await portalFetch<{ versionNumber: number }>(`/arts/${detail.project.id}/approve`, {
         method: 'POST',
@@ -293,21 +342,28 @@ export function StudioArtsTab({
       await openDetail(detail.project.id);
       await loadList();
     } catch (err) {
-      setError(err instanceof PortalApiError ? err.message : 'Erro ao aprovar versão.');
+      setApproveError(err instanceof PortalApiError ? err.message : 'Erro ao aprovar versão.');
+    } finally {
+      setApproving(false);
     }
   };
 
   const handleStatusStep = async (nextStatus: 'revisao_interna' | 'enviado_ao_cliente') => {
     if (!detail) return;
+    setUpdatingStatus(true);
+    setDetailError(null);
     try {
       await portalFetch(`/arts/${detail.project.id}/status`, {
         method: 'POST',
         body: JSON.stringify({ status: nextStatus }),
       });
+      setFeedback('Status do projeto de arte atualizado.');
       await openDetail(detail.project.id);
       await loadList();
     } catch (err) {
-      setError(err instanceof PortalApiError ? err.message : 'Erro ao atualizar status.');
+      setDetailError(err instanceof PortalApiError ? err.message : 'Erro ao atualizar status.');
+    } finally {
+      setUpdatingStatus(false);
     }
   };
 
@@ -349,7 +405,10 @@ export function StudioArtsTab({
           {canWrite ? (
             <button
               type="button"
-              onClick={() => setNewOpen(true)}
+              onClick={() => {
+                setCreateError(null);
+                setNewOpen(true);
+              }}
               className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full apple-glass-cta text-xs font-semibold text-white"
             >
               <Plus className="w-4 h-4" /> Novo projeto de arte
@@ -425,20 +484,34 @@ export function StudioArtsTab({
       <GlassModal
         open={newOpen}
         title="Novo projeto de arte & briefing"
-        onClose={() => setNewOpen(false)}
+        onClose={() => {
+          setCreateError(null);
+          setNewOpen(false);
+        }}
       >
         <form onSubmit={handleCreateProject} className="space-y-4">
+          {createError ? <ErrorBanner message={createError} /> : null}
+          {customers.length === 0 ? (
+            <div className="rounded-2xl bg-amber-500/15 border border-amber-400/35 p-3 text-xs text-amber-100">
+              Cadastre primeiro um cliente no CRM Comercial antes de abrir um projeto de arte.
+            </div>
+          ) : null}
           <div>
             <label className="block text-xs font-semibold text-wise-ink mb-1">Cliente *</label>
             <select
               required
+              disabled={customers.length === 0}
               value={newCustomerId}
               onChange={(e) => setNewCustomerId(e.target.value)}
-              className="w-full apple-glass-well rounded-xl px-3 py-2.5 text-xs text-wise-ink outline-none"
+              className="w-full apple-glass-well rounded-xl px-3 py-2.5 text-xs text-wise-ink outline-none disabled:opacity-50"
             >
-              {customers.map((c) => (
-                <option key={c.id} value={c.id} className="bg-[#181818]">{c.name}</option>
-              ))}
+              {customers.length === 0 ? (
+                <option value="" className="bg-[#181818]">Nenhum cliente cadastrado</option>
+              ) : (
+                customers.map((c) => (
+                  <option key={c.id} value={c.id} className="bg-[#181818]">{c.name}</option>
+                ))
+              )}
             </select>
           </div>
           <div>
@@ -446,6 +519,7 @@ export function StudioArtsTab({
             <input
               type="text"
               required
+              minLength={3}
               value={newTitle}
               onChange={(e) => setNewTitle(e.target.value)}
               placeholder="Ex: Uniforme Titular + Goleiro Copa 2026"
@@ -462,11 +536,22 @@ export function StudioArtsTab({
             />
           </div>
           <div className="flex justify-end gap-2">
-            <button type="button" onClick={() => setNewOpen(false)} className="px-4 py-2 rounded-full bg-white/8 text-xs font-semibold text-wise-body">
+            <button
+              type="button"
+              onClick={() => {
+                setCreateError(null);
+                setNewOpen(false);
+              }}
+              className="px-4 py-2 rounded-full bg-white/8 text-xs font-semibold text-wise-body"
+            >
               Cancelar
             </button>
-            <button type="submit" className="px-5 py-2 rounded-full apple-glass-cta text-xs font-semibold text-white">
-              Criar projeto
+            <button
+              type="submit"
+              disabled={creatingProject || customers.length === 0}
+              className="px-5 py-2 rounded-full apple-glass-cta text-xs font-semibold text-white disabled:opacity-50"
+            >
+              {creatingProject ? 'Criando...' : 'Criar projeto'}
             </button>
           </div>
         </form>
@@ -476,12 +561,20 @@ export function StudioArtsTab({
       <GlassModal
         open={Boolean(detail)}
         title={detail?.project.title || 'Projeto de Arte'}
-        subtitle={detail ? `Cliente: ${detail.project.customer_name} · Status: ${detail.project.status}` : ''}
-        onClose={() => setDetail(null)}
+        subtitle={
+          detail
+            ? `Cliente: ${detail.project.customer_name} · Status: ${ART_STATUS_LABELS[detail.project.status] || detail.project.status}`
+            : ''
+        }
+        onClose={() => {
+          setDetailError(null);
+          setDetail(null);
+        }}
         maxWidthClass="max-w-4xl"
       >
         {detail ? (
           <div className="space-y-5 max-h-[75vh] overflow-y-auto pr-1">
+            {detailError ? <ErrorBanner message={detailError} /> : null}
             <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl apple-glass-well p-3.5">
               <div className="flex flex-wrap items-center gap-2 text-xs">
                 <StatusPill value={detail.project.status} />
@@ -503,16 +596,20 @@ export function StudioArtsTab({
                 {canWrite && detail.versions.length > 0 ? (
                   <button
                     type="button"
+                    disabled={updatingStatus}
                     onClick={() => handleStatusStep('enviado_ao_cliente')}
-                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-blue-500/20 border border-blue-400/40 text-xs font-semibold text-blue-100"
+                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-blue-500/20 border border-blue-400/40 text-xs font-semibold text-blue-100 disabled:opacity-50"
                   >
-                    <Send className="w-3.5 h-3.5" /> Enviar ao cliente
+                    <Send className="w-3.5 h-3.5" /> {updatingStatus ? 'Enviando...' : 'Enviar ao cliente'}
                   </button>
                 ) : null}
                 {canApprove && detail.versions.length > 0 ? (
                   <button
                     type="button"
-                    onClick={() => setApproveOpen(true)}
+                    onClick={() => {
+                      setApproveError(null);
+                      setApproveOpen(true);
+                    }}
                     className="inline-flex items-center gap-1 px-3.5 py-1.5 rounded-full apple-glass-cta text-xs font-semibold text-white"
                   >
                     <FileCheck className="w-3.5 h-3.5" /> Registrar Aprovação
@@ -667,8 +764,12 @@ export function StudioArtsTab({
                   placeholder="Descreva o comentário ou ajuste na arte..."
                   className="flex-1 apple-glass-well rounded-xl px-3 py-2 text-xs text-wise-ink outline-none"
                 />
-                <button type="submit" className="px-4 py-2 rounded-full bg-white/10 hover:bg-white/18 border border-white/15 text-xs font-semibold text-white">
-                  Enviar
+                <button
+                  type="submit"
+                  disabled={commenting}
+                  className="px-4 py-2 rounded-full bg-white/10 hover:bg-white/18 border border-white/15 text-xs font-semibold text-white disabled:opacity-50"
+                >
+                  {commenting ? 'Enviando...' : 'Enviar'}
                 </button>
               </form>
               <div className="space-y-2">
@@ -699,10 +800,14 @@ export function StudioArtsTab({
         open={approveOpen}
         title="Registrar aprovação formal da arte"
         subtitle="Vinculada especificamente à versão escolhida, com identificação do aprovador e evidência."
-        onClose={() => setApproveOpen(false)}
+        onClose={() => {
+          setApproveError(null);
+          setApproveOpen(false);
+        }}
         maxWidthClass="max-w-lg"
       >
         <form onSubmit={handleApproveVersion} className="space-y-4">
+          {approveError ? <ErrorBanner message={approveError} /> : null}
           <div>
             <label className="block text-xs font-semibold text-wise-ink mb-1">Versão aprovada *</label>
             <select
@@ -761,11 +866,23 @@ export function StudioArtsTab({
             />
           </div>
           <div className="flex justify-end gap-2">
-            <button type="button" onClick={() => setApproveOpen(false)} className="px-4 py-2 rounded-full bg-white/8 text-xs font-semibold text-wise-body">
+            <button
+              type="button"
+              onClick={() => {
+                setApproveError(null);
+                setApproveOpen(false);
+              }}
+              className="px-4 py-2 rounded-full bg-white/8 text-xs font-semibold text-wise-body"
+            >
               Cancelar
             </button>
-            <button type="submit" className="px-5 py-2 rounded-full apple-glass-cta text-xs font-semibold text-white">
-              <CheckCircle2 className="w-3.5 h-3.5 inline mr-1" /> Confirmar aprovação
+            <button
+              type="submit"
+              disabled={approving}
+              className="px-5 py-2 rounded-full apple-glass-cta text-xs font-semibold text-white disabled:opacity-50"
+            >
+              <CheckCircle2 className="w-3.5 h-3.5 inline mr-1" />
+              {approving ? 'Registrando...' : 'Confirmar aprovação'}
             </button>
           </div>
         </form>

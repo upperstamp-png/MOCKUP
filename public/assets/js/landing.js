@@ -4,8 +4,41 @@
   var formStartedAt = Date.now();
   var currentStep = 1;
 
+  function sanitizeHttpUrl(candidate) {
+    var val = String(candidate || '').trim().replace(/\/+$/, '');
+    return /^https?:\/\//i.test(val) ? val : '';
+  }
+
+  function applyCrossDomainLinks(cfg) {
+    var hostname = (window.location && window.location.hostname) || '';
+    if (!/^lp\./i.test(hostname)) return;
+
+    var proto = (window.location && window.location.protocol) || 'https:';
+    var port = window.location && window.location.port ? ':' + window.location.port : '';
+    var baseHost = hostname.slice(3);
+
+    var urls = (cfg && cfg.urls) || {};
+    var hubBase = sanitizeHttpUrl(urls.hub_url) || proto + '//app.' + baseHost + port;
+    var crmBase = sanitizeHttpUrl(urls.crm_url) || proto + '//crm.' + baseHost + port;
+
+    var hubLoginUrl = /\/login$/i.test(hubBase) ? hubBase : hubBase + '/login';
+    var crmLoginUrl = /\/login\.html$/i.test(crmBase) ? crmBase : crmBase + '/login.html';
+
+    document.querySelectorAll('a[href="/hub/login"], a[data-ks-cross-link="hub"]').forEach(function (a) {
+      a.setAttribute('data-ks-cross-link', 'hub');
+      a.setAttribute('href', hubLoginUrl);
+    });
+
+    document.querySelectorAll('a[href="/admin/login.html"], a[data-ks-cross-link="crm"]').forEach(function (a) {
+      a.setAttribute('data-ks-cross-link', 'crm');
+      a.setAttribute('href', crmLoginUrl);
+    });
+  }
+
   function applyDynamicConfig(cfg) {
-    if (!cfg || !cfg.landing_content) return;
+    if (!cfg) return;
+    applyCrossDomainLinks(cfg);
+    if (!cfg.landing_content) return;
     var lc = cfg.landing_content;
     var map = {
       'ks-hero-tag': lc.hero_tag,
@@ -20,12 +53,21 @@
       if (defText && String(map[id]).trim() === defText.trim()) return;
       el.textContent = map[id];
     });
+    var heroCta = document.getElementById('ks-hero-cta');
+    if (heroCta && lc.hero_cta_text) {
+      var defCta = heroCta.getAttribute('data-default-text');
+      if (!defCta || String(lc.hero_cta_text).trim() !== defCta.trim()) {
+        var span = heroCta.querySelector('span');
+        if (span) span.textContent = lc.hero_cta_text;
+      }
+    }
   }
 
   function initMobileMenu() {
     var btn = document.getElementById('ks-hamburger-btn');
     var drawer = document.getElementById('ks-mobile-drawer');
-    if (!btn || !drawer) return;
+    if (!btn || !drawer || btn.dataset.ksMenuBound === '1') return;
+    btn.dataset.ksMenuBound = '1';
     btn.addEventListener('click', function () {
       var open = drawer.classList.toggle('open');
       btn.setAttribute('aria-expanded', open ? 'true' : 'false');
@@ -35,6 +77,12 @@
         drawer.classList.remove('open');
         btn.setAttribute('aria-expanded', 'false');
       });
+    });
+    document.addEventListener('keydown', function (ev) {
+      if (ev.key === 'Escape' && drawer.classList.contains('open')) {
+        drawer.classList.remove('open');
+        btn.setAttribute('aria-expanded', 'false');
+      }
     });
   }
 
@@ -346,7 +394,11 @@
   }
 
   function formatWhatsappInput(input) {
-    var v = input.value.replace(/\D/g, '').slice(0, 11);
+    var v = input.value.replace(/\D/g, '');
+    if (v.length >= 12 && v.slice(0, 2) === '55') {
+      v = v.slice(2);
+    }
+    v = v.slice(0, 11);
     if (v.length >= 11) {
       input.value = '(' + v.slice(0, 2) + ') ' + v.slice(2, 7) + '-' + v.slice(7);
     } else if (v.length >= 7) {
@@ -366,8 +418,29 @@
     if (errEl && msg) errEl.textContent = msg;
   }
 
+  function showFormAlert(alertBox, msg) {
+    if (!alertBox) return;
+    if (!msg) {
+      alertBox.className = 'ks-form-alert';
+      alertBox.textContent = '';
+      return;
+    }
+    alertBox.className = 'ks-form-alert error';
+    alertBox.textContent = msg;
+  }
+
   function validateStep(stepNumber) {
     var valid = true;
+    var firstInvalid = null;
+
+    function mark(el, ok, msg) {
+      setFieldError(el, !ok, msg);
+      if (!ok) {
+        valid = false;
+        if (!firstInvalid) firstInvalid = el;
+      }
+    }
+
     if (stepNumber === 1) {
       var nameEl = document.getElementById('f_full_name');
       var whatsEl = document.getElementById('f_whatsapp');
@@ -375,35 +448,35 @@
       var cityEl = document.getElementById('f_city');
       var stateEl = document.getElementById('f_state');
 
-      var nameOk = nameEl.value.trim().length >= 3;
-      setFieldError(nameEl, !nameOk, 'Informe seu nome completo.');
-      if (!nameOk) valid = false;
+      mark(nameEl, nameEl.value.trim().length >= 3, 'Informe seu nome completo (mínimo 3 letras).');
 
       var digits = whatsEl.value.replace(/\D/g, '');
-      var whatsOk = digits.length >= 10 && digits.length <= 13;
-      setFieldError(whatsEl, !whatsOk, 'Informe WhatsApp válido com DDD.');
-      if (!whatsOk) valid = false;
+      mark(whatsEl, digits.length >= 10 && digits.length <= 13, 'Informe um WhatsApp válido com DDD.');
 
-      var emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailEl.value.trim());
-      setFieldError(emailEl, !emailOk, 'Informe um e-mail válido.');
-      if (!emailOk) valid = false;
+      mark(emailEl, /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailEl.value.trim()), 'Informe um e-mail válido.');
 
-      var cityOk = cityEl.value.trim().length >= 2;
-      setFieldError(cityEl, !cityOk, 'Informe sua cidade.');
-      if (!cityOk) valid = false;
+      mark(cityEl, cityEl.value.trim().length >= 2, 'Informe sua cidade.');
 
-      var stateOk = stateEl.value.trim().length === 2;
-      setFieldError(stateEl, !stateOk, 'UF');
-      if (!stateOk) valid = false;
+      mark(stateEl, stateEl.value.trim().length === 2, 'UF');
     }
 
     if (stepNumber === 2) {
-      ['f_commercial_experience', 'f_current_profession', 'f_available_capital_range', 'f_desired_start_timeframe', 'f_intended_track'].forEach(function (id) {
-        var el = document.getElementById(id);
-        var ok = el.value.trim().length >= 2;
-        setFieldError(el, !ok, 'Campo obrigatório.');
-        if (!ok) valid = false;
+      var step2Rules = [
+        { id: 'f_intended_track', msg: 'Selecione seu perfil de atuação.' },
+        { id: 'f_commercial_experience', msg: 'Selecione sua experiência comercial.' },
+        { id: 'f_current_profession', msg: 'Informe sua profissão atual.' },
+        { id: 'f_available_capital_range', msg: 'Selecione a faixa de capital disponível.' },
+        { id: 'f_desired_start_timeframe', msg: 'Selecione o prazo desejado para começar.' }
+      ];
+      step2Rules.forEach(function (rule) {
+        var el = document.getElementById(rule.id);
+        if (!el) return;
+        mark(el, el.value.trim().length >= 2, rule.msg);
       });
+    }
+
+    if (firstInvalid && typeof firstInvalid.focus === 'function') {
+      firstInvalid.focus();
     }
 
     return valid;
@@ -426,6 +499,34 @@
     }
   }
 
+  function applyServerValidationErrors(details) {
+    if (!Array.isArray(details) || !details.length) return;
+    var fieldMap = {
+      full_name: { id: 'f_full_name', step: 1 },
+      whatsapp: { id: 'f_whatsapp', step: 1 },
+      email: { id: 'f_email', step: 1 },
+      city: { id: 'f_city', step: 1 },
+      state: { id: 'f_state', step: 1 },
+      desired_zip_prefix: { id: 'f_zip', step: 1 },
+      intended_track: { id: 'f_intended_track', step: 2 },
+      commercial_experience: { id: 'f_commercial_experience', step: 2 },
+      current_profession: { id: 'f_current_profession', step: 2 },
+      available_capital_range: { id: 'f_available_capital_range', step: 2 },
+      desired_start_timeframe: { id: 'f_desired_start_timeframe', step: 2 }
+    };
+    var targetStep = currentStep;
+    details.forEach(function (item) {
+      var mapped = fieldMap[item.field];
+      if (!mapped) return;
+      var el = document.getElementById(mapped.id);
+      if (el) {
+        setFieldError(el, true, item.message);
+        if (mapped.step === 1) targetStep = 1;
+      }
+    });
+    showStep(targetStep);
+  }
+
   function initMultiStepForm() {
     var form = document.getElementById('ks-franchise-form');
     if (!form) return;
@@ -437,62 +538,77 @@
       });
     }
 
+    var alertBox = document.getElementById('ks-form-alert');
+
     form.querySelectorAll('input, select').forEach(function (el) {
       el.addEventListener('focus', function () {
         if (window.KingTracking) window.KingTracking.trackFormStart();
       });
-      el.addEventListener('input', function () {
+      var clearField = function () {
         setFieldError(el, false);
-      });
+        if (el.id === 'f_lgpd' && el.checked) {
+          showFormAlert(alertBox, '');
+        }
+      };
+      el.addEventListener('input', clearField);
+      el.addEventListener('change', clearField);
     });
 
     var nextBtn = document.getElementById('ks-next-step-btn');
     var prevBtn = document.getElementById('ks-prev-step-btn');
-    var alertBox = document.getElementById('ks-form-alert');
+
+    function advanceFromStep1() {
+      showFormAlert(alertBox, '');
+      if (!validateStep(1)) {
+        showFormAlert(alertBox, 'Revise os campos destacados na Etapa 1 para continuar.');
+        return;
+      }
+      showStep(2);
+      if (window.KingTracking) {
+        window.KingTracking.pushEvent('form_step_complete', { step: 1, step_name: 'identificacao' });
+      }
+    }
 
     if (nextBtn) {
-      nextBtn.addEventListener('click', function () {
-        if (!validateStep(1)) return;
-        showStep(2);
-        if (window.KingTracking) {
-          window.KingTracking.pushEvent('form_step_complete', { step: 1, step_name: 'identificacao' });
-        }
-      });
+      nextBtn.addEventListener('click', advanceFromStep1);
     }
 
     if (prevBtn) {
       prevBtn.addEventListener('click', function () {
+        showFormAlert(alertBox, '');
         showStep(1);
       });
     }
 
     form.addEventListener('submit', async function (e) {
       e.preventDefault();
-      if (alertBox) {
-        alertBox.className = 'ks-form-alert';
-        alertBox.textContent = '';
+      showFormAlert(alertBox, '');
+
+      if (currentStep === 1) {
+        advanceFromStep1();
+        return;
       }
 
       if (!validateStep(1)) {
         showStep(1);
+        showFormAlert(alertBox, 'Revise os campos destacados na Etapa 1 antes de enviar.');
         return;
       }
       if (!validateStep(2)) {
         showStep(2);
+        showFormAlert(alertBox, 'Preencha todos os campos obrigatórios da Etapa 2.');
         return;
       }
 
       var lgpdEl = document.getElementById('f_lgpd');
       if (!lgpdEl.checked) {
-        if (alertBox) {
-          alertBox.className = 'ks-form-alert error';
-          alertBox.textContent = 'É necessário aceitar a Política de Privacidade para enviar sua candidatura.';
-        }
+        showFormAlert(alertBox, 'É necessário aceitar a Política de Privacidade para enviar sua candidatura.');
+        lgpdEl.focus();
         return;
       }
 
       var submitBtn = document.getElementById('ks-submit-btn');
-      var originalText = submitBtn.textContent;
+      var originalText = submitBtn.getAttribute('data-default-text') || submitBtn.textContent;
       submitBtn.disabled = true;
       submitBtn.textContent = 'ENVIANDO CANDIDATURA...';
 
@@ -540,7 +656,24 @@
         });
 
         if (!resp.ok) {
-          throw new Error(data?.error?.message || 'Não foi possível concluir o envio. Tente novamente.');
+          if (resp.status === 400 && data?.error?.details) {
+            applyServerValidationErrors(data.error.details);
+          }
+          var errMsg = data?.error?.message;
+          if (resp.status === 503 || data?.error?.code === 'SERVICE_NOT_CONFIGURED') {
+            errMsg =
+              'Nosso sistema de cadastro está temporariamente indisponível no servidor. Tente novamente em alguns instantes.';
+          } else if (resp.status === 429) {
+            errMsg =
+              errMsg ||
+              'Muitas tentativas em curto intervalo. Aguarde alguns minutos antes de tentar novamente.';
+          } else if (!errMsg) {
+            errMsg =
+              resp.status >= 500
+                ? 'Erro temporário no servidor (HTTP ' + resp.status + '). Tente novamente em instantes.'
+                : 'Não foi possível concluir o envio. Revise os dados e tente novamente.';
+          }
+          throw new Error(errMsg);
         }
 
         if (tracking) {
@@ -570,10 +703,11 @@
 
         window.location.href = '/obrigado.html';
       } catch (err) {
-        if (alertBox) {
-          alertBox.className = 'ks-form-alert error';
-          alertBox.textContent = err.message;
-        }
+        var displayMsg =
+          err && err.name === 'TypeError'
+            ? 'Falha de conexão com o servidor. Verifique sua internet e tente novamente.'
+            : (err && err.message) || 'Não foi possível concluir o envio. Tente novamente.';
+        showFormAlert(alertBox, displayMsg);
         submitBtn.disabled = false;
         submitBtn.textContent = originalText;
       }
@@ -595,5 +729,14 @@
     initFaq();
     initFormFocusCtas();
     initMultiStepForm();
+    var cachedCfg =
+      window.KingTracking && typeof window.KingTracking.getPublicConfig === 'function'
+        ? window.KingTracking.getPublicConfig()
+        : null;
+    if (cachedCfg) {
+      applyDynamicConfig(cachedCfg);
+    } else {
+      applyCrossDomainLinks(null);
+    }
   });
 })();

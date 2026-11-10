@@ -15,7 +15,7 @@ import {
   Trash2,
   UserPlus,
 } from 'lucide-react';
-import { formatBrl, formatDateBr, hubAsset, portalFetch, PortalApiError } from '@/lib/api-client';
+import { formatBrl, formatDateBr, hubPublicUrl, portalFetch, PortalApiError } from '@/lib/api-client';
 import type { ModuleTabId, PortalMeResponse } from './PortalTypes';
 import { EmptyStateCard, ErrorBanner, GlassModal, LoadingCard, StatusPill } from './UiPrimitives';
 
@@ -28,6 +28,28 @@ const PIPELINE_STAGES = [
   { key: 'ganho', label: 'Ganho' },
   { key: 'perdido', label: 'Perdido' },
 ] as const;
+
+const STAGE_LABELS: Record<string, string> = Object.fromEntries(
+  PIPELINE_STAGES.map((st) => [st.key, st.label])
+);
+
+const CUSTOMER_TYPE_LABELS: Record<string, string> = {
+  time: 'Time Amador / Liga',
+  escolinha: 'Escolinha / Colégio',
+  academia: 'Academia / Box',
+  empresa: 'Empresa / Corporativo',
+  organizador_eventos: 'Organizador de Eventos',
+  atletica: 'Atlética Universitária',
+  outro: 'Outro',
+};
+
+const ACTIVITY_TYPE_LABELS: Record<string, string> = {
+  whatsapp: 'WhatsApp',
+  call: 'Ligação',
+  meeting: 'Reunião',
+  email: 'E-mail',
+  note: 'Nota',
+};
 
 interface CustomerItem {
   id: string;
@@ -112,6 +134,8 @@ export function CrmTab({
   const [contactEmail, setContactEmail] = useState('');
   const [duplicatesWarning, setDuplicatesWarning] = useState<string | null>(null);
   const [possibleDups, setPossibleDups] = useState<Array<{ id: string; name: string; city: string | null }>>([]);
+  const [savingCust, setSavingCust] = useState(false);
+  const [custError, setCustError] = useState<string | null>(null);
 
   const [oppModalOpen, setOppModalOpen] = useState(initialAction === 'new-opportunity');
   const [oppCustomerId, setOppCustomerId] = useState('');
@@ -122,6 +146,8 @@ export function CrmTab({
   const [oppEventDate, setOppEventDate] = useState('');
   const [oppNextAction, setOppNextAction] = useState('');
   const [oppOwner, setOppOwner] = useState(me.user.id);
+  const [savingOpp, setSavingOpp] = useState(false);
+  const [oppError, setOppError] = useState<string | null>(null);
 
   // Selected Opportunity Drawer
   const [selectedOpp, setSelectedOpp] = useState<{
@@ -135,12 +161,17 @@ export function CrmTab({
   const [actTitle, setActTitle] = useState('');
   const [actType, setActType] = useState<'note' | 'call' | 'whatsapp' | 'meeting' | 'email'>('whatsapp');
   const [actDesc, setActDesc] = useState('');
+  const [updatingStage, setUpdatingStage] = useState(false);
+  const [addingAct, setAddingAct] = useState(false);
+  const [oppDetailError, setOppDetailError] = useState<string | null>(null);
 
   // Customer Detail / Add Contact
   const [selectedCustomer, setSelectedCustomer] = useState<CustomerItem | null>(null);
   const [newContactName, setNewContactName] = useState('');
   const [newContactPhone, setNewContactPhone] = useState('');
   const [newContactRole, setNewContactRole] = useState('');
+  const [addingContact, setAddingContact] = useState(false);
+  const [contactError, setContactError] = useState<string | null>(null);
 
   const canWrite = me.activeRole.permissions.includes('crm:write');
 
@@ -199,6 +230,12 @@ export function CrmTab({
 
   const handleCreateCustomer = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (custName.trim().length < 2) {
+      setCustError('Informe o nome do cliente com pelo menos 2 caracteres.');
+      return;
+    }
+    setSavingCust(true);
+    setCustError(null);
     setError(null);
     try {
       const created = await portalFetch<{ customer: { id: string } }>('/crm/customers', {
@@ -231,12 +268,24 @@ export function CrmTab({
       setOppCustomerId(created.customer.id);
       await loadAll();
     } catch (err) {
-      setError(err instanceof PortalApiError ? err.message : 'Erro ao cadastrar cliente.');
+      setCustError(err instanceof PortalApiError ? err.message : 'Erro ao cadastrar cliente.');
+    } finally {
+      setSavingCust(false);
     }
   };
 
   const handleCreateOpportunity = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!oppCustomerId) {
+      setOppError('Selecione um cliente cadastrado.');
+      return;
+    }
+    if (oppTitle.trim().length < 3) {
+      setOppError('Informe o título da oportunidade com pelo menos 3 caracteres.');
+      return;
+    }
+    setSavingOpp(true);
+    setOppError(null);
     setError(null);
     try {
       const valueNum = Number(oppEstValue.replace(',', '.'));
@@ -263,11 +312,14 @@ export function CrmTab({
       setFeedback('Oportunidade registrada no funil comercial.');
       await loadAll();
     } catch (err) {
-      setError(err instanceof PortalApiError ? err.message : 'Erro ao criar oportunidade.');
+      setOppError(err instanceof PortalApiError ? err.message : 'Erro ao criar oportunidade.');
+    } finally {
+      setSavingOpp(false);
     }
   };
 
   const openOppDetail = async (id: string) => {
+    setOppDetailError(null);
     try {
       const detail = await portalFetch<{
         opportunity: OpportunityItem;
@@ -286,7 +338,12 @@ export function CrmTab({
   const handleStageUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedOpp) return;
-    setError(null);
+    if (targetStage === 'perdido' && lossReason.trim().length < 3) {
+      setOppDetailError('Informe o motivo obrigatório da perda (mínimo 3 caracteres).');
+      return;
+    }
+    setUpdatingStage(true);
+    setOppDetailError(null);
     try {
       const res = await portalFetch<{ nextStepHint: string | null }>(
         `/crm/opportunities/${selectedOpp.opportunity.id}/stage`,
@@ -294,10 +351,10 @@ export function CrmTab({
           method: 'PATCH',
           body: JSON.stringify({
             stage: targetStage,
-            lossReason: targetStage === 'perdido' ? lossReason : null,
+            lossReason: targetStage === 'perdido' ? lossReason.trim() : null,
             reopenReason:
               selectedOpp.opportunity.status !== 'open' && !['ganho', 'perdido'].includes(targetStage)
-                ? reopenReason
+                ? reopenReason.trim() || null
                 : null,
           }),
         }
@@ -306,13 +363,21 @@ export function CrmTab({
       await openOppDetail(selectedOpp.opportunity.id);
       await loadAll();
     } catch (err) {
-      setError(err instanceof PortalApiError ? err.message : 'Erro ao atualizar etapa.');
+      setOppDetailError(err instanceof PortalApiError ? err.message : 'Erro ao atualizar etapa.');
+    } finally {
+      setUpdatingStage(false);
     }
   };
 
   const handleAddActivity = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedOpp) return;
+    if (actTitle.trim().length < 2) {
+      setOppDetailError('Descreva o resumo da interação com pelo menos 2 caracteres.');
+      return;
+    }
+    setAddingAct(true);
+    setOppDetailError(null);
     try {
       await portalFetch(`/crm/opportunities/${selectedOpp.opportunity.id}/activities`, {
         method: 'POST',
@@ -323,13 +388,21 @@ export function CrmTab({
       await openOppDetail(selectedOpp.opportunity.id);
       await loadAll();
     } catch (err) {
-      setError(err instanceof PortalApiError ? err.message : 'Erro ao registrar atividade.');
+      setOppDetailError(err instanceof PortalApiError ? err.message : 'Erro ao registrar atividade.');
+    } finally {
+      setAddingAct(false);
     }
   };
 
   const handleAddContact = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedCustomer) return;
+    if (newContactName.trim().length < 2) {
+      setContactError('Informe o nome do contato (mínimo 2 caracteres).');
+      return;
+    }
+    setAddingContact(true);
+    setContactError(null);
     try {
       await portalFetch(`/crm/customers/${selectedCustomer.id}/contacts`, {
         method: 'POST',
@@ -344,9 +417,12 @@ export function CrmTab({
       setNewContactPhone('');
       setNewContactRole('');
       setSelectedCustomer(null);
+      setFeedback('Novo contato adicionado ao cliente.');
       await loadAll();
     } catch (err) {
-      setError(err instanceof PortalApiError ? err.message : 'Erro ao adicionar contato.');
+      setContactError(err instanceof PortalApiError ? err.message : 'Erro ao adicionar contato.');
+    } finally {
+      setAddingContact(false);
     }
   };
 
@@ -379,7 +455,10 @@ export function CrmTab({
             <>
               <button
                 type="button"
-                onClick={() => setCustModalOpen(true)}
+                onClick={() => {
+                  setCustError(null);
+                  setCustModalOpen(true);
+                }}
                 className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-white/10 hover:bg-white/16 border border-white/15 text-xs font-semibold text-white"
               >
                 <UserPlus className="w-4 h-4" />
@@ -387,7 +466,10 @@ export function CrmTab({
               </button>
               <button
                 type="button"
-                onClick={() => setOppModalOpen(true)}
+                onClick={() => {
+                  setOppError(null);
+                  setOppModalOpen(true);
+                }}
                 className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full apple-glass-cta text-xs font-semibold text-white"
               >
                 <Plus className="w-4 h-4" />
@@ -573,7 +655,9 @@ export function CrmTab({
                 <div key={c.id} className="apple-glass-subtle rounded-2xl p-4 space-y-2.5">
                   <div className="flex items-start justify-between gap-2">
                     <div>
-                      <span className="text-[10px] uppercase font-bold text-blue-300">{c.customer_type.replace(/_/g, ' ')}</span>
+                      <span className="text-[10px] uppercase font-bold text-blue-300">
+                        {CUSTOMER_TYPE_LABELS[c.customer_type] || c.customer_type}
+                      </span>
                       <h3 className="text-sm font-bold text-wise-ink">{c.name}</h3>
                     </div>
                     <span className="text-[11px] text-wise-mute">{c.city ? `${c.city}/${c.state || ''}` : ''}</span>
@@ -592,7 +676,10 @@ export function CrmTab({
                     <div className="flex items-center gap-2">
                       <button
                         type="button"
-                        onClick={() => setSelectedCustomer(c)}
+                        onClick={() => {
+                          setContactError(null);
+                          setSelectedCustomer(c);
+                        }}
                         className="px-2.5 py-1 rounded-full bg-white/8 hover:bg-white/15 border border-white/12 text-white font-semibold"
                       >
                         Contatos ({c.contacts?.length || 0})
@@ -618,9 +705,13 @@ export function CrmTab({
         open={custModalOpen}
         title="Cadastrar cliente"
         subtitle="Times, escolinhas, academias, empresas ou organizadores da sua região."
-        onClose={() => setCustModalOpen(false)}
+        onClose={() => {
+          setCustError(null);
+          setCustModalOpen(false);
+        }}
       >
         <form onSubmit={handleCreateCustomer} className="space-y-4">
+          {custError ? <ErrorBanner message={custError} /> : null}
           {duplicatesWarning ? (
             <div className="rounded-2xl bg-amber-500/15 border border-amber-400/40 p-3 space-y-1 text-xs text-amber-100">
               <p className="font-bold flex items-center gap-1.5">
@@ -748,11 +839,22 @@ export function CrmTab({
           </div>
 
           <div className="flex justify-end gap-2">
-            <button type="button" onClick={() => setCustModalOpen(false)} className="px-4 py-2 rounded-full bg-white/8 text-xs font-semibold text-wise-body">
+            <button
+              type="button"
+              onClick={() => {
+                setCustError(null);
+                setCustModalOpen(false);
+              }}
+              className="px-4 py-2 rounded-full bg-white/8 text-xs font-semibold text-wise-body"
+            >
               Cancelar
             </button>
-            <button type="submit" className="px-5 py-2 rounded-full apple-glass-cta text-xs font-semibold text-white">
-              Salvar cliente
+            <button
+              type="submit"
+              disabled={savingCust}
+              className="px-5 py-2 rounded-full apple-glass-cta text-xs font-semibold text-white disabled:opacity-50"
+            >
+              {savingCust ? 'Salvando...' : 'Salvar cliente'}
             </button>
           </div>
         </form>
@@ -763,9 +865,13 @@ export function CrmTab({
         open={oppModalOpen}
         title="Nova oportunidade comercial"
         subtitle="Vincule a um cliente e defina a próxima ação e data do evento."
-        onClose={() => setOppModalOpen(false)}
+        onClose={() => {
+          setOppError(null);
+          setOppModalOpen(false);
+        }}
       >
         <form onSubmit={handleCreateOpportunity} className="space-y-4">
+          {oppError ? <ErrorBanner message={oppError} /> : null}
           {customers.length === 0 ? (
             <div className="p-3 rounded-2xl bg-amber-500/15 border border-amber-400/35 text-xs text-amber-100">
               Cadastre primeiro um cliente em &quot;Novo cliente&quot; antes de abrir uma oportunidade.
@@ -782,7 +888,7 @@ export function CrmTab({
                 >
                   {customers.map((c) => (
                     <option key={c.id} value={c.id} className="bg-[#181818]">
-                      {c.name} ({c.customer_type})
+                      {c.name} ({CUSTOMER_TYPE_LABELS[c.customer_type] || c.customer_type})
                     </option>
                   ))}
                 </select>
@@ -866,11 +972,22 @@ export function CrmTab({
                 />
               </div>
               <div className="flex justify-end gap-2">
-                <button type="button" onClick={() => setOppModalOpen(false)} className="px-4 py-2 rounded-full bg-white/8 text-xs font-semibold text-wise-body">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setOppError(null);
+                    setOppModalOpen(false);
+                  }}
+                  className="px-4 py-2 rounded-full bg-white/8 text-xs font-semibold text-wise-body"
+                >
                   Cancelar
                 </button>
-                <button type="submit" className="px-5 py-2 rounded-full apple-glass-cta text-xs font-semibold text-white">
-                  Criar oportunidade
+                <button
+                  type="submit"
+                  disabled={savingOpp}
+                  className="px-5 py-2 rounded-full apple-glass-cta text-xs font-semibold text-white disabled:opacity-50"
+                >
+                  {savingOpp ? 'Criando...' : 'Criar oportunidade'}
                 </button>
               </div>
             </>
@@ -884,14 +1001,18 @@ export function CrmTab({
         title={selectedOpp?.opportunity.title || 'Oportunidade'}
         subtitle={
           selectedOpp
-            ? `${selectedOpp.opportunity.customer_name} · Etapa atual: ${selectedOpp.opportunity.stage}`
+            ? `${selectedOpp.opportunity.customer_name} · Etapa atual: ${STAGE_LABELS[selectedOpp.opportunity.stage] || selectedOpp.opportunity.stage}`
             : ''
         }
-        onClose={() => setSelectedOpp(null)}
+        onClose={() => {
+          setOppDetailError(null);
+          setSelectedOpp(null);
+        }}
         maxWidthClass="max-w-3xl"
       >
         {selectedOpp ? (
           <div className="space-y-5">
+            {oppDetailError ? <ErrorBanner message={oppDetailError} /> : null}
             {canWrite ? (
               <form onSubmit={handleStageUpdate} className="rounded-2xl apple-glass-well p-4 space-y-3">
                 <span className="text-xs font-bold text-wise-ink block">Atualizar etapa / perda / reabertura</span>
@@ -907,9 +1028,10 @@ export function CrmTab({
                   </select>
                   <button
                     type="submit"
-                    className="px-4 py-2 rounded-full apple-glass-cta text-xs font-semibold text-white"
+                    disabled={updatingStage}
+                    className="px-4 py-2 rounded-full apple-glass-cta text-xs font-semibold text-white disabled:opacity-50"
                   >
-                    Salvar etapa
+                    {updatingStage ? 'Salvando...' : 'Salvar etapa'}
                   </button>
                 </div>
                 {targetStage === 'perdido' ? (
@@ -955,7 +1077,8 @@ export function CrmTab({
                 <span className="font-bold text-blue-200">Histórico de reaberturas:</span>
                 {selectedOpp.opportunity.reopen_history.map((rh, i) => (
                   <p key={i} className="text-[11px] text-wise-body">
-                    {formatDateBr(rh.reopenedAt, { withTime: true })} por {rh.reopenedBy}: {rh.fromStage} → {rh.toStage} ({rh.reason})
+                    {formatDateBr(rh.reopenedAt, { withTime: true })} por {rh.reopenedBy}:{' '}
+                    {STAGE_LABELS[rh.fromStage] || rh.fromStage} → {STAGE_LABELS[rh.toStage] || rh.toStage} ({rh.reason})
                   </p>
                 ))}
               </div>
@@ -987,9 +1110,10 @@ export function CrmTab({
                   />
                   <button
                     type="submit"
-                    className="px-4 py-2 rounded-full bg-white/10 hover:bg-white/18 border border-white/15 text-xs font-semibold text-white inline-flex items-center gap-1"
+                    disabled={addingAct}
+                    className="px-4 py-2 rounded-full bg-white/10 hover:bg-white/18 border border-white/15 text-xs font-semibold text-white inline-flex items-center gap-1 disabled:opacity-50"
                   >
-                    <MessageSquarePlus className="w-3.5 h-3.5" /> Registrar
+                    <MessageSquarePlus className="w-3.5 h-3.5" /> {addingAct ? 'Registrando...' : 'Registrar'}
                   </button>
                 </form>
               ) : null}
@@ -998,7 +1122,9 @@ export function CrmTab({
                 {selectedOpp.activities.map((a) => (
                   <div key={a.id} className="rounded-xl bg-white/5 border border-white/10 p-3 text-xs">
                     <div className="flex items-center justify-between text-[11px] text-wise-mute">
-                      <span className="uppercase font-bold text-blue-300">{a.activity_type}</span>
+                      <span className="uppercase font-bold text-blue-300">
+                        {ACTIVITY_TYPE_LABELS[a.activity_type] || a.activity_type}
+                      </span>
                       <span>{formatDateBr(a.created_at, { withTime: true })}</span>
                     </div>
                     <p className="font-semibold text-wise-ink mt-0.5">{a.title}</p>
@@ -1015,11 +1141,15 @@ export function CrmTab({
       <GlassModal
         open={Boolean(selectedCustomer)}
         title={`Contatos · ${selectedCustomer?.name || ''}`}
-        onClose={() => setSelectedCustomer(null)}
+        onClose={() => {
+          setContactError(null);
+          setSelectedCustomer(null);
+        }}
         maxWidthClass="max-w-lg"
       >
         {selectedCustomer ? (
           <div className="space-y-4">
+            {contactError ? <ErrorBanner message={contactError} /> : null}
             <div className="space-y-2">
               {(selectedCustomer.contacts || []).length === 0 ? (
                 <p className="text-xs text-wise-mute">Nenhum contato adicional cadastrado.</p>
@@ -1066,8 +1196,12 @@ export function CrmTab({
                     className="apple-glass-well rounded-xl px-3 py-2 text-xs text-wise-ink outline-none"
                   />
                 </div>
-                <button type="submit" className="px-4 py-2 rounded-full apple-glass-cta text-xs font-semibold text-white">
-                  Salvar contato
+                <button
+                  type="submit"
+                  disabled={addingContact}
+                  className="px-4 py-2 rounded-full apple-glass-cta text-xs font-semibold text-white disabled:opacity-50"
+                >
+                  {addingContact ? 'Salvando...' : 'Salvar contato'}
                 </button>
               </form>
             ) : null}
@@ -1153,7 +1287,10 @@ export function QuotesTab({
   const [shippingReais, setShippingReais] = useState('45.00');
   const [discountReais, setDiscountReais] = useState('0.00');
   const [paymentTerms, setPaymentTerms] = useState('50% entrada + 50% antes do despacho SP');
-  const [validUntil, setValidUntil] = useState(() => new Date(Date.now() + 10 * 86_400_000).toISOString().slice(0, 10));
+  const [validUntil, setValidUntil] = useState(() => {
+    const dt = new Date(Date.now() + 10 * 86_400_000);
+    return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
+  });
   const [deliveryDays, setDeliveryDays] = useState('15');
   const [draftItems, setDraftItems] = useState<
     Array<{
@@ -1164,6 +1301,12 @@ export function QuotesTab({
       personalizationReais: string;
     }>
   >([]);
+  const [savingQuote, setSavingQuote] = useState(false);
+  const [quoteModalError, setQuoteModalError] = useState<string | null>(null);
+  const [updatingQuoteId, setUpdatingQuoteId] = useState<string | null>(null);
+  const [approveQuoteTarget, setApproveQuoteTarget] = useState<QuoteRow | null>(null);
+  const [approveQuoteByName, setApproveQuoteByName] = useState('');
+  const [approveQuoteError, setApproveQuoteError] = useState<string | null>(null);
 
   const canWrite = me.activeRole.permissions.includes('quotes:write');
 
@@ -1220,23 +1363,57 @@ export function QuotesTab({
 
   const handleCreateQuote = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!customerId) {
+      setQuoteModalError('Cadastre e selecione um cliente antes de gerar o orçamento.');
+      return;
+    }
+    if (draftItems.length === 0) {
+      setQuoteModalError('Adicione pelo menos um produto disponível ao orçamento.');
+      return;
+    }
+    const payloadItems: Array<{
+      productId: string;
+      productSku: string;
+      productName: string;
+      quantity: number;
+      unitSalePriceCents: number;
+      unitSupplyCostCents: number | null;
+      personalizationSummary: string | null;
+      personalizationCents: number;
+    }> = [];
+    for (const it of draftItems) {
+      const prod = products.find((p) => p.id === it.productId);
+      if (!prod) {
+        setQuoteModalError('Selecione um produto válido para todos os itens.');
+        return;
+      }
+      const quantity = Math.trunc(Number(it.quantity));
+      if (!Number.isFinite(quantity) || quantity < 1) {
+        setQuoteModalError(`Informe uma quantidade válida (mínimo 1) para ${prod.name}.`);
+        return;
+      }
+      const unitSalePriceCents = Math.round((Number(it.unitSalePriceReais.replace(',', '.')) || 0) * 100);
+      if (!Number.isFinite(unitSalePriceCents) || unitSalePriceCents <= 0) {
+        setQuoteModalError(`Informe um preço unitário de venda maior que zero para ${prod.name}.`);
+        return;
+      }
+      const knownCost = prod.unit_cost_cents ?? prod.supply_price_cents ?? null;
+      payloadItems.push({
+        productId: prod.id,
+        productSku: prod.sku,
+        productName: prod.name,
+        quantity,
+        unitSalePriceCents,
+        unitSupplyCostCents: knownCost,
+        personalizationSummary: it.personalizationSummary.trim() || null,
+        personalizationCents: Math.max(0, Math.round((Number(it.personalizationReais.replace(',', '.')) || 0) * 100)),
+      });
+    }
+
+    setSavingQuote(true);
+    setQuoteModalError(null);
     setError(null);
     try {
-      const payloadItems = draftItems.map((it) => {
-        const prod = products.find((p) => p.id === it.productId)!;
-        const knownCost = prod.unit_cost_cents ?? prod.supply_price_cents ?? null;
-        return {
-          productId: prod.id,
-          productSku: prod.sku,
-          productName: prod.name,
-          quantity: Math.max(1, Math.trunc(Number(it.quantity))),
-          unitSalePriceCents: Math.round((Number(it.unitSalePriceReais.replace(',', '.')) || 0) * 100),
-          unitSupplyCostCents: knownCost,
-          personalizationSummary: it.personalizationSummary.trim() || null,
-          personalizationCents: Math.round((Number(it.personalizationReais.replace(',', '.')) || 0) * 100),
-        };
-      });
-
       const created = await portalFetch<{
         quote: { quote_number: string; estimation_status: string };
       }>('/quotes', {
@@ -1245,11 +1422,11 @@ export function QuotesTab({
           customerId,
           opportunityId: opportunityId || null,
           priceListId: activePriceListId,
-          shippingCents: Math.round((Number(shippingReais.replace(',', '.')) || 0) * 100),
-          discountCents: Math.round((Number(discountReais.replace(',', '.')) || 0) * 100),
-          paymentTerms,
+          shippingCents: Math.max(0, Math.round((Number(shippingReais.replace(',', '.')) || 0) * 100)),
+          discountCents: Math.max(0, Math.round((Number(discountReais.replace(',', '.')) || 0) * 100)),
+          paymentTerms: paymentTerms.trim() || null,
           validUntil: validUntil || null,
-          estimatedDeliveryDays: Number(deliveryDays) || 15,
+          estimatedDeliveryDays: Math.max(1, Math.trunc(Number(deliveryDays) || 15)),
           items: payloadItems,
         }),
       });
@@ -1259,28 +1436,68 @@ export function QuotesTab({
       );
       await loadData();
     } catch (err) {
-      setError(err instanceof PortalApiError ? err.message : 'Erro ao criar orçamento.');
+      setQuoteModalError(err instanceof PortalApiError ? err.message : 'Erro ao criar orçamento.');
+    } finally {
+      setSavingQuote(false);
     }
   };
 
-  const handleStatusChange = async (id: string, status: string) => {
+  const handleMarkSent = async (id: string) => {
+    setUpdatingQuoteId(id);
+    setError(null);
     try {
-      const approvedByName =
-        status === 'approved' ? window.prompt('Nome completo de quem aprovou pelo cliente:') || 'Cliente' : null;
       await portalFetch(`/quotes/${id}/status`, {
         method: 'POST',
-        body: JSON.stringify({ status, approvedByName }),
+        body: JSON.stringify({ status: 'sent', approvedByName: null }),
       });
+      setFeedback('Proposta marcada como enviada ao cliente.');
       await loadData();
     } catch (err) {
       setError(err instanceof PortalApiError ? err.message : 'Erro ao atualizar status da proposta.');
+    } finally {
+      setUpdatingQuoteId(null);
     }
   };
 
-  const copyShareUrl = (token: string) => {
-    const url = `${window.location.origin}${hubAsset(`/quotes/shared/${token}`)}`;
-    navigator.clipboard?.writeText(url).catch(() => {});
-    setFeedback(`Link público controlado copiado: ${url}`);
+  const handleConfirmQuoteApproval = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!approveQuoteTarget) return;
+    if (approveQuoteByName.trim().length < 2) {
+      setApproveQuoteError('Informe o nome completo de quem aprovou pelo cliente (mínimo 2 caracteres).');
+      return;
+    }
+    setUpdatingQuoteId(approveQuoteTarget.id);
+    setApproveQuoteError(null);
+    setError(null);
+    try {
+      await portalFetch(`/quotes/${approveQuoteTarget.id}/status`, {
+        method: 'POST',
+        body: JSON.stringify({ status: 'approved', approvedByName: approveQuoteByName.trim() }),
+      });
+      const num = approveQuoteTarget.quote_number;
+      setApproveQuoteTarget(null);
+      setApproveQuoteByName('');
+      setFeedback(`Aceite registrado formalmente para o orçamento ${num}.`);
+      await loadData();
+    } catch (err) {
+      setApproveQuoteError(err instanceof PortalApiError ? err.message : 'Erro ao registrar aceite da proposta.');
+    } finally {
+      setUpdatingQuoteId(null);
+    }
+  };
+
+  const copyShareUrl = async (token: string) => {
+    const url = hubPublicUrl(`/quotes/shared/${token}`);
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(url);
+        setFeedback(`Link público controlado copiado: ${url}`);
+        return;
+      }
+    } catch {
+      // Fallback below
+    }
+    setFeedback(`Link público controlado disponível: ${url}`);
   };
 
   if (loading && quotes.length === 0) return <LoadingCard message="Carregando propostas comerciais..." />;
@@ -1305,7 +1522,10 @@ export function QuotesTab({
         {canWrite ? (
           <button
             type="button"
-            onClick={() => setModalOpen(true)}
+            onClick={() => {
+              setQuoteModalError(null);
+              setModalOpen(true);
+            }}
             className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full apple-glass-cta text-xs font-semibold text-white"
           >
             <Plus className="w-4 h-4" />
@@ -1407,17 +1627,23 @@ export function QuotesTab({
                   {canWrite && qt.status === 'draft' ? (
                     <button
                       type="button"
-                      onClick={() => handleStatusChange(qt.id, 'sent')}
-                      className="px-3 py-1.5 rounded-full bg-blue-500/20 border border-blue-400/40 text-xs font-semibold text-blue-100"
+                      disabled={updatingQuoteId === qt.id}
+                      onClick={() => handleMarkSent(qt.id)}
+                      className="px-3 py-1.5 rounded-full bg-blue-500/20 border border-blue-400/40 text-xs font-semibold text-blue-100 disabled:opacity-50"
                     >
-                      Marcar Enviado
+                      {updatingQuoteId === qt.id ? 'Atualizando...' : 'Marcar Enviado'}
                     </button>
                   ) : null}
                   {canWrite && ['draft', 'sent'].includes(qt.status) ? (
                     <button
                       type="button"
-                      onClick={() => handleStatusChange(qt.id, 'approved')}
-                      className="px-3 py-1.5 rounded-full bg-emerald-500/20 border border-emerald-400/40 text-xs font-semibold text-emerald-100"
+                      disabled={updatingQuoteId === qt.id}
+                      onClick={() => {
+                        setApproveQuoteError(null);
+                        setApproveQuoteByName(qt.customer_name || '');
+                        setApproveQuoteTarget(qt);
+                      }}
+                      className="px-3 py-1.5 rounded-full bg-emerald-500/20 border border-emerald-400/40 text-xs font-semibold text-emerald-100 disabled:opacity-50"
                     >
                       Registrar Aceite
                     </button>
@@ -1443,22 +1669,36 @@ export function QuotesTab({
         open={modalOpen}
         title="Novo orçamento comercial"
         subtitle={`Baseado em ${priceListName}. Itens sem custo exibem aviso honesto em vez de margem fictícia.`}
-        onClose={() => setModalOpen(false)}
+        onClose={() => {
+          setQuoteModalError(null);
+          setModalOpen(false);
+        }}
         maxWidthClass="max-w-3xl"
       >
         <form onSubmit={handleCreateQuote} className="space-y-4">
+          {quoteModalError ? <ErrorBanner message={quoteModalError} /> : null}
+          {customers.length === 0 ? (
+            <div className="rounded-2xl bg-amber-500/15 border border-amber-400/35 p-3 text-xs text-amber-100">
+              Cadastre primeiro um cliente no CRM Comercial antes de gerar um orçamento.
+            </div>
+          ) : null}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-semibold text-wise-ink mb-1">Cliente *</label>
               <select
                 required
+                disabled={customers.length === 0}
                 value={customerId}
                 onChange={(e) => setCustomerId(e.target.value)}
-                className="w-full apple-glass-well rounded-xl px-3 py-2.5 text-xs text-wise-ink outline-none"
+                className="w-full apple-glass-well rounded-xl px-3 py-2.5 text-xs text-wise-ink outline-none disabled:opacity-50"
               >
-                {customers.map((c) => (
-                  <option key={c.id} value={c.id} className="bg-[#181818]">{c.name}</option>
-                ))}
+                {customers.length === 0 ? (
+                  <option value="" className="bg-[#181818]">Nenhum cliente cadastrado</option>
+                ) : (
+                  customers.map((c) => (
+                    <option key={c.id} value={c.id} className="bg-[#181818]">{c.name}</option>
+                  ))
+                )}
               </select>
             </div>
             <div>
@@ -1655,11 +1895,73 @@ export function QuotesTab({
           </div>
 
           <div className="flex justify-end gap-2">
-            <button type="button" onClick={() => setModalOpen(false)} className="px-4 py-2 rounded-full bg-white/8 text-xs font-semibold text-wise-body">
+            <button
+              type="button"
+              onClick={() => {
+                setQuoteModalError(null);
+                setModalOpen(false);
+              }}
+              className="px-4 py-2 rounded-full bg-white/8 text-xs font-semibold text-wise-body"
+            >
               Cancelar
             </button>
-            <button type="submit" className="px-5 py-2 rounded-full apple-glass-cta text-xs font-semibold text-white">
-              Gerar orçamento
+            <button
+              type="submit"
+              disabled={savingQuote || customers.length === 0 || draftItems.length === 0}
+              className="px-5 py-2 rounded-full apple-glass-cta text-xs font-semibold text-white disabled:opacity-50"
+            >
+              {savingQuote ? 'Gerando...' : 'Gerar orçamento'}
+            </button>
+          </div>
+        </form>
+      </GlassModal>
+
+      {/* Modal Registrar Aceite da Proposta */}
+      <GlassModal
+        open={Boolean(approveQuoteTarget)}
+        title={approveQuoteTarget ? `Registrar aceite · ${approveQuoteTarget.quote_number}` : 'Registrar aceite'}
+        subtitle="Informe o responsável pelo aceite formal do cliente antes da conversão em pedido."
+        onClose={() => {
+          setApproveQuoteError(null);
+          setApproveQuoteTarget(null);
+        }}
+        maxWidthClass="max-w-md"
+      >
+        <form onSubmit={handleConfirmQuoteApproval} className="space-y-4">
+          {approveQuoteError ? <ErrorBanner message={approveQuoteError} /> : null}
+          <div>
+            <label className="block text-xs font-semibold text-wise-ink mb-1">
+              Nome completo de quem aprovou pelo cliente *
+            </label>
+            <input
+              type="text"
+              required
+              minLength={2}
+              value={approveQuoteByName}
+              onChange={(e) => setApproveQuoteByName(e.target.value)}
+              placeholder="Ex: Marcos Oliveira (Diretor de Esportes)"
+              className="w-full apple-glass-well rounded-xl px-3.5 py-2.5 text-xs text-wise-ink outline-none"
+            />
+          </div>
+          <div className="flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                setApproveQuoteError(null);
+                setApproveQuoteTarget(null);
+              }}
+              className="px-4 py-2 rounded-full bg-white/8 text-xs font-semibold text-wise-body"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              disabled={Boolean(approveQuoteTarget && updatingQuoteId === approveQuoteTarget.id)}
+              className="px-5 py-2 rounded-full apple-glass-cta text-xs font-semibold text-white disabled:opacity-50"
+            >
+              {approveQuoteTarget && updatingQuoteId === approveQuoteTarget.id
+                ? 'Registrando...'
+                : 'Confirmar aceite'}
             </button>
           </div>
         </form>

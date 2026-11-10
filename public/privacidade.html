@@ -44,33 +44,79 @@
   }
   </script>
 </head>
-<body>
+<body style="min-height:100vh;display:flex;flex-direction:column;">
   <header class="ks-header">
     <div class="ks-container ks-header-inner">
       <a href="/" class="ks-logo-link" aria-label="King Sports Franchising">
         <img src="/assets/images/logo-king-dark-bg.png" alt="King Sports Franchising" width="136" height="34" />
       </a>
-      <a href="/" class="ks-btn ks-btn-secondary ks-btn-sm">Voltar ao site</a>
+      <nav class="ks-nav" aria-label="Navegação principal">
+        <a href="/">Início</a>
+        <a href="/blog">Blog</a>
+        <a href="/privacidade.html" class="active">Privacidade</a>
+        <a href="/termos.html">Termos</a>
+      </nav>
+      <a href="/" class="ks-btn ks-btn-secondary ks-btn-sm ks-header-cta">Voltar ao site</a>
+      <button type="button" class="ks-hamburger" id="ks-hamburger-btn" aria-label="Abrir menu" aria-expanded="false">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4">
+          <path d="M4 6h16M4 12h16M4 18h16" stroke-linecap="round" />
+        </svg>
+      </button>
     </div>
+    <nav class="ks-mobile-drawer" id="ks-mobile-drawer" aria-label="Menu Mobile">
+      <a href="/">Página Inicial</a>
+      <a href="/blog">Blog Técnico</a>
+      <a href="/privacidade.html">Política de Privacidade (LGPD)</a>
+      <a href="/termos.html">Termos &amp; Lei nº 13.966/2019</a>
+      <a href="/#candidatura" class="ks-btn ks-btn-primary ks-btn-sm">Quero Conhecer a Franquia</a>
+    </nav>
   </header>
-  <main class="ks-container" style="max-width:860px;padding:56px 24px 80px;">
+  <main class="ks-container ks-legal-main" style="flex:1;">
     <span class="ks-tag">LEI Nº 13.709/2018 — LGPD</span>
-    <h1 style="font-family:var(--ks-font-display);font-size:clamp(2rem,4vw,2.8rem);text-transform:uppercase;line-height:1;margin:16px 0 22px;">Política de Privacidade e Uso de Cookies</h1>
+    <h1 class="ks-legal-title">Política de Privacidade e Uso de Cookies</h1>
     <div style="display:flex;flex-direction:column;gap:18px;color:var(--ks-text-light);line-height:1.72;">
       <p>A <strong>King Sports Franchising</strong> trata dados pessoais coletados neste portal em estrita conformidade com a Lei Geral de Proteção de Dados Pessoais (Lei nº 13.709/2018).</p>
-      <h2 style="color:#FFFFFF;font-family:var(--ks-font-display);font-size:1.5rem;text-transform:uppercase;">1. Finalidade dos Dados Coletados</h2>
+      <h2 class="ks-legal-subtitle">1. Finalidade dos Dados Coletados</h2>
       <p>Os dados informados no formulário de candidatura (nome completo, WhatsApp, e-mail, cidade, estado e informações de qualificação comercial/financeira) são utilizados exclusivamente para análise de perfil de candidato à franquia, verificação de disponibilidade territorial e contato da equipe de Expansão.</p>
-      <h2 style="color:#FFFFFF;font-family:var(--ks-font-display);font-size:1.5rem;text-transform:uppercase;">2. Rastreamento, Consent Mode e Publicidade</h2>
+      <h2 class="ks-legal-subtitle">2. Rastreamento, Consent Mode e Publicidade</h2>
       <p>Cookies analíticos (Google Tag Manager / Google Analytics 4) e cookies de mídia e atribuição (Meta Pixel, Meta Conversions API e Google Ads) somente recebem dados de identificação ou disparo de conversão publicitária mediante seu consentimento expresso no banner de preferências de cookies, salvo dados estritamente necessários ao registro seguro da candidatura.</p>
-      <h2 style="color:#FFFFFF;font-family:var(--ks-font-display);font-size:1.5rem;text-transform:uppercase;">3. Segurança &amp; Retenção</h2>
+      <h2 class="ks-legal-subtitle">3. Segurança &amp; Retenção</h2>
       <p>As comunicações trafegam criptografadas via HTTPS, com controle de acesso restrito no servidor e sem exposição de chaves ou dados administrativos no navegador. Dados de candidatos não contratados podem ser excluídos mediante solicitação ao Encarregado de Dados (DPO).</p>
-      <h2 style="color:#FFFFFF;font-family:var(--ks-font-display);font-size:1.5rem;text-transform:uppercase;">4. Direitos do Titular</h2>
+      <h2 class="ks-legal-subtitle">4. Direitos do Titular</h2>
       <p>Você pode solicitar confirmação de tratamento, acesso, correção, revogação de consentimento ou eliminação dos dados pelo canal oficial informado no site. Também pode ajustar suas preferências de cookies clicando abaixo:</p>
       <div>
         <button type="button" class="ks-btn ks-btn-primary ks-btn-sm" id="ks-open-consent-prefs">Alterar Preferências de Cookies</button>
       </div>
     </div>
   </main>
+  <footer class="ks-footer">
+    <div class="ks-container ks-footer-grid">
+      <div>
+        <img src="/assets/images/logo-king-dark-bg.png" alt="King Sports Franchising" width="144" height="36" />
+        <p class="ks-footer-note">Expansão Nacional de Franquias Home Based • Indústria homologada King Sports LTDA (São Paulo/SP).</p>
+      </div>
+      <div>
+        <h4>Navegação</h4>
+        <ul>
+          <li><a href="/">Landing Page da Franquia</a></li>
+          <li><a href="/blog">Blog Técnico</a></li>
+          <li><a href="/#candidatura">Formulário de Candidatura</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Transparência &amp; LGPD</h4>
+        <ul>
+          <li><a href="/privacidade.html">Política de Privacidade</a></li>
+          <li><a href="/termos.html">Termos &amp; Lei nº 13.966/2019</a></li>
+          <li><button type="button" class="ks-link-btn" data-open-consent-prefs="1">Alterar Preferências de Cookies</button></li>
+        </ul>
+      </div>
+    </div>
+    <div class="ks-container ks-footer-bottom">
+      <span>&copy; 2026 King Sports Franchising. Todos os direitos reservados.</span>
+      <span>Conformidade LGPD (Lei nº 13.709/2018) &amp; Lei nº 13.966/2019.</span>
+    </div>
+  </footer>
   <script src="/assets/js/tracking.js" defer></script>
 </body>
 </html>

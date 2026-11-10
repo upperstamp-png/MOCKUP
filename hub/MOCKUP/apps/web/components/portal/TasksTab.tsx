@@ -355,11 +355,16 @@ export function TasksTab({
       setModalError('Informe um título com pelo menos 2 caracteres.');
       return;
     }
+    const dueDt = new Date(formDueAt);
+    if (!formDueAt || Number.isNaN(dueDt.getTime())) {
+      setModalError('Informe uma data/hora válida para o vencimento.');
+      return;
+    }
 
     setSavingModal(true);
     setModalError(null);
     try {
-      const dueIso = new Date(formDueAt).toISOString();
+      const dueIso = dueDt.toISOString();
 
       if (editingTask) {
         await portalFetch(`/crm/tasks/${editingTask.id}`, {

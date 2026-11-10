@@ -10,6 +10,19 @@ const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().int().positive().default(3000),
   APP_URL: z.string().url().default('http://localhost:3000'),
+  LP_HOST: z.string().trim().optional().default('lp.kinsports.com.br'),
+  LP_HOST_ALIASES: z
+    .string()
+    .trim()
+    .optional()
+    .default('lp.kingsports.com.br,www.kingsports.com.br'),
+  CRM_HOST: z.string().trim().optional().default('crm.kingsports.com.br'),
+  HUB_HOST: z.string().trim().optional().default('app.kingsports.com.br'),
+  LP_URL: z.string().trim().optional().default(''),
+  CRM_URL: z.string().trim().optional().default(''),
+  HUB_URL: z.string().trim().optional().default(''),
+  PORTAL_API_INTERNAL_URL: z.string().trim().optional().default('http://127.0.0.1:4000'),
+  HUB_WEB_INTERNAL_URL: z.string().trim().optional().default('http://127.0.0.1:3333'),
   TRUST_PROXY: z.coerce.number().int().min(0).default(1),
 
   SESSION_SECRET: z.string().default('dev-session-secret-change-in-production-64-chars-minimum-ok'),
@@ -64,7 +77,22 @@ function loadEnv() {
   if (!parsed.success) {
     throw new Error(`Invalid environment variables: ${parsed.error.message}`);
   }
-  return parsed.data;
+  const data = parsed.data;
+  const isProd = data.NODE_ENV === 'production';
+  const cleanAppUrl = String(data.APP_URL || 'http://localhost:3000').replace(/\/+$/, '');
+  const lpHost = data.LP_HOST || 'lp.kinsports.com.br';
+  const crmHost = data.CRM_HOST || 'crm.kingsports.com.br';
+  const hubHost = data.HUB_HOST || 'app.kingsports.com.br';
+
+  return {
+    ...data,
+    LP_HOST: lpHost,
+    CRM_HOST: crmHost,
+    HUB_HOST: hubHost,
+    LP_URL: (data.LP_URL || (isProd ? `https://${lpHost}` : cleanAppUrl)).replace(/\/+$/, ''),
+    CRM_URL: (data.CRM_URL || (isProd ? `https://${crmHost}` : '')).replace(/\/+$/, ''),
+    HUB_URL: (data.HUB_URL || (isProd ? `https://${hubHost}` : '')).replace(/\/+$/, '')
+  };
 }
 
 const env = loadEnv();

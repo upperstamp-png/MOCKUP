@@ -317,6 +317,13 @@ export async function portalAuthRoutes(fastify: FastifyInstance): Promise<void> 
     { preHandler: [requirePortalAuth] },
     async (request, reply) => {
       const { id } = request.params as { id: string };
+      if (!z.string().uuid().safeParse(id).success) {
+        return reply.status(400).send({
+          statusCode: 400,
+          code: 'VALIDATION_ERROR',
+          message: 'ID de dispositivo inválido.',
+        });
+      }
       const ctx = request.portal!;
       const res = await dbQuery(
         `UPDATE portal.user_devices

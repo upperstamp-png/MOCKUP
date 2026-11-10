@@ -94,8 +94,8 @@ export async function GET() {
       const hasSvg = fs.existsSync(path.join(publicTexturesDir, `${base}.svg`));
       const hasPng = fs.existsSync(path.join(publicTexturesDir, `${base}.png`));
 
-      const svgUrl = hasSvg ? `/hub/textures/${base}.svg` : `/hub/textures/${base}.png`;
-      const thumbUrl = hasPng ? `/hub/textures/${base}.png` : `/hub/textures/${base}.svg`;
+      const svgUrl = hasSvg ? `/textures/${base}.svg` : `/textures/${base}.png`;
+      const thumbUrl = hasPng ? `/textures/${base}.png` : `/textures/${base}.svg`;
 
       const formattedName = base
         .replace(/_/g, ' ')

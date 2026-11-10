@@ -11,6 +11,51 @@ const {
 } = require('../utils/errors');
 const { issueCsrfToken } = require('../middleware/csrfMiddleware');
 
+function resolvePasswordResetRedirectUrl(req, env) {
+  const rawHost = String(req.headers['x-forwarded-host'] || req.headers.host || '')
+    .split(',')[0]
+    .trim();
+  const hostname = rawHost.startsWith('[')
+    ? rawHost.slice(0, rawHost.indexOf(']') + 1).toLowerCase()
+    : rawHost.split(':')[0].trim().toLowerCase();
+  const crmHost = String(env?.CRM_HOST || '').trim().toLowerCase();
+  const isCrmHost = Boolean(
+    hostname &&
+      ((crmHost && hostname === crmHost) ||
+        hostname === 'crm.kingsports.com.br' ||
+        hostname === 'crm.localhost' ||
+        hostname.startsWith('crm.'))
+  );
+
+  const cleanCrmUrl = String(env?.CRM_URL || '').trim().replace(/\/+$/, '');
+  if (isCrmHost) {
+    let crmUrlHostname = '';
+    if (cleanCrmUrl) {
+      try {
+        crmUrlHostname = new URL(cleanCrmUrl).hostname.toLowerCase();
+      } catch {
+        crmUrlHostname = '';
+      }
+    }
+    const isLocalCrmHost = hostname === 'crm.localhost' || hostname.endsWith('.localhost');
+    if (cleanCrmUrl && (!isLocalCrmHost || crmUrlHostname === hostname || crmUrlHostname.startsWith('crm.'))) {
+      return `${cleanCrmUrl}/login.html`;
+    }
+    if (rawHost) {
+      const proto = String(req.headers['x-forwarded-proto'] || req.protocol || 'https')
+        .split(',')[0]
+        .trim();
+      return `${proto}://${rawHost}/login.html`;
+    }
+    if (cleanCrmUrl) {
+      return `${cleanCrmUrl}/login.html`;
+    }
+  }
+
+  const cleanAppUrl = String(env?.APP_URL || 'http://localhost:3000').replace(/\/+$/, '');
+  return `${cleanAppUrl}/admin/login.html`;
+}
+
 function createAdminAuthRoutes({
   settingsRepo,
   authMiddleware,
@@ -71,10 +116,10 @@ function createAdminAuthRoutes({
         res.cookie(
           SESSION_COOKIE,
           accessToken,
-          getCookieOptions(env, (authResult.session.expires_in || 3600) * 1000)
+          getCookieOptions(env, (authResult.session.expires_in || 3600) * 1000, req)
         );
         if (refreshToken) {
-          res.cookie(REFRESH_COOKIE, refreshToken, getCookieOptions(env, 1000 * 60 * 60 * 24 * 14));
+          res.cookie(REFRESH_COOKIE, refreshToken, getCookieOptions(env, 1000 * 60 * 60 * 24 * 14, req));
         }
 
         req.sessionTokenHint = accessToken.slice(-24);
@@ -98,8 +143,9 @@ function createAdminAuthRoutes({
   );
 
   router.post('/auth/logout', async (req, res) => {
-    res.clearCookie(SESSION_COOKIE, { path: '/' });
-    res.clearCookie(REFRESH_COOKIE, { path: '/' });
+    const clearOptions = getCookieOptions(env, undefined, req);
+    res.clearCookie(SESSION_COOKIE, clearOptions);
+    res.clearCookie(REFRESH_COOKIE, clearOptions);
     res.json({ authenticated: false });
   });
 
@@ -114,7 +160,7 @@ function createAdminAuthRoutes({
         }
         const anon = getSupabaseAnon();
         await anon.auth.resetPasswordForEmail(req.validatedBody.email, {
-          redirectTo: `${env.APP_URL}/admin/login.html`
+          redirectTo: resolvePasswordResetRedirectUrl(req, env)
         });
         // Always return generic success message to prevent user enumeration
         res.json({
@@ -139,4 +185,4 @@ function createAdminAuthRoutes({
   return router;
 }
 
-module.exports = { createAdminAuthRoutes };
+module.exports = { createAdminAuthRoutes, resolvePasswordResetRedirectUrl };

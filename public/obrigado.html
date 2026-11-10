@@ -22,13 +22,30 @@
       <a href="/" class="ks-logo-link" aria-label="King Sports Franchising">
         <img src="/assets/images/logo-king-dark-bg.png" alt="King Sports Franchising" width="136" height="34" />
       </a>
-      <a href="/blog" class="ks-btn ks-btn-secondary ks-btn-sm">Explorar Blog Técnico</a>
+      <nav class="ks-nav" aria-label="Navegação principal">
+        <a href="/">Início</a>
+        <a href="/blog">Blog</a>
+        <a href="/privacidade.html">Privacidade</a>
+        <a href="/termos.html">Termos</a>
+      </nav>
+      <a href="/blog" class="ks-btn ks-btn-secondary ks-btn-sm ks-header-cta">Explorar Blog Técnico</a>
+      <button type="button" class="ks-hamburger" id="ks-hamburger-btn" aria-label="Abrir menu" aria-expanded="false">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4">
+          <path d="M4 6h16M4 12h16M4 18h16" stroke-linecap="round" />
+        </svg>
+      </button>
     </div>
+    <nav class="ks-mobile-drawer" id="ks-mobile-drawer" aria-label="Menu Mobile">
+      <a href="/">Página Inicial</a>
+      <a href="/blog">Explorar Blog Técnico</a>
+      <a href="/privacidade.html">Política de Privacidade (LGPD)</a>
+      <a href="/termos.html">Termos &amp; Lei nº 13.966/2019</a>
+    </nav>
   </header>
 
-  <main class="ks-sec ks-bg-dark ks-on-dark" style="flex:1;display:flex;align-items:center;padding:56px 0;">
+  <main class="ks-sec ks-bg-dark ks-on-dark ks-thanks-main">
     <div class="ks-lp-wrap" style="max-width:920px;">
-      <div class="ks-feat" style="padding:40px;border-color:rgba(104,216,255,0.34);background:rgba(11,28,50,0.72);">
+      <div class="ks-feat ks-thanks-card">
         <p class="ks-eyebrow">CANDIDATURA REGISTRADA COM SUCESSO</p>
         <h1 class="ks-display ks-h-md" style="margin:18px 0 14px;color:#FFFFFF;">
           Obrigado<span id="ks-thanks-name"></span>! Sua solicitação já está com a nossa equipe de Expansão.
@@ -37,7 +54,7 @@
           Recebemos suas informações de perfil e região para avaliação inicial do modelo de franquia home based King Sports.
         </p>
 
-        <div class="ks-tools" style="margin:32px 0;">
+        <div class="ks-thanks-steps">
           <div class="ks-tool" style="gap:14px;padding:22px;">
             <span class="ks-idx">01.</span>
             <div>
@@ -61,7 +78,7 @@
           </div>
         </div>
 
-        <div style="display:flex;flex-wrap:wrap;gap:14px;">
+        <div class="ks-thanks-actions">
           <a href="/blog" class="ks-btn ks-btn-primary">Ler Artigos sobre o Modelo</a>
           <a href="/" class="ks-btn ks-btn-secondary">Voltar à Página Inicial</a>
           <a href="#" id="ks-whatsapp-cta" class="ks-btn ks-btn-blue" style="display:none;" target="_blank" rel="noopener noreferrer">
@@ -75,14 +92,27 @@
   <script src="/assets/js/tracking.js" defer></script>
   <script>
     (function () {
+      var trackLabels = {
+        comercial: 'Comercial',
+        designer: 'Designer / Studio',
+        hibrido: 'Híbrido'
+      };
       document.addEventListener('DOMContentLoaded', function () {
         try {
           var saved = JSON.parse(sessionStorage.getItem('ks_last_submission') || 'null');
           if (saved && saved.first_name) {
-            document.getElementById('ks-thanks-name').textContent = ', ' + saved.first_name;
-            document.getElementById('ks-thanks-subtitle').textContent =
-              'Recebemos sua candidatura para a região de ' + saved.city + '/' + saved.state +
-              ' (Perfil ' + saved.track + '). Nossa equipe entrará em contato em breve.';
+            var nameEl = document.getElementById('ks-thanks-name');
+            var subEl = document.getElementById('ks-thanks-subtitle');
+            if (nameEl) {
+              nameEl.textContent = ', ' + String(saved.first_name).slice(0, 60);
+            }
+            if (subEl && saved.city && saved.state) {
+              var trackText = trackLabels[saved.track] || String(saved.track || 'Comercial');
+              subEl.textContent =
+                'Recebemos sua candidatura para a região de ' +
+                String(saved.city).slice(0, 100) + '/' + String(saved.state).slice(0, 4) +
+                ' (Perfil ' + trackText + '). Nossa equipe entrará em contato em breve.';
+            }
           }
         } catch {}
       });

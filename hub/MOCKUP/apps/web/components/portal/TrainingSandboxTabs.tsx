@@ -68,6 +68,16 @@ export function TrainingTab({ me }: { me: PortalMeResponse }) {
   const [feedback, setFeedback] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const selectedCourseIdRef = useRef<string | null>(null);
+  const activeLessonIdRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    selectedCourseIdRef.current = selectedCourse?.id ?? null;
+  }, [selectedCourse]);
+
+  useEffect(() => {
+    activeLessonIdRef.current = activeLesson?.id ?? null;
+  }, [activeLesson]);
 
   const loadCourses = useCallback(async () => {
     setLoading(true);
@@ -75,11 +85,15 @@ export function TrainingTab({ me }: { me: PortalMeResponse }) {
     try {
       const res = await portalFetch<TrainingResponse>('/training/courses');
       setData(res);
-      if (selectedCourse) {
-        const updatedCourse = res.courses.find((c) => c.id === selectedCourse.id) || null;
+      const currentCourseId = selectedCourseIdRef.current;
+      const currentLessonId = activeLessonIdRef.current;
+      if (currentCourseId) {
+        const updatedCourse = res.courses.find((c) => c.id === currentCourseId) || null;
         setSelectedCourse(updatedCourse);
-        if (activeLesson && updatedCourse) {
-          setActiveLesson(updatedCourse.lessons.find((l) => l.id === activeLesson.id) || null);
+        if (currentLessonId && updatedCourse) {
+          setActiveLesson(updatedCourse.lessons.find((l) => l.id === currentLessonId) || null);
+        } else if (!updatedCourse) {
+          setActiveLesson(null);
         }
       }
     } catch (err) {
@@ -87,21 +101,29 @@ export function TrainingTab({ me }: { me: PortalMeResponse }) {
     } finally {
       setLoading(false);
     }
-  }, [selectedCourse, activeLesson]);
+  }, []);
 
   useEffect(() => {
     loadCourses();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [loadCourses, me.activeUnit.id]);
 
   const handleSaveProgress = async (lesson: LessonItem, markCompleted: boolean) => {
-    setSaving(true);
     setError(null);
+    const qCount = lesson.quiz_questions?.length || 0;
+    if (markCompleted && qCount > 0) {
+      const unanswered = Array.from({ length: qCount }, (_, i) => i).some(
+        (i) => typeof quizAnswers[i] !== 'number'
+      );
+      if (unanswered) {
+        setError('Responda todas as perguntas da verificação de aprendizagem antes de concluir a aula.');
+        return;
+      }
+    }
+    setSaving(true);
     try {
       const currentSec = Math.floor(videoRef.current?.currentTime || lesson.progress.resume_position_seconds || 0);
-      const qCount = lesson.quiz_questions?.length || 0;
       const answersArray =
-        qCount > 0 ? Array.from({ length: qCount }, (_, i) => quizAnswers[i] ?? 0) : undefined;
+        qCount > 0 ? Array.from({ length: qCount }, (_, i) => quizAnswers[i] as number) : undefined;
 
       const res = await portalFetch<{
         courseCompleted: boolean;
@@ -326,7 +348,7 @@ export function TrainingTab({ me }: { me: PortalMeResponse }) {
                                     <input
                                       type="radio"
                                       name={`quiz_${activeLesson.id}_${qIdx}`}
-                                      checked={(quizAnswers[qIdx] ?? 0) === oIdx}
+                                      checked={quizAnswers[qIdx] === oIdx}
                                       onChange={() =>
                                         setQuizAnswers((prev) => ({ ...prev, [qIdx]: oIdx }))
                                       }
@@ -486,6 +508,8 @@ export function SandboxTab({ me }: { me: PortalMeResponse }) {
   const [complianceOk, setComplianceOk] = useState(true);
   const [decision, setDecision] = useState<'approved' | 'retry_required'>('approved');
   const [evaluatorNotes, setEvaluatorNotes] = useState('');
+  const [evalError, setEvalError] = useState<string | null>(null);
+  const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
 
   const canReviewBanca = me.activeRole.permissions.includes('sandbox:review');
 
@@ -504,7 +528,11 @@ export function SandboxTab({ me }: { me: PortalMeResponse }) {
 
   useEffect(() => {
     loadSandbox();
-  }, [loadSandbox]);
+  }, [loadSandbox, me.activeUnit.id]);
+
+  useEffect(() => {
+    setCaseTitle(`Banca Prática · ${me.activeUnit.name}`);
+  }, [me.activeUnit.id, me.activeUnit.name]);
 
   const handleSeedCase = async () => {
     setBusy(true);
@@ -525,6 +553,7 @@ export function SandboxTab({ me }: { me: PortalMeResponse }) {
     setError(null);
     try {
       await portalFetch('/sandbox/reset', { method: 'POST', body: JSON.stringify({}) });
+      setResetConfirmOpen(false);
       setFeedback('Registros isolados do Sandbox removidos com segurança (operação real preservada).');
       await loadSandbox();
     } catch (err) {
@@ -536,6 +565,10 @@ export function SandboxTab({ me }: { me: PortalMeResponse }) {
 
   const handleSubmitBanca = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (caseTitle.trim().length < 3) {
+      setError('Informe um título para o caso apresentado (mínimo 3 caracteres).');
+      return;
+    }
     setBusy(true);
     setError(null);
     try {
@@ -545,9 +578,9 @@ export function SandboxTab({ me }: { me: PortalMeResponse }) {
       await portalFetch('/sandbox/banca/submit', {
         method: 'POST',
         body: JSON.stringify({
-          caseTitle,
+          caseTitle: caseTitle.trim(),
           exerciseChecks: checks,
-          submissionNotes: submissionNotes || null,
+          submissionNotes: submissionNotes.trim() || null,
           videoFile: encodedVideo,
         }),
       });
@@ -574,25 +607,40 @@ export function SandboxTab({ me }: { me: PortalMeResponse }) {
   const handleEvaluateBanca = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!evalTarget) return;
+    setEvalError(null);
+    const parsedSales = Number(salesScore);
+    const parsedArt = Number(artScore);
+    if (!Number.isFinite(parsedSales) || parsedSales < 0 || parsedSales > 10) {
+      setEvalError('Informe uma Nota Comercial válida entre 0 e 10.');
+      return;
+    }
+    if (!Number.isFinite(parsedArt) || parsedArt < 0 || parsedArt > 10) {
+      setEvalError('Informe uma Nota de Arte / Studio válida entre 0 e 10.');
+      return;
+    }
+    if (evaluatorNotes.trim().length < 3) {
+      setEvalError('Informe o parecer formal do avaliador (mínimo 3 caracteres).');
+      return;
+    }
     setBusy(true);
-    setError(null);
     try {
       await portalFetch(`/sandbox/banca/${evalTarget.id}/evaluate`, {
         method: 'POST',
         body: JSON.stringify({
-          salesScore: Number(salesScore),
-          artScore: Number(artScore),
+          salesScore: parsedSales,
+          artScore: parsedArt,
           complianceOk,
           decision,
-          evaluatorNotes,
+          evaluatorNotes: evaluatorNotes.trim(),
         }),
       });
       setEvalTarget(null);
+      setEvalError(null);
       setEvaluatorNotes('');
       setFeedback('Parecer da Banca registrado!');
       await loadSandbox();
     } catch (err) {
-      setError(err instanceof PortalApiError ? err.message : 'Erro ao avaliar submissão.');
+      setEvalError(err instanceof PortalApiError ? err.message : 'Erro ao avaliar submissão.');
     } finally {
       setBusy(false);
     }
@@ -626,8 +674,8 @@ export function SandboxTab({ me }: { me: PortalMeResponse }) {
           <button
             type="button"
             disabled={busy}
-            onClick={handleResetSandbox}
-            className="px-4 py-2 rounded-full bg-rose-500/15 hover:bg-rose-500/25 border border-rose-400/35 text-xs font-semibold text-rose-200 inline-flex items-center gap-1.5"
+            onClick={() => setResetConfirmOpen(true)}
+            className="px-4 py-2 rounded-full bg-rose-500/15 hover:bg-rose-500/25 border border-rose-400/35 text-xs font-semibold text-rose-200 inline-flex items-center gap-1.5 disabled:opacity-50"
           >
             <RotateCcw className="w-3.5 h-3.5" />
             Limpar Somente Sandbox
@@ -797,6 +845,7 @@ export function SandboxTab({ me }: { me: PortalMeResponse }) {
                             type="button"
                             onClick={() => {
                               setEvalTarget(ev);
+                              setEvalError(null);
                               setEvaluatorNotes(ev.evaluator_notes || '');
                             }}
                             className="px-3 py-1.5 rounded-full apple-glass-cta text-xs font-semibold text-white"
@@ -818,9 +867,13 @@ export function SandboxTab({ me }: { me: PortalMeResponse }) {
         open={Boolean(evalTarget)}
         title={evalTarget ? `Avaliar Banca · ${evalTarget.case_title}` : ''}
         subtitle={evalTarget ? `${evalTarget.unit_name} · ${evalTarget.student_name}` : undefined}
-        onClose={() => setEvalTarget(null)}
+        onClose={() => {
+          setEvalTarget(null);
+          setEvalError(null);
+        }}
       >
         <form onSubmit={handleEvaluateBanca} className="space-y-4">
+          {evalError ? <ErrorBanner message={evalError} /> : null}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
               <label className="block text-xs font-semibold text-wise-ink mb-1">Nota Comercial (0–10)</label>
@@ -855,8 +908,8 @@ export function SandboxTab({ me }: { me: PortalMeResponse }) {
                 onChange={(e) => setDecision(e.target.value as 'approved' | 'retry_required')}
                 className="w-full apple-glass-well rounded-xl px-3 py-2 text-xs text-wise-ink outline-none"
               >
-                <option value="approved">Aprovar Banca</option>
-                <option value="retry_required">Solicitar Nova Apresentação</option>
+                <option value="approved" className="bg-[#181818]">Aprovar Banca</option>
+                <option value="retry_required" className="bg-[#181818]">Solicitar Nova Apresentação</option>
               </select>
             </div>
           </div>
@@ -886,16 +939,55 @@ export function SandboxTab({ me }: { me: PortalMeResponse }) {
           <div className="flex justify-end gap-2">
             <button
               type="button"
-              onClick={() => setEvalTarget(null)}
+              onClick={() => {
+                setEvalTarget(null);
+                setEvalError(null);
+              }}
               className="px-4 py-2 rounded-full bg-white/8 text-xs font-semibold text-wise-body"
             >
               Cancelar
             </button>
-            <button type="submit" disabled={busy} className="px-5 py-2 rounded-full apple-glass-cta text-xs font-semibold text-white">
-              Registrar Parecer
+            <button
+              type="submit"
+              disabled={busy}
+              className="px-5 py-2 rounded-full apple-glass-cta text-xs font-semibold text-white disabled:opacity-50"
+            >
+              {busy ? 'Salvando...' : 'Registrar Parecer'}
             </button>
           </div>
         </form>
+      </GlassModal>
+
+      {/* Modal Confirmação Limpeza Sandbox */}
+      <GlassModal
+        open={resetConfirmOpen}
+        title="Limpar registros do modo Sandbox"
+        subtitle="Apenas clientes, oportunidades, orçamentos, artes e pedidos marcados com is_sandbox = TRUE serão removidos."
+        onClose={() => setResetConfirmOpen(false)}
+        maxWidthClass="max-w-md"
+      >
+        <div className="space-y-4">
+          <p className="text-xs text-wise-body">
+            Confirma a limpeza dos dados simulados desta unidade? Os registros reais da operação não serão alterados.
+          </p>
+          <div className="flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => setResetConfirmOpen(false)}
+              className="px-4 py-2 rounded-full bg-white/8 text-xs font-semibold text-wise-body"
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={handleResetSandbox}
+              className="px-5 py-2 rounded-full bg-rose-500/80 hover:bg-rose-500 text-xs font-semibold text-white disabled:opacity-50"
+            >
+              {busy ? 'Limpando...' : 'Confirmar limpeza'}
+            </button>
+          </div>
+        </div>
       </GlassModal>
     </div>
   );

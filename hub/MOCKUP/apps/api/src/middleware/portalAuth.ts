@@ -308,18 +308,61 @@ export function hashToken(token: string): string {
   return crypto.createHash('sha256').update(token).digest('hex');
 }
 
+function isRequestHttps(reply?: FastifyReply): boolean {
+  const req = reply?.request;
+  if (!req) return false;
+  const forwardedProto = String(req.headers['x-forwarded-proto'] || '')
+    .split(',')[0]
+    .trim()
+    .toLowerCase();
+  return forwardedProto === 'https' || req.protocol === 'https';
+}
+
+function isLocalHttpRequest(reply?: FastifyReply): boolean {
+  const req = reply?.request;
+  if (!req) return false;
+  if (isRequestHttps(reply)) return false;
+  const rawHost = String(req.headers['x-forwarded-host'] || req.headers.host || '')
+    .split(',')[0]
+    .trim()
+    .toLowerCase();
+  const hostname = rawHost.startsWith('[')
+    ? rawHost.slice(0, rawHost.indexOf(']') + 1)
+    : rawHost.split(':')[0].trim();
+  return Boolean(
+    hostname &&
+      (hostname === 'localhost' ||
+        hostname === '127.0.0.1' ||
+        hostname === '[::1]' ||
+        hostname.endsWith('.localhost'))
+  );
+}
+
+export function getAuthCookieOptions(reply?: FastifyReply) {
+  const cookieDomain = env.COOKIE_DOMAIN.trim();
+  const httpsConfigured =
+    env.HUB_URL.startsWith('https://') || env.APP_URL.startsWith('https://');
+  const shouldSecure = Boolean(
+    env.COOKIE_SECURE ||
+      (env.NODE_ENV === 'production' &&
+        (isRequestHttps(reply) || (!isLocalHttpRequest(reply) && httpsConfigured)))
+  );
+  return {
+    path: '/',
+    httpOnly: true,
+    sameSite: 'lax' as const,
+    secure: shouldSecure,
+    ...(cookieDomain ? { domain: cookieDomain } : {}),
+  };
+}
+
 export function setAuthCookies(
   reply: FastifyReply,
   accessToken: string,
   refreshToken?: string,
   activeUnitId?: string
 ): void {
-  const baseOptions = {
-    path: '/',
-    httpOnly: true,
-    sameSite: 'lax' as const,
-    secure: env.COOKIE_SECURE,
-  };
+  const baseOptions = getAuthCookieOptions(reply);
 
   reply.setCookie(ACCESS_COOKIE_NAME, accessToken, {
     ...baseOptions,
@@ -342,7 +385,7 @@ export function setAuthCookies(
 }
 
 export function clearAuthCookies(reply: FastifyReply): void {
-  const baseOptions = { path: '/', httpOnly: true, sameSite: 'lax' as const, secure: env.COOKIE_SECURE };
+  const baseOptions = getAuthCookieOptions(reply);
   reply.clearCookie(ACCESS_COOKIE_NAME, baseOptions);
   reply.clearCookie(REFRESH_COOKIE_NAME, baseOptions);
   reply.clearCookie(UNIT_COOKIE_NAME, baseOptions);

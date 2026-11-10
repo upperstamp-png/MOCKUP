@@ -176,6 +176,7 @@
 
 .ks-hl-box {
   display: inline-block;
+  max-width: 100%;
   background: #FFFFFF;
   color: var(--ks-blue);
   padding: 0.08em 0.18em 0.02em;
@@ -256,6 +257,7 @@
   display: flex;
   flex-direction: column;
   gap: 24px;
+  min-width: 0;
 }
 
 .ks-split {
@@ -347,6 +349,7 @@
 
 .ks-hero-copy {
   padding-top: 12px;
+  min-width: 0;
 }
 
 .ks-hero-copy h1 {
@@ -369,6 +372,8 @@
 .ks-carousel {
   position: relative;
   height: 368px;
+  min-width: 0;
+  max-width: 100%;
   border-radius: 14px;
   overflow: hidden;
   border: 1px solid rgba(104, 216, 255, 0.34);
@@ -493,6 +498,8 @@
   background: #FFFFFF;
   color: var(--ks-ink);
   border-radius: 14px;
+  min-width: 0;
+  max-width: 100%;
   overflow: hidden;
   box-shadow: 0 30px 80px rgba(0, 0, 0, 0.55);
   scroll-margin-top: 24px;
@@ -576,7 +583,7 @@
 
 .ks-field-row {
   display: grid;
-  grid-template-columns: 1fr 94px;
+  grid-template-columns: minmax(0, 1fr) 94px;
   gap: 10px;
 }
 
@@ -584,6 +591,7 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
+  min-width: 0;
 }
 
 .ks-field label {
@@ -617,6 +625,10 @@
     url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%230356C5' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")
     no-repeat right 12px center;
   padding-right: 38px;
+  max-width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .ks-field input:focus,
@@ -763,7 +775,7 @@
 
 .ks-stats {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 44px 28px;
 }
 
@@ -810,7 +822,7 @@
 
 .ks-pillars {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 36px;
   margin: 56px 0;
 }
@@ -847,7 +859,7 @@
 
 .ks-rail {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 24px;
 }
 
@@ -1162,7 +1174,7 @@
 /* Seção 06 — Fábrica em Ação (Vídeos Oficiais) & Segmentos Atendidos */
 .ks-videos {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 24px;
   margin: 44px 0 56px;
 }
@@ -1235,7 +1247,7 @@
 
 .ks-cards-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 22px;
 }
 
@@ -1289,7 +1301,7 @@
 
 .ks-tools {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 22px;
   margin: 44px 0;
 }
@@ -1376,8 +1388,9 @@
 
 .ks-bento-float {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 16px;
+  width: 100%;
   max-width: 520px;
   margin: 0 auto;
 }
@@ -1490,6 +1503,7 @@
 .ks-eco-img {
   display: flex;
   justify-content: center;
+  min-width: 0;
 }
 
 .ks-eco-frame {
@@ -1663,15 +1677,46 @@
   color: #AEBBD0;
 }
 
+/* Página Obrigado */
+.ks-thanks-main {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  padding: 56px 0;
+}
+
+.ks-thanks-card {
+  padding: 40px;
+  border-color: rgba(104, 216, 255, 0.34);
+  background: rgba(11, 28, 50, 0.72);
+}
+
+.ks-thanks-steps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+  margin: 32px 0;
+}
+
+.ks-thanks-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
 /* Responsive Breakpoints */
 @media (max-width: 1100px) {
   .ks-hero-grid,
   .ks-split {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     gap: 44px;
+  }
+  .ks-faq-split > .ks-stack {
+    position: static !important;
   }
   .ks-form-card {
     max-width: 560px;
+    width: 100%;
   }
   .ks-tunnel {
     opacity: 0.45;
@@ -1690,8 +1735,11 @@
     --lp-section-y: 80px;
   }
   .ks-pillars {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     gap: 26px;
+  }
+  .ks-thanks-steps {
+    grid-template-columns: minmax(0, 1fr);
   }
   .ks-rail,
   .ks-videos,
@@ -1735,6 +1783,41 @@
     --lp-gutter: 18px;
     --lp-section-y: 68px;
   }
+  .ks-lp-header {
+    min-height: 72px;
+    margin-bottom: 28px;
+    gap: 12px;
+  }
+  .ks-lp-brand {
+    gap: 10px;
+    min-width: 0;
+  }
+  .ks-lp-brand img {
+    height: 26px;
+  }
+  .ks-lp-brand .ks-div {
+    height: 18px;
+  }
+  .ks-lp-brand .ks-subbrand {
+    font-size: 9.5px;
+    letter-spacing: 0.12em;
+  }
+  .ks-h-xl {
+    font-size: clamp(32px, 8.8vw, 46px);
+  }
+  .ks-h-lg {
+    font-size: clamp(30px, 8vw, 42px);
+  }
+  .ks-h-md {
+    font-size: clamp(26px, 7.2vw, 34px);
+  }
+  .ks-hero-copy h1 {
+    font-size: clamp(29px, 7.8vw, 36px);
+  }
+  .ks-lead,
+  .ks-hero-copy .ks-lead {
+    font-size: 16px;
+  }
   .ks-bg-hero {
     padding-bottom: 68px;
   }
@@ -1745,10 +1828,26 @@
     padding: 22px 18px;
   }
   .ks-field-row {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .ks-field input,
+  .ks-field select {
+    font-size: 16px;
+  }
+  .ks-btn {
+    padding: 14px 20px;
+    font-size: 0.88rem;
+  }
+  .ks-form-nav .ks-btn-back {
+    height: 48px;
+    padding: 0 14px;
+  }
+  .ks-form-nav .ks-btn-submit-main {
+    padding: 14px 16px;
+    font-size: 0.84rem;
   }
   .ks-stats {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     gap: 28px;
   }
   .ks-vqt {
@@ -1765,9 +1864,42 @@
     padding-left: 12px;
   }
   .ks-vqt-h > div {
-    padding: 0 6px;
+    min-height: 54px;
+    height: auto;
+    padding: 8px 6px;
     font-size: 9.5px;
     letter-spacing: 0.08em;
+  }
+  .ks-inv-box {
+    padding: 22px 18px;
+  }
+  .ks-feat {
+    padding: 20px;
+  }
+  .ks-feat p {
+    font-size: 16px;
+  }
+  .ks-bento-float {
+    gap: 12px;
+  }
+  .ks-float-tile.t2 {
+    margin-top: 16px;
+  }
+  .ks-float-tile.t3 {
+    margin-top: -6px;
+  }
+  .ks-thanks-main {
+    padding: 32px 0;
+  }
+  .ks-thanks-card {
+    padding: 22px 18px;
+  }
+  .ks-thanks-steps {
+    margin: 22px 0;
+    gap: 14px;
+  }
+  .ks-thanks-actions .ks-btn {
+    width: 100%;
   }
   .ks-faq-list summary {
     font-size: 16.5px;
@@ -1779,5 +1911,7 @@
   .ks-eco-badge {
     left: 12px;
     right: 12px;
+    bottom: 16px;
+    padding: 12px 14px;
   }
 }

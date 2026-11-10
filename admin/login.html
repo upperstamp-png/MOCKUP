@@ -12,7 +12,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/admin/assets/css/admin.css" />
+  <link rel="stylesheet" href="/assets/css/admin.css" />
 </head>
 <body style="display:grid;place-items:center;padding:24px;">
   <main style="width:100%;max-width:430px;">
@@ -22,7 +22,7 @@
     </div>
 
     <div class="ad-card" style="padding:28px;">
-      <div id="login-alert"></div>
+      <div id="login-alert" role="alert" aria-live="polite"></div>
       <div id="env-warning"></div>
 
       <form id="login-form">
@@ -40,46 +40,84 @@
         </button>
       </form>
 
-      <div style="margin-top:16px;display:flex;justify-content:space-between;align-items:center;font-size:0.84rem;color:#AEBBD0;">
+      <div style="margin-top:16px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;font-size:0.84rem;color:#AEBBD0;">
         <button type="button" id="toggle-forgot" style="background:none;border:none;color:#68D8FF;cursor:pointer;font-weight:600;">
           Esqueci minha senha
         </button>
-        <a href="/">← Voltar à Landing Page</a>
+        <a id="login-lp-link" data-ks-lp-path="/" href="/">← Voltar à Landing Page</a>
       </div>
 
       <form id="forgot-form" style="display:none;margin-top:18px;padding-top:18px;border-top:1px solid rgba(148,163,184,0.2);">
         <div class="ad-field">
           <label for="forgot-email">E-mail para recuperação via Supabase Auth</label>
-          <input type="email" id="forgot-email" class="ad-input" required placeholder="seu@email.com.br" />
+          <input type="email" id="forgot-email" class="ad-input" required autocomplete="email" placeholder="seu@email.com.br" />
         </div>
-        <button type="submit" class="ad-btn ad-btn-secondary" style="width:100%;">Enviar link de recuperação</button>
+        <button type="submit" id="forgot-btn" class="ad-btn ad-btn-secondary" style="width:100%;">Enviar link de recuperação</button>
       </form>
     </div>
   </main>
 
+  <script src="/assets/js/admin-core.js"></script>
   <script>
     (function () {
-      fetch('/api/health').then(function (r) { return r.json(); }).then(function (h) {
-        if (!h.dependencies || !h.dependencies.supabase || !h.dependencies.supabase.configured) {
-          document.getElementById('env-warning').innerHTML =
-            '<div class="ad-alert ad-alert-warn"><strong>Supabase não configurado:</strong> Configure <code>SUPABASE_URL</code>, <code>SUPABASE_ANON_KEY</code> e <code>SUPABASE_SERVICE_ROLE_KEY</code> no <code>.env</code> para habilitar o login administrativo.</div>';
-        }
-      }).catch(function () {});
+      'use strict';
 
-      fetch('/api/admin/auth/me', { credentials: 'same-origin' }).then(function (r) {
-        if (r.ok) window.location.href = '/admin/dashboard.html';
-      }).catch(function () {});
+      var esc = function (value) {
+        return window.KingAdmin ? KingAdmin.esc(value) : String(value == null ? '' : value);
+      };
+
+      function dashboardHref() {
+        return window.KingAdmin ? KingAdmin.crmUrl('dashboard.html') : '/dashboard.html';
+      }
+
+      if (window.KingAdmin) {
+        KingAdmin.syncCrossUrlElements();
+        KingAdmin.loadPublicConfigUrls();
+      }
+
+      fetch('/api/health', { credentials: 'same-origin' })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (h) {
+          if (h && (!h.dependencies || !h.dependencies.supabase || !h.dependencies.supabase.configured)) {
+            document.getElementById('env-warning').innerHTML =
+              '<div class="ad-alert ad-alert-warn"><strong>Supabase não configurado:</strong> Configure <code>SUPABASE_URL</code>, <code>SUPABASE_ANON_KEY</code> e <code>SUPABASE_SERVICE_ROLE_KEY</code> no <code>.env</code> para habilitar o login administrativo.</div>';
+          }
+        })
+        .catch(function () {});
+
+      fetch('/api/admin/auth/me', { credentials: 'same-origin' })
+        .then(function (r) {
+          if (r.ok) {
+            window.location.href = dashboardHref();
+          }
+        })
+        .catch(function () {});
 
       document.getElementById('toggle-forgot').addEventListener('click', function () {
         var f = document.getElementById('forgot-form');
-        f.style.display = f.style.display === 'none' ? 'block' : 'none';
+        var opening = f.style.display === 'none';
+        f.style.display = opening ? 'block' : 'none';
+        if (opening) {
+          var loginEmail = document.getElementById('email').value.trim();
+          var forgotEmail = document.getElementById('forgot-email');
+          if (loginEmail && !forgotEmail.value) forgotEmail.value = loginEmail;
+          forgotEmail.focus();
+        }
       });
 
       document.getElementById('login-form').addEventListener('submit', async function (e) {
         e.preventDefault();
         var alertEl = document.getElementById('login-alert');
         var btn = document.getElementById('login-btn');
+        var email = document.getElementById('email').value.trim();
+        var password = document.getElementById('password').value;
+
         alertEl.innerHTML = '';
+        if (!email || !password) {
+          alertEl.innerHTML = '<div class="ad-alert ad-alert-warn">Informe e-mail corporativo e senha para acessar.</div>';
+          return;
+        }
+
         btn.disabled = true;
         btn.textContent = 'Autenticando...';
         try {
@@ -87,16 +125,16 @@
             method: 'POST',
             credentials: 'same-origin',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              email: document.getElementById('email').value.trim(),
-              password: document.getElementById('password').value
-            })
+            body: JSON.stringify({ email: email, password: password })
           });
           var data = await resp.json().catch(function () { return {}; });
-          if (!resp.ok) throw new Error(data?.error?.message || 'Falha no login.');
-          window.location.href = '/admin/dashboard.html';
+          if (!resp.ok) {
+            throw new Error((data && data.error && data.error.message) || 'Falha ao autenticar no CRM.');
+          }
+          window.location.href = dashboardHref();
         } catch (err) {
-          alertEl.innerHTML = '<div class="ad-alert ad-alert-error">' + err.message + '</div>';
+          alertEl.innerHTML =
+            '<div class="ad-alert ad-alert-error">' + esc((err && err.message) || 'Erro de conexão com o servidor.') + '</div>';
           btn.disabled = false;
           btn.textContent = 'Entrar no CRM';
         }
@@ -105,17 +143,38 @@
       document.getElementById('forgot-form').addEventListener('submit', async function (e) {
         e.preventDefault();
         var alertEl = document.getElementById('login-alert');
+        var btn = document.getElementById('forgot-btn');
+        var email = document.getElementById('forgot-email').value.trim();
+
+        alertEl.innerHTML = '';
+        if (!email) {
+          alertEl.innerHTML = '<div class="ad-alert ad-alert-warn">Informe o e-mail para recuperação.</div>';
+          return;
+        }
+
+        btn.disabled = true;
+        btn.textContent = 'Enviando...';
         try {
           var resp = await fetch('/api/admin/auth/forgot-password', {
             method: 'POST',
+            credentials: 'same-origin',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email: document.getElementById('forgot-email').value.trim() })
+            body: JSON.stringify({ email: email })
           });
           var data = await resp.json().catch(function () { return {}; });
-          if (!resp.ok) throw new Error(data?.error?.message || 'Erro ao solicitar recuperação.');
-          alertEl.innerHTML = '<div class="ad-alert ad-alert-info">' + data.message + '</div>';
+          if (!resp.ok) {
+            throw new Error((data && data.error && data.error.message) || 'Erro ao solicitar recuperação.');
+          }
+          alertEl.innerHTML =
+            '<div class="ad-alert ad-alert-info">' +
+            esc((data && data.message) || 'Solicitação de recuperação enviada ao e-mail informado.') +
+            '</div>';
         } catch (err) {
-          alertEl.innerHTML = '<div class="ad-alert ad-alert-error">' + err.message + '</div>';
+          alertEl.innerHTML =
+            '<div class="ad-alert ad-alert-error">' + esc((err && err.message) || 'Erro ao enviar solicitação.') + '</div>';
+        } finally {
+          btn.disabled = false;
+          btn.textContent = 'Enviar link de recuperação';
         }
       });
     })();

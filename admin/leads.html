@@ -12,7 +12,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/admin/assets/css/admin.css" />
+  <link rel="stylesheet" href="/assets/css/admin.css" />
 </head>
 <body>
   <div class="ad-shell">
@@ -24,48 +24,83 @@
           <p class="ad-topbar-sub">Candidatos à franquia captados pela landing page, blog e campanhas.</p>
         </div>
         <div class="ad-actions-row">
-          <a href="/api/admin/leads/export.csv" class="ad-btn ad-btn-secondary">Exportar CSV</a>
-          <a href="/admin/pipeline.html" class="ad-btn ad-btn-primary">Abrir Pipeline Kanban</a>
+          <a id="export-csv-link" href="/api/admin/leads/export.csv" class="ad-btn ad-btn-secondary">Exportar CSV</a>
+          <a id="pipeline-link" data-crm-page="pipeline.html" href="#" class="ad-btn ad-btn-primary">Abrir Pipeline Kanban</a>
         </div>
       </div>
 
-      <div id="ad-global-alert"></div>
+      <div id="ad-global-alert" role="alert" aria-live="polite"></div>
 
       <section class="ad-card" style="margin-bottom:18px;">
-        <div class="ad-actions-row">
-          <input type="search" id="f-search" class="ad-input" style="max-width:280px;" placeholder="Buscar nome, e-mail, cidade..." />
-          <select id="f-status" class="ad-select" style="width:auto;">
+        <form id="leads-filter-form" class="ad-actions-row">
+          <input type="search" id="f-search" class="ad-input" style="flex:1 1 220px;min-width:180px;max-width:300px;" placeholder="Buscar nome, e-mail, cidade, WhatsApp..." />
+          <select id="f-status" class="ad-select" style="width:auto;" aria-label="Filtrar por status">
             <option value="">Todos os status</option>
             <option value="pending">Pendente</option>
             <option value="qualified">Qualificado</option>
             <option value="nurture">Nutrição</option>
             <option value="disqualified">Desqualificado</option>
           </select>
-          <select id="f-priority" class="ad-select" style="width:auto;">
+          <select id="f-priority" class="ad-select" style="width:auto;" aria-label="Filtrar por prioridade">
             <option value="">Todas prioridades</option>
             <option value="urgent">Urgente</option>
             <option value="high">Alta</option>
             <option value="normal">Normal</option>
             <option value="low">Baixa</option>
           </select>
-          <label style="display:flex;align-items:center;gap:6px;font-size:0.85rem;">
+          <select id="f-grade" class="ad-select" style="width:auto;" aria-label="Filtrar por grade">
+            <option value="">Todas grades</option>
+            <option value="A">Grade A (80–100)</option>
+            <option value="B">Grade B (60–79)</option>
+            <option value="C">Grade C (40–59)</option>
+            <option value="D">Grade D (&lt; 40)</option>
+          </select>
+          <label style="display:flex;align-items:center;gap:6px;font-size:0.85rem;cursor:pointer;">
             <input type="checkbox" id="f-unattended" /> Sem 1º atendimento
           </label>
-          <button type="button" id="f-apply" class="ad-btn ad-btn-primary ad-btn-sm">Filtrar</button>
-        </div>
+          <button type="submit" id="f-apply" class="ad-btn ad-btn-primary ad-btn-sm">Filtrar</button>
+          <button type="button" id="f-clear" class="ad-btn ad-btn-secondary ad-btn-sm" style="display:none;">Limpar</button>
+        </form>
       </section>
 
       <section class="ad-card">
+        <div class="ad-card-title">
+          <span>Base de Candidatos</span>
+          <span id="leads-total-badge" class="ad-badge ad-badge-gray">Carregando...</span>
+        </div>
         <div class="ad-table-wrap" id="leads-table-wrap">Carregando leads...</div>
-        <div id="leads-pagination" style="display:flex;justify-content:space-between;align-items:center;margin-top:16px;font-size:0.84rem;color:#94A3B8;"></div>
+        <div id="leads-pagination" style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:10px;margin-top:16px;font-size:0.84rem;color:#94A3B8;"></div>
       </section>
     </main>
   </div>
 
-  <script src="/admin/assets/js/admin-core.js"></script>
+  <script src="/assets/js/admin-core.js"></script>
   <script>
     (function () {
+      'use strict';
+
       var page = 1;
+      var activeSeq = 0;
+
+      var TRACK_LABELS = {
+        comercial: 'Comercial',
+        designer: 'Designer',
+        hibrido: 'Híbrido'
+      };
+
+      var PRIORITY_BADGES = {
+        urgent: { label: 'Urgente', cls: 'ad-badge-red' },
+        high: { label: 'Alta', cls: 'ad-badge-orange' },
+        normal: { label: 'Normal', cls: 'ad-badge-blue' },
+        low: { label: 'Baixa', cls: 'ad-badge-gray' }
+      };
+
+      function hydrateCrmLinks() {
+        document.querySelectorAll('[data-crm-page]').forEach(function (el) {
+          var pageName = el.getAttribute('data-crm-page');
+          if (pageName) el.setAttribute('href', KingAdmin.crmUrl(pageName));
+        });
+      }
 
       function badgeForStatus(status) {
         if (status === 'qualified') return '<span class="ad-badge ad-badge-green">Qualificado</span>';
@@ -74,48 +109,136 @@
         return '<span class="ad-badge ad-badge-blue">Pendente</span>';
       }
 
+      function badgeForPriority(priority) {
+        var meta = PRIORITY_BADGES[priority] || { label: 'Normal', cls: 'ad-badge-gray' };
+        return '<span class="ad-badge ' + meta.cls + '">' + KingAdmin.esc(meta.label) + '</span>';
+      }
+
+      function mapTrack(track) {
+        if (!track) return '—';
+        return TRACK_LABELS[track] || String(track).replace(/_/g, ' ');
+      }
+
+      function buildFilterParams(includePagination) {
+        var params = new URLSearchParams();
+        if (includePagination) {
+          params.set('page', String(page));
+          params.set('limit', '25');
+        }
+        var search = document.getElementById('f-search').value.trim();
+        var status = document.getElementById('f-status').value;
+        var priority = document.getElementById('f-priority').value;
+        var grade = document.getElementById('f-grade').value;
+        var unattended = document.getElementById('f-unattended').checked;
+
+        if (search) params.set('search', search);
+        if (status) params.set('qualification_status', status);
+        if (priority) params.set('priority', priority);
+        if (grade) params.set('score_grade', grade);
+        if (unattended) params.set('unattended', 'true');
+
+        var hasFilters = Boolean(search || status || priority || grade || unattended);
+        document.getElementById('f-clear').style.display = hasFilters ? 'inline-flex' : 'none';
+
+        var exportParams = new URLSearchParams(params.toString());
+        exportParams.delete('page');
+        exportParams.delete('limit');
+        var exportQs = exportParams.toString();
+        document.getElementById('export-csv-link').setAttribute(
+          'href',
+          exportQs ? '/api/admin/leads/export.csv?' + exportQs : '/api/admin/leads/export.csv'
+        );
+
+        return { params: params, hasFilters: hasFilters };
+      }
+
+      function resetFilters() {
+        document.getElementById('f-search').value = '';
+        document.getElementById('f-status').value = '';
+        document.getElementById('f-priority').value = '';
+        document.getElementById('f-grade').value = '';
+        document.getElementById('f-unattended').checked = false;
+        page = 1;
+        loadLeads();
+      }
+
+      function showErrorBanner(err, retryFn) {
+        var alertEl = document.getElementById('ad-global-alert');
+        alertEl.innerHTML =
+          '<div class="ad-alert ad-alert-error" style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:10px;">' +
+          '  <div><strong>Não foi possível carregar os leads:</strong> ' + KingAdmin.esc((err && err.message) || 'Erro de conexão.') + '</div>' +
+          '  <button type="button" id="retry-leads-btn" class="ad-btn ad-btn-secondary ad-btn-sm">Tentar novamente</button>' +
+          '</div>';
+        var retryBtn = document.getElementById('retry-leads-btn');
+        if (retryBtn) retryBtn.addEventListener('click', retryFn);
+      }
+
       async function loadLeads() {
-        var qs = new URLSearchParams({
-          page: page,
-          limit: 25,
-          search: document.getElementById('f-search').value.trim(),
-          qualification_status: document.getElementById('f-status').value,
-          priority: document.getElementById('f-priority').value,
-          unattended: document.getElementById('f-unattended').checked ? 'true' : ''
-        });
+        var seq = ++activeSeq;
+        var applyBtn = document.getElementById('f-apply');
+        var wrap = document.getElementById('leads-table-wrap');
+        var badgeEl = document.getElementById('leads-total-badge');
+        var filterState = buildFilterParams(true);
+
+        document.getElementById('ad-global-alert').innerHTML = '';
+        applyBtn.disabled = true;
+        applyBtn.textContent = 'Filtrando...';
+        wrap.innerHTML = '<p style="color:#94A3B8;padding:12px 0;">Carregando leads cadastrados...</p>';
+
         try {
-          var data = await KingAdmin.apiFetch('/api/admin/leads?' + qs.toString());
-          var wrap = document.getElementById('leads-table-wrap');
-          if (!data.items || !data.items.length) {
-            wrap.innerHTML = '<p style="color:#94A3B8;">Nenhum lead encontrado para os filtros selecionados.</p>';
+          var data = await KingAdmin.apiFetch('/api/admin/leads?' + filterState.params.toString());
+          if (seq !== activeSeq) return;
+
+          var items = Array.isArray(data.items) ? data.items : [];
+          var total = Number(data.total || 0);
+          badgeEl.textContent = total + ' lead(s)';
+
+          if (!items.length) {
+            wrap.innerHTML =
+              '<div style="padding:20px;border:1px dashed var(--ad-border);border-radius:10px;color:#AEBBD0;">' +
+              '  <p style="margin-bottom:10px;">' +
+              (filterState.hasFilters
+                ? 'Nenhum lead encontrado para os filtros selecionados.'
+                : 'Nenhum candidato cadastrado ainda pela landing page ou blog.') +
+              '</p>' +
+              (filterState.hasFilters
+                ? '<button type="button" id="empty-clear-btn" class="ad-btn ad-btn-secondary ad-btn-sm">Limpar filtros</button>'
+                : '') +
+              '</div>';
             document.getElementById('leads-pagination').innerHTML = '';
+            var emptyClearBtn = document.getElementById('empty-clear-btn');
+            if (emptyClearBtn) emptyClearBtn.addEventListener('click', resetFilters);
             return;
           }
+
           wrap.innerHTML =
-            '<table class="ad-table"><thead><tr><th>Candidato</th><th>Contato</th><th>Cidade / UF</th><th>Perfil</th><th>Score</th><th>Estágio</th><th>Status</th><th>Criado em</th><th>Ações</th></tr></thead><tbody>' +
-            data.items.map(function (l) {
+            '<table class="ad-table"><thead><tr><th>Candidato</th><th>Contato</th><th>Cidade / UF</th><th>Perfil</th><th>Score</th><th>Prioridade</th><th>Estágio</th><th>Status</th><th>Criado em</th><th>Ações</th></tr></thead><tbody>' +
+            items.map(function (l) {
               var opp = (l.opportunities && l.opportunities[0]) || null;
-              var stageName = opp && opp.stage ? opp.stage.name : '—';
-              var track = l.qualification ? l.qualification.intended_track : '—';
+              var stageName = opp && opp.stage ? opp.stage.name : 'Sem estágio';
+              var qual = Array.isArray(l.qualification) ? (l.qualification[0] || {}) : (l.qualification || {});
+              var location = (l.city || l.state) ? ((l.city || '—') + (l.state ? '/' + l.state : '')) : 'Não informado';
               var unattended = !l.first_contact_at ? '<span class="ad-badge ad-badge-orange" style="margin-left:6px;">Sem contato</span>' : '';
+              var detailHref = KingAdmin.crmUrl('lead-detalhes.html?id=' + encodeURIComponent(l.id));
               return (
                 '<tr>' +
-                '  <td><strong>' + KingAdmin.esc(l.full_name) + '</strong>' + unattended + '</td>' +
-                '  <td><div>' + KingAdmin.esc(l.whatsapp) + '</div><div style="font-size:0.78rem;color:#94A3B8;">' + KingAdmin.esc(l.email) + '</div></td>' +
-                '  <td>' + KingAdmin.esc(l.city + '/' + l.state) + '</td>' +
-                '  <td>' + KingAdmin.esc(track) + '</td>' +
-                '  <td><strong>' + l.lead_score + '</strong> (' + KingAdmin.esc(l.score_grade) + ')</td>' +
+                '  <td><strong>' + KingAdmin.esc(l.full_name || 'Candidato') + '</strong>' + unattended + '</td>' +
+                '  <td><div>' + KingAdmin.esc(l.whatsapp || '—') + '</div><div style="font-size:0.78rem;color:#94A3B8;">' + KingAdmin.esc(l.email || '—') + '</div></td>' +
+                '  <td>' + KingAdmin.esc(location) + '</td>' +
+                '  <td>' + KingAdmin.esc(mapTrack(qual.intended_track)) + '</td>' +
+                '  <td><strong>' + KingAdmin.esc(String(l.lead_score != null ? l.lead_score : 0)) + '</strong> (' + KingAdmin.esc(l.score_grade || '—') + ')</td>' +
+                '  <td>' + badgeForPriority(l.priority) + '</td>' +
                 '  <td><span class="ad-badge ad-badge-gray">' + KingAdmin.esc(stageName) + '</span></td>' +
                 '  <td>' + badgeForStatus(l.qualification_status) + '</td>' +
-                '  <td>' + KingAdmin.esc(KingAdmin.formatDate(l.created_at)) + '</td>' +
-                '  <td><a href="/admin/lead-detalhes.html?id=' + encodeURIComponent(l.id) + '" class="ad-btn ad-btn-primary ad-btn-sm">Abrir 360°</a></td>' +
+                '  <td style="white-space:nowrap;">' + KingAdmin.esc(KingAdmin.formatDate(l.created_at)) + '</td>' +
+                '  <td><a href="' + KingAdmin.esc(detailHref) + '" class="ad-btn ad-btn-primary ad-btn-sm">Abrir 360°</a></td>' +
                 '</tr>'
               );
             }).join('') +
             '</tbody></table>';
 
           document.getElementById('leads-pagination').innerHTML =
-            '<span>Total: ' + data.total + ' leads • Página ' + data.page + ' de ' + data.total_pages + '</span>' +
+            '<span>Total: ' + KingAdmin.esc(String(total)) + ' lead(s) • Página ' + KingAdmin.esc(String(data.page || 1)) + ' de ' + KingAdmin.esc(String(data.total_pages || 1)) + '</span>' +
             '<div style="display:flex;gap:8px;">' +
             '  <button type="button" id="pg-prev" class="ad-btn ad-btn-secondary ad-btn-sm" ' + (data.page <= 1 ? 'disabled' : '') + '>Anterior</button>' +
             '  <button type="button" id="pg-next" class="ad-btn ad-btn-secondary ad-btn-sm" ' + (data.page >= data.total_pages ? 'disabled' : '') + '>Próxima</button>' +
@@ -126,14 +249,40 @@
           if (prev) prev.onclick = function () { if (page > 1) { page--; loadLeads(); } };
           if (next) next.onclick = function () { if (page < data.total_pages) { page++; loadLeads(); } };
         } catch (err) {
-          KingAdmin.renderErrorState('ad-global-alert', err);
+          if (seq !== activeSeq) return;
+          badgeEl.textContent = 'Indisponível';
+          wrap.innerHTML = '<p style="color:#FECACA;">Erro ao carregar leads. Use "Tentar novamente" acima.</p>';
+          showErrorBanner(err, loadLeads);
+        } finally {
+          if (seq === activeSeq) {
+            applyBtn.disabled = false;
+            applyBtn.textContent = 'Filtrar';
+          }
         }
       }
 
-      document.getElementById('f-apply').addEventListener('click', function () { page = 1; loadLeads(); });
-      document.addEventListener('DOMContentLoaded', async function () {
-        if (await KingAdmin.initProtectedPage('leads')) loadLeads();
+      document.getElementById('leads-filter-form').addEventListener('submit', function (e) {
+        e.preventDefault();
+        page = 1;
+        loadLeads();
       });
+      document.getElementById('f-status').addEventListener('change', function () { page = 1; loadLeads(); });
+      document.getElementById('f-priority').addEventListener('change', function () { page = 1; loadLeads(); });
+      document.getElementById('f-grade').addEventListener('change', function () { page = 1; loadLeads(); });
+      document.getElementById('f-unattended').addEventListener('change', function () { page = 1; loadLeads(); });
+      document.getElementById('f-clear').addEventListener('click', resetFilters);
+
+      async function boot() {
+        hydrateCrmLinks();
+        var user = await KingAdmin.initProtectedPage('leads');
+        if (!user) {
+          showErrorBanner(new Error('Não foi possível validar sua sessão administrativa.'), boot);
+          return;
+        }
+        loadLeads();
+      }
+
+      document.addEventListener('DOMContentLoaded', boot);
     })();
   </script>
 </body>

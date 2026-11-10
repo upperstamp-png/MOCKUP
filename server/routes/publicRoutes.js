@@ -11,7 +11,109 @@ const { hashIp } = require('../utils/crypto');
 const { checkDatabaseHealth } = require('../database/supabase');
 const { checkRedisHealth } = require('../jobs/redis');
 const { getEventCatalog } = require('../tracking/eventCatalog');
-const { isSupabaseConfigured } = require('../config/env');
+const { env, isSupabaseConfigured } = require('../config/env');
+
+function trimUrl(value) {
+  return String(value || '').trim().replace(/\/+$/, '');
+}
+
+function isLoopbackUrl(value) {
+  return /^https?:\/\/(localhost|127\.0\.0\.1|\[::1\])(:\d+)?$/i.test(String(value || '').trim());
+}
+
+function extractRequestOrigin(req) {
+  if (!req) return null;
+  const forwardedHost =
+    req.headers && req.headers['x-forwarded-host']
+      ? String(req.headers['x-forwarded-host']).split(',')[0].trim()
+      : '';
+  const directHost = req.get && req.get('host') ? String(req.get('host')).trim() : '';
+  const host = forwardedHost || directHost;
+  if (!host || !/^[a-zA-Z0-9.:-]+$/.test(host)) return null;
+  const proto =
+    req.headers && req.headers['x-forwarded-proto']
+      ? String(req.headers['x-forwarded-proto']).split(',')[0].trim()
+      : req.protocol || 'http';
+  const hostname = host.split(':')[0].toLowerCase();
+  const port = host.includes(':') ? host.slice(host.indexOf(':')) : '';
+  return { proto, host, hostname, port, origin: `${proto}://${host}`.replace(/\/+$/, '') };
+}
+
+function resolvePublicUrlsForRequest(req, rawUrls) {
+  const baseUrls = {
+    lp_url: trimUrl(rawUrls?.lp_url || env.LP_URL || env.APP_URL || ''),
+    crm_url: trimUrl(rawUrls?.crm_url || env.CRM_URL || ''),
+    hub_url: trimUrl(rawUrls?.hub_url || env.HUB_URL || '')
+  };
+
+  const domainKind = req?.domainKind || 'unified';
+  if (domainKind === 'unified') {
+    return baseUrls;
+  }
+
+  const originInfo = extractRequestOrigin(req);
+  if (!originInfo) {
+    return baseUrls;
+  }
+
+  const { proto, hostname, port, origin } = originInfo;
+  const isLocalSubdomain = hostname === 'localhost' || hostname.endsWith('.localhost');
+  const dotIdx = hostname.indexOf('.');
+  const baseDomain = dotIdx !== -1 ? hostname.slice(dotIdx + 1) : hostname;
+
+  if (hostname.endsWith('.localhost')) {
+    return {
+      lp_url: `${proto}://lp.${baseDomain}${port}`,
+      crm_url: `${proto}://crm.${baseDomain}${port}`,
+      hub_url: `${proto}://app.${baseDomain}${port}`
+    };
+  }
+
+  let lpUrl = baseUrls.lp_url;
+  let crmUrl = baseUrls.crm_url;
+  let hubUrl = baseUrls.hub_url;
+
+  if (domainKind === 'lp' && (!lpUrl || isLoopbackUrl(lpUrl))) {
+    lpUrl = origin;
+  } else if (!lpUrl || isLoopbackUrl(lpUrl)) {
+    lpUrl = `${proto}://${env.LP_HOST}`;
+  }
+
+  if (domainKind === 'crm' && (!crmUrl || isLoopbackUrl(crmUrl))) {
+    crmUrl = origin;
+  } else if (!crmUrl || isLoopbackUrl(crmUrl)) {
+    crmUrl = `${proto}://${env.CRM_HOST}`;
+  }
+
+  if (domainKind === 'hub' && (!hubUrl || isLoopbackUrl(hubUrl))) {
+    hubUrl = origin;
+  } else if (!hubUrl || isLoopbackUrl(hubUrl)) {
+    hubUrl = `${proto}://${env.HUB_HOST}`;
+  }
+
+  return {
+    lp_url: trimUrl(lpUrl),
+    crm_url: trimUrl(crmUrl),
+    hub_url: trimUrl(hubUrl)
+  };
+}
+
+function sanitizePublicConfigResponse(config, req) {
+  const tracking = config?.tracking || {};
+  return {
+    tracking: {
+      gtm_id: String(tracking.gtm_id || ''),
+      ga4_measurement_id: String(tracking.ga4_measurement_id || ''),
+      google_ads_conversion_id: String(tracking.google_ads_conversion_id || ''),
+      google_ads_label_lead: String(tracking.google_ads_label_lead || ''),
+      meta_pixel_id: String(tracking.meta_pixel_id || '')
+    },
+    franchise: config?.franchise || {},
+    landing_content: config?.landing_content || {},
+    urls: resolvePublicUrlsForRequest(req, config?.urls),
+    storage_ready: Boolean(config?.storage_ready)
+  };
+}
 
 function createPublicRoutes({
   leadIngestionService,
@@ -38,10 +140,10 @@ function createPublicRoutes({
     });
   });
 
-  router.get('/public/config', async (_req, res, next) => {
+  router.get('/public/config', async (req, res, next) => {
     try {
       const config = await settingsService.getPublicConfig();
-      res.json(config);
+      res.json(sanitizePublicConfigResponse(config, req));
     } catch (err) {
       next(err);
     }

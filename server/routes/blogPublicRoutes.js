@@ -1,8 +1,9 @@
 'use strict';
 
 const express = require('express');
+const { env: defaultEnv } = require('../config/env');
 const { NotFoundError } = require('../utils/errors');
-const { renderBlogNotFoundPage } = require('../services/blogRenderer');
+const { renderBlogNotFoundPage, resolveSafeCanonicalUrl } = require('../services/blogRenderer');
 const { resolveBaseUrl, renderLlmsTxt, renderLlmsFullTxt } = require('../services/geoService');
 const { createSeoHtmlService } = require('../services/seoHtmlService');
 
@@ -27,6 +28,11 @@ function buildRobotsTxt(baseUrl) {
       `User-agent: ${agent}`,
       'Allow: /',
       'Disallow: /admin/',
+      'Disallow: /hub/',
+      'Disallow: /studio',
+      'Disallow: /universidade',
+      'Disallow: /quotes/',
+      'Disallow: /login',
       'Disallow: /api/',
       'Disallow: /obrigado.html'
     ].join('\n')
@@ -44,9 +50,17 @@ function buildRobotsTxt(baseUrl) {
   ].join('\n');
 }
 
+function normalizeQueryStringParam(rawValue) {
+  const single = Array.isArray(rawValue) ? rawValue[0] : rawValue;
+  if (single == null) return null;
+  const trimmed = String(single).trim();
+  return trimmed || null;
+}
+
 function createBlogPublicRoutes({ blogService, seoHtmlService, env }) {
   const router = express.Router();
-  const htmlService = seoHtmlService || createSeoHtmlService({ env });
+  const resolvedEnv = env === undefined ? defaultEnv : env;
+  const htmlService = seoHtmlService || createSeoHtmlService({ env: resolvedEnv });
 
   // Páginas públicas estáticas com reescrita dinâmica de canonical/OG/JSON-LD + X-Robots-Tag
   router.get(['/', '/index.html'], htmlService.sendSeoHtml('index.html', { indexable: true }));
@@ -57,12 +71,19 @@ function createBlogPublicRoutes({ blogService, seoHtmlService, env }) {
   // GEO (Generative Engine Optimization) — llms.txt & llms-full.txt dinâmicos em Markdown
   router.get(['/llms.txt', '/.well-known/llms.txt'], async (req, res, next) => {
     try {
-      const baseUrl = resolveBaseUrl(req, env);
+      const baseUrl = resolveBaseUrl(req, resolvedEnv);
       const { posts } = await blogService.getPublishedPostsForGeo();
-      const markdown = renderLlmsTxt({ baseUrl, posts });
+      const markdown = renderLlmsTxt({
+        baseUrl,
+        posts,
+        expansionEmail: resolvedEnv?.EXPANSION_EMAIL
+      });
       res
+        .vary('Host')
+        .vary('X-Forwarded-Host')
         .set('Content-Type', 'text/markdown; charset=utf-8')
         .set('X-Robots-Tag', 'all')
+        .set('Link', `<${baseUrl}/llms.txt>; rel="canonical"`)
         .set('Cache-Control', 'public, max-age=300')
         .send(markdown);
     } catch (err) {
@@ -72,12 +93,15 @@ function createBlogPublicRoutes({ blogService, seoHtmlService, env }) {
 
   router.get('/llms-full.txt', async (req, res, next) => {
     try {
-      const baseUrl = resolveBaseUrl(req, env);
+      const baseUrl = resolveBaseUrl(req, resolvedEnv);
       const { posts } = await blogService.getPublishedPostsForGeo();
       const markdown = renderLlmsFullTxt({ baseUrl, posts });
       res
+        .vary('Host')
+        .vary('X-Forwarded-Host')
         .set('Content-Type', 'text/markdown; charset=utf-8')
         .set('X-Robots-Tag', 'all')
+        .set('Link', `<${baseUrl}/llms-full.txt>; rel="canonical"`)
         .set('Cache-Control', 'public, max-age=300')
         .send(markdown);
     } catch (err) {
@@ -88,18 +112,32 @@ function createBlogPublicRoutes({ blogService, seoHtmlService, env }) {
   // Blog SSR
   router.get('/blog', async (req, res, next) => {
     try {
-      const baseUrl = resolveBaseUrl(req, env);
-      const categorySlug = req.query.categoria ? String(req.query.categoria) : null;
-      const html = await blogService.renderPublicIndex({
-        categorySlug,
-        baseUrl
-      });
-      const canonical = categorySlug
-        ? `${baseUrl}/blog?categoria=${encodeURIComponent(categorySlug)}`
-        : `${baseUrl}/blog`;
+      const baseUrl = resolveBaseUrl(req, resolvedEnv);
+      const categorySlug = normalizeQueryStringParam(req.query.categoria);
+      let html;
+      let canonical;
+      let notFoundCategory = false;
+
+      if (typeof blogService.resolvePublicIndex === 'function') {
+        const result = await blogService.resolvePublicIndex({ categorySlug, baseUrl });
+        html = result.html;
+        canonical = result.canonicalUrl;
+        notFoundCategory = Boolean(result.notFoundCategory);
+      } else {
+        html = await blogService.renderPublicIndex({ categorySlug, baseUrl });
+        canonical = categorySlug
+          ? `${baseUrl}/blog?categoria=${encodeURIComponent(categorySlug)}`
+          : `${baseUrl}/blog`;
+      }
+
+      const robotsTag = notFoundCategory
+        ? 'noindex, follow'
+        : 'index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1';
 
       res
-        .set('X-Robots-Tag', 'index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1')
+        .vary('Host')
+        .vary('X-Forwarded-Host')
+        .set('X-Robots-Tag', robotsTag)
         .set('Link', `<${canonical}>; rel="canonical", <${baseUrl}/llms.txt>; rel="alternate"; type="text/markdown"`)
         .set('Content-Type', 'text/html; charset=utf-8')
         .send(html);
@@ -110,11 +148,17 @@ function createBlogPublicRoutes({ blogService, seoHtmlService, env }) {
 
   router.get('/blog/:slug', async (req, res, next) => {
     try {
-      const baseUrl = resolveBaseUrl(req, env);
-      const { post, html } = await blogService.renderPublicArticle(req.params.slug, { baseUrl });
-      const canonical = post.canonical_url || `${baseUrl}/blog/${post.slug}`;
+      const baseUrl = resolveBaseUrl(req, resolvedEnv);
+      const { post, html, canonicalUrl } = await blogService.renderPublicArticle(req.params.slug, {
+        baseUrl
+      });
+      const fallbackCanonical = `${baseUrl}/blog/${encodeURIComponent(String(post.slug || '').trim())}`;
+      const canonical =
+        canonicalUrl || resolveSafeCanonicalUrl(post.canonical_url, fallbackCanonical, baseUrl);
 
       res
+        .vary('Host')
+        .vary('X-Forwarded-Host')
         .set('X-Robots-Tag', 'index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1')
         .set('Link', `<${canonical}>; rel="canonical", <${baseUrl}/llms.txt>; rel="alternate"; type="text/markdown"`)
         .set('Content-Type', 'text/html; charset=utf-8')
@@ -134,9 +178,11 @@ function createBlogPublicRoutes({ blogService, seoHtmlService, env }) {
   // Sitemap XML com namespace de imagens
   router.get('/sitemap.xml', async (req, res, next) => {
     try {
-      const baseUrl = resolveBaseUrl(req, env);
+      const baseUrl = resolveBaseUrl(req, resolvedEnv);
       const xml = await blogService.generateSitemap({ baseUrl });
       res
+        .vary('Host')
+        .vary('X-Forwarded-Host')
         .set('Content-Type', 'application/xml; charset=utf-8')
         .set('Cache-Control', 'public, max-age=300')
         .send(xml);
@@ -147,9 +193,11 @@ function createBlogPublicRoutes({ blogService, seoHtmlService, env }) {
 
   // Robots.txt (Search Engines + Generative AI Crawlers)
   router.get('/robots.txt', (req, res) => {
-    const baseUrl = resolveBaseUrl(req, env);
+    const baseUrl = resolveBaseUrl(req, resolvedEnv);
     const body = buildRobotsTxt(baseUrl);
     res
+      .vary('Host')
+      .vary('X-Forwarded-Host')
       .set('Content-Type', 'text/plain; charset=utf-8')
       .set('Cache-Control', 'public, max-age=300')
       .send(body);

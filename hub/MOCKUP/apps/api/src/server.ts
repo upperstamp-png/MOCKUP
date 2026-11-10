@@ -29,6 +29,39 @@ import { portalNotificationsRoutes } from './modules/portal/notifications.routes
 import { portalNetworkAdminRoutes } from './modules/portal/networkAdmin.routes.js';
 import { portalScheduleRoutes } from './modules/portal/schedule.routes.js';
 
+function buildCorsOrigins(): boolean | string[] {
+  if (env.CORS_ORIGIN.trim() === '*') {
+    return true;
+  }
+  const origins = new Set(
+    env.CORS_ORIGIN.split(',')
+      .map((s) => s.trim())
+      .filter(Boolean)
+  );
+  for (const candidate of [env.APP_URL, env.HUB_URL, env.CRM_URL, env.LP_URL]) {
+    if (!candidate) continue;
+    try {
+      origins.add(new URL(candidate).origin);
+    } catch {
+      // Ignora URL inválida opcional
+    }
+  }
+  if (env.NODE_ENV !== 'production') {
+    let devPort = '3000';
+    try {
+      const parsedAppUrl = new URL(env.APP_URL);
+      if (parsedAppUrl.port) devPort = parsedAppUrl.port;
+    } catch {
+      // Mantém porta padrão 3000
+    }
+    for (const prefix of ['app', 'hub', 'crm', 'lp']) {
+      origins.add(`http://${prefix}.localhost:${devPort}`);
+      origins.add(`http://${prefix}.localhost:3000`);
+    }
+  }
+  return Array.from(origins);
+}
+
 export function buildServer(): FastifyInstance {
   const app = Fastify({
     bodyLimit: 30 * 1024 * 1024, // Suporta uploads DataURL base64 (ex: comprovantes, pranchas Studio)
@@ -63,9 +96,16 @@ export function buildServer(): FastifyInstance {
   });
 
   app.register(cors, {
-    origin: env.CORS_ORIGIN === '*' ? true : env.CORS_ORIGIN.split(',').map((s) => s.trim()),
+    origin: buildCorsOrigins(),
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  });
+
+  app.addHook('onSend', async (_request, reply, payload) => {
+    if (!reply.hasHeader('X-Robots-Tag')) {
+      reply.header('X-Robots-Tag', 'noindex, nofollow, noarchive');
+    }
+    return payload;
   });
 
   app.register(cookie, {

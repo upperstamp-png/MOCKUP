@@ -19,6 +19,8 @@ import {
   uploadPrivatePortalFile,
 } from '../../services/storageService.js';
 
+const uuidSchema = z.string().uuid();
+
 export async function portalFinanceRoutes(fastify: FastifyInstance): Promise<void> {
   // GET /api/v1/finance/summary (com bloqueio honesto de regras não configuradas + separação taxa inicial R$ 20k)
   fastify.get(
@@ -221,6 +223,18 @@ export async function portalFinanceRoutes(fastify: FastifyInstance): Promise<voi
       }
       const ctx = request.portal!;
       const d = parsed.data;
+      if (d.orderId) {
+        const ordRes = await dbQuery<{ unit_id: string }>(`SELECT unit_id FROM portal.orders WHERE id = $1`, [d.orderId]);
+        if (!ordRes.rows[0] || ordRes.rows[0].unit_id !== ctx.activeUnitId) {
+          return reply.status(403).send({ statusCode: 403, code: 'ORDER_UNIT_MISMATCH', message: 'Pedido inválido ou pertencente a outra unidade.' });
+        }
+      }
+      if (d.customerId) {
+        const custRes = await dbQuery<{ unit_id: string }>(`SELECT unit_id FROM portal.customers WHERE id = $1`, [d.customerId]);
+        if (!custRes.rows[0] || custRes.rows[0].unit_id !== ctx.activeUnitId) {
+          return reply.status(403).send({ statusCode: 403, code: 'CUSTOMER_UNIT_MISMATCH', message: 'Cliente inválido ou pertencente a outra unidade.' });
+        }
+      }
       const todayIso = new Date().toISOString().slice(0, 10);
       const initialStatus = d.dueDate < todayIso ? 'overdue' : 'pending';
 
@@ -389,6 +403,9 @@ export async function portalFinanceRoutes(fastify: FastifyInstance): Promise<voi
     { preHandler: [requirePortalAuth, requirePermission('finance:reconcile')] },
     async (request, reply) => {
       const { id } = request.params as { id: string };
+      if (!uuidSchema.safeParse(id).success) {
+        return reply.status(400).send({ statusCode: 400, code: 'VALIDATION_ERROR', message: 'ID de lançamento inválido.' });
+      }
       const schema = z.object({ decision: z.enum(['confirmed', 'rejected']), notes: z.string().optional().nullable() });
       const parsed = schema.safeParse(request.body);
       if (!parsed.success) {
@@ -450,6 +467,9 @@ export async function portalFinanceRoutes(fastify: FastifyInstance): Promise<voi
     { preHandler: [requirePortalAuth, requirePermission('finance:reverse')] },
     async (request, reply) => {
       const { id } = request.params as { id: string };
+      if (!uuidSchema.safeParse(id).success) {
+        return reply.status(400).send({ statusCode: 400, code: 'VALIDATION_ERROR', message: 'ID de lançamento inválido.' });
+      }
       const schema = z.object({ reason: z.string().min(4, 'Motivo do estorno obrigatório') });
       const parsed = schema.safeParse(request.body);
       if (!parsed.success) {
@@ -551,6 +571,9 @@ export async function portalFinanceRoutes(fastify: FastifyInstance): Promise<voi
     { preHandler: [requirePortalAuth, requirePermission('finance:read')] },
     async (request, reply) => {
       const { txId } = request.params as { txId: string };
+      if (!uuidSchema.safeParse(txId).success) {
+        return reply.status(400).send({ statusCode: 400, code: 'VALIDATION_ERROR', message: 'ID de lançamento inválido.' });
+      }
       const txRes = await dbQuery<{ unit_id: string; proof_storage_path: string | null }>(
         `SELECT unit_id, proof_storage_path FROM portal.payment_transactions WHERE id = $1`,
         [txId]
@@ -621,6 +644,12 @@ export async function portalFinanceRoutes(fastify: FastifyInstance): Promise<voi
       }
       const d = parsed.data;
       const ctx = request.portal!;
+      if (d.orderId) {
+        const ordRes = await dbQuery<{ unit_id: string }>(`SELECT unit_id FROM portal.orders WHERE id = $1`, [d.orderId]);
+        if (!ordRes.rows[0] || ordRes.rows[0].unit_id !== ctx.activeUnitId) {
+          return reply.status(403).send({ statusCode: 403, code: 'ORDER_UNIT_MISMATCH', message: 'Pedido inválido ou pertencente a outra unidade.' });
+        }
+      }
       const inserted = await dbQuery(
         `INSERT INTO portal.expenses (
            unit_id, order_id, expense_category, description, vendor_name, due_date,
@@ -648,6 +677,9 @@ export async function portalFinanceRoutes(fastify: FastifyInstance): Promise<voi
     { preHandler: [requirePortalAuth, requirePermission('finance:write')] },
     async (request, reply) => {
       const { id } = request.params as { id: string };
+      if (!uuidSchema.safeParse(id).success) {
+        return reply.status(400).send({ statusCode: 400, code: 'VALIDATION_ERROR', message: 'ID de despesa inválido.' });
+      }
       const existing = await dbQuery<{ unit_id: string; amount_cents: string }>(
         `SELECT unit_id, amount_cents::text FROM portal.expenses WHERE id = $1`,
         [id]
