@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard Geral | CRM King Sports</title>
+  <meta name="robots" content="noindex, nofollow" />
+  <meta name="theme-color" content="#02060E" />
+  <link rel="icon" href="/favicon.ico" sizes="any" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/assets/images/favicon-32x32.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/assets/images/apple-touch-icon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/admin/assets/css/admin.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js" defer></script>
+</head>
+<body>
+  <div class="ad-shell">
+    <aside class="ad-sidebar" id="ad-sidebar"></aside>
+
+    <main class="ad-main">
+      <div class="ad-topbar">
+        <div>
+          <h1>Dashboard Executivo &amp; Marketing</h1>
+          <p class="ad-topbar-sub">Indicadores reais de aquisição, qualificação, pipeline e mídia.</p>
+        </div>
+
+        <div class="ad-actions-row">
+          <select id="period-preset" class="ad-select" style="width:auto;">
+            <option value="7">Últimos 7 dias</option>
+            <option value="30" selected>Últimos 30 dias</option>
+            <option value="90">Últimos 90 dias</option>
+            <option value="360">Últimos 360 dias</option>
+            <option value="custom">Período personalizado</option>
+          </select>
+          <input type="date" id="custom-start" class="ad-input" style="width:auto;display:none;" />
+          <input type="date" id="custom-end" class="ad-input" style="width:auto;display:none;" />
+          <button type="button" id="refresh-btn" class="ad-btn ad-btn-primary">Atualizar</button>
+        </div>
+      </div>
+
+      <div id="ad-global-alert"></div>
+      <div id="kpi-grid" class="ad-kpi-grid"></div>
+
+      <div class="ad-grid-2" style="margin-bottom: 18px;">
+        <section class="ad-card">
+          <div class="ad-card-title">
+            <span>Saúde dos Indicadores (Metas Configuráveis)</span>
+          </div>
+          <div id="health-bars" class="ad-health-list">Carregando...</div>
+        </section>
+
+        <section class="ad-card">
+          <div class="ad-card-title">
+            <span>Análises Automáticas &amp; Alertas</span>
+          </div>
+          <div id="diagnostics-list">Carregando...</div>
+        </section>
+      </div>
+
+      <div class="ad-grid-2" style="margin-bottom: 18px;">
+        <section class="ad-card">
+          <div class="ad-card-title"><span>Evolução Diária: Leads vs. Qualificados</span></div>
+          <canvas id="timeseries-chart" height="190"></canvas>
+        </section>
+
+        <section class="ad-card">
+          <div class="ad-card-title"><span>Funil Comercial por Estágio</span></div>
+          <canvas id="funnel-chart" height="190"></canvas>
+        </section>
+      </div>
+
+      <section class="ad-card">
+        <div class="ad-card-title">
+          <span>Desempenho das Campanhas no Período</span>
+          <a href="/admin/campanhas.html" class="ad-btn ad-btn-secondary ad-btn-sm">Ver todas →</a>
+        </div>
+        <div class="ad-table-wrap" id="campaigns-table-wrap">Carregando...</div>
+      </section>
+      <p id="revenue-notice" style="font-size:0.78rem;color:#94A3B8;margin-top:14px;"></p>
+    </main>
+  </div>
+
+  <script src="/admin/assets/js/admin-core.js"></script>
+  <script>
+    (function () {
+      var tsChart = null;
+      var funnelChart = null;
+
+      function renderKpis(k) {
+        var fmtNum = function (v) { return v == null ? '—' : Number(v).toLocaleString('pt-BR'); };
+        var cards = [
+          { label: 'Leads Captados', val: fmtNum(k.leads_count), sub: 'Sem atendimento: ' + fmtNum(k.unattended_leads_count) },
+          { label: 'Leads Qualificados', val: fmtNum(k.qualified_leads_count), sub: 'Taxa: ' + (k.qualification_rate_pct || 0) + '%' },
+          { label: 'Reuniões Agendadas', val: fmtNum(k.meetings_scheduled_count), sub: 'Realizadas: ' + fmtNum(k.meetings_completed_count) },
+          { label: 'Propostas', val: fmtNum(k.proposals_count), sub: 'Avançado no funil' },
+          { label: 'Franquias Vendidas', val: fmtNum(k.sales_count), sub: 'Conversão: ' + (k.close_rate_pct || 0) + '%' },
+          { label: 'Investimento em Mídia', val: KingAdmin.formatBrl(k.media_spend_brl), sub: 'Cliques: ' + fmtNum(k.clicks) },
+          { label: 'CPL', val: KingAdmin.formatBrl(k.cpl_brl), sub: 'Custo por Lead' },
+          { label: 'CPQL', val: KingAdmin.formatBrl(k.cpql_brl), sub: 'Custo p/ Lead Qualificado' },
+          { label: 'CAC', val: KingAdmin.formatBrl(k.cac_brl), sub: 'Custo p/ Venda' },
+          { label: 'ROAS', val: k.roas != null ? k.roas + 'x' : '—', sub: 'Receita Contratada: ' + KingAdmin.formatBrl(k.attributed_contracted_revenue_brl) },
+          { label: 'Tempo Médio Atendimento', val: k.avg_response_minutes != null ? k.avg_response_minutes + ' min' : '—', sub: '1º contato após cadastro' }
+        ];
+        document.getElementById('kpi-grid').innerHTML = cards.map(function (c) {
+          return '<div class="ad-kpi-card"><div class="ad-kpi-label">' + KingAdmin.esc(c.label) + '</div><div class="ad-kpi-value">' + KingAdmin.esc(c.val) + '</div><div class="ad-kpi-sub">' + KingAdmin.esc(c.sub) + '</div></div>';
+        }).join('');
+      }
+
+      function renderHealthBars(bars) {
+        var el = document.getElementById('health-bars');
+        if (!bars || !bars.length) {
+          el.innerHTML = '<p style="color:#94A3B8;font-size:0.88rem;">Sem indicadores suficientes no período.</p>';
+          return;
+        }
+        el.innerHTML = bars.map(function (b) {
+          var formatted = b.value == null ? 'Sem dados' : (b.unit === 'R$' ? KingAdmin.formatBrl(b.value) : b.value + ' ' + b.unit);
+          return (
+            '<div>' +
+            '  <div class="ad-health-item-head">' +
+            '    <span><strong>' + KingAdmin.esc(b.label) + '</strong></span>' +
+            '    <span>' + KingAdmin.esc(formatted) + ' <em style="color:#94A3B8;">(' + KingAdmin.esc(b.status_label || '') + ')</em></span>' +
+            '  </div>' +
+            '  <div class="ad-health-track"><div class="ad-health-fill ' + KingAdmin.esc(b.band) + '" style="width:' + Number(b.pct || 0) + '%"></div></div>' +
+            '</div>'
+          );
+        }).join('');
+      }
+
+      function renderDiagnostics(alerts) {
+        var el = document.getElementById('diagnostics-list');
+        if (!alerts || !alerts.length) {
+          el.innerHTML = '<div class="ad-alert ad-alert-info">Nenhum gargalo crítico ou anomalia detectada no período selecionado.</div>';
+          return;
+        }
+        el.innerHTML = alerts.map(function (a) {
+          var cls = a.severity === 'red' ? 'ad-alert-error' : 'ad-alert-warn';
+          return '<div class="ad-alert ' + cls + '"><strong>' + KingAdmin.esc(a.title) + '</strong><br/>' + KingAdmin.esc(a.description) + '</div>';
+        }).join('');
+      }
+
+      function renderCharts(timeseries, stages) {
+        if (typeof Chart === 'undefined') return;
+        var tsCtx = document.getElementById('timeseries-chart');
+        if (tsChart) tsChart.destroy();
+        tsChart = new Chart(tsCtx, {
+          type: 'line',
+          data: {
+            labels: timeseries.map(function (t) { return t.date; }),
+            datasets: [
+              { label: 'Leads', data: timeseries.map(function (t) { return t.leads; }), borderColor: '#68D8FF', backgroundColor: 'rgba(104,216,255,0.16)', tension: 0.3 },
+              { label: 'Qualificados', data: timeseries.map(function (t) { return t.qualified; }), borderColor: '#168B48', backgroundColor: 'rgba(22,139,72,0.18)', tension: 0.3 }
+            ]
+          },
+          options: { plugins: { legend: { labels: { color: '#D6E2F1' } } }, scales: { x: { ticks: { color: '#AEBBD0' } }, y: { beginAtZero: true, ticks: { color: '#AEBBD0' } } } }
+        });
+
+        var fnCtx = document.getElementById('funnel-chart');
+        if (funnelChart) funnelChart.destroy();
+        funnelChart = new Chart(fnCtx, {
+          type: 'bar',
+          data: {
+            labels: stages.map(function (s) { return s.name; }),
+            datasets: [{ label: 'Oportunidades', data: stages.map(function (s) { return s.count; }), backgroundColor: '#0356C5' }]
+          },
+          options: { indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true, ticks: { color: '#AEBBD0' } }, y: { ticks: { color: '#D6E2F1' } } } }
+        });
+      }
+
+      function renderCampaignsTable(campaigns) {
+        var wrap = document.getElementById('campaigns-table-wrap');
+        if (!campaigns || !campaigns.length) {
+          wrap.innerHTML = '<p style="color:#94A3B8;font-size:0.9rem;">Nenhuma campanha cadastrada ou sincronizada neste período.</p>';
+          return;
+        }
+        wrap.innerHTML =
+          '<table class="ad-table"><thead><tr><th>Campanha</th><th>Plataforma</th><th>Investimento</th><th>Leads</th><th>CPL</th><th>Qualif.</th><th>CPQL</th><th>Vendas</th><th>ROAS</th></tr></thead><tbody>' +
+          campaigns.map(function (c) {
+            return '<tr><td><strong>' + KingAdmin.esc(c.name) + '</strong></td><td>' + KingAdmin.esc(c.platform) + '</td><td>' + KingAdmin.formatBrl(c.spend_brl) + '</td><td>' + c.leads + '</td><td>' + KingAdmin.formatBrl(c.cpl) + '</td><td>' + c.qualified_leads + '</td><td>' + KingAdmin.formatBrl(c.cpql) + '</td><td>' + c.sales + '</td><td>' + (c.roas != null ? c.roas + 'x' : '—') + '</td></tr>';
+          }).join('') +
+          '</tbody></table>';
+      }
+
+      async function loadDashboard() {
+        var preset = document.getElementById('period-preset').value;
+        var qs = preset === 'custom'
+          ? 'start_date=' + encodeURIComponent(document.getElementById('custom-start').value) + '&end_date=' + encodeURIComponent(document.getElementById('custom-end').value)
+          : 'days=' + encodeURIComponent(preset);
+
+        try {
+          var data = await KingAdmin.apiFetch('/api/admin/dashboard?' + qs);
+          renderKpis(data.kpis);
+          renderHealthBars(data.health_bars);
+          renderDiagnostics(data.diagnostics);
+          renderCharts(data.timeseries || [], data.stage_breakdown || []);
+          renderCampaignsTable(data.campaigns || []);
+          document.getElementById('revenue-notice').textContent = data.revenue_notice || '';
+        } catch (err) {
+          KingAdmin.renderErrorState('ad-global-alert', err);
+        }
+      }
+
+      document.getElementById('period-preset').addEventListener('change', function () {
+        var isCustom = this.value === 'custom';
+        document.getElementById('custom-start').style.display = isCustom ? 'inline-block' : 'none';
+        document.getElementById('custom-end').style.display = isCustom ? 'inline-block' : 'none';
+        if (!isCustom) loadDashboard();
+      });
+
+      document.getElementById('refresh-btn').addEventListener('click', loadDashboard);
+
+      document.addEventListener('DOMContentLoaded', async function () {
+        var user = await KingAdmin.initProtectedPage('dashboard');
+        if (user) loadDashboard();
+      });
+    })();
+  </script>
+</body>
+</html>

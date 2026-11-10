@@ -1,0 +1,943 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Pré-Apresentação Comercial — Franquia Home Based King Sports</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Montserrat:wght@700;800;900&display=swap');
+
+  :root {
+    --bg-dark: #070C18;
+    --bg-card: #0F172A;
+    --bg-card-2: #131E36;
+    --blue-primary: #2563EB;
+    --blue-bright: #38BDF8;
+    --blue-soft: rgba(56, 189, 248, 0.14);
+    --border-dark: rgba(148, 163, 184, 0.22);
+    --text-white: #F8FAFC;
+    --text-muted: #94A3B8;
+    --text-light: #CBD5E1;
+    --bg-light: #F1F5F9;
+    --ink-dark: #0F172A;
+    --ink-muted: #475569;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  @page {
+    size: 1280px 720px;
+    margin: 0;
+  }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: #020617;
+    color: var(--text-white);
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .slide {
+    width: 1280px;
+    height: 720px;
+    position: relative;
+    overflow: hidden;
+    padding: 46px 64px 52px 64px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    page-break-after: always;
+    break-after: page;
+    background: radial-gradient(circle at 88% 15%, rgba(37, 99, 235, 0.20) 0%, rgba(7, 12, 24, 0) 48%),
+                linear-gradient(145deg, #070C18 0%, #0B1325 100%);
+  }
+
+  .slide.light {
+    background: linear-gradient(155deg, #F8FAFC 0%, #E2E8F0 100%);
+    color: var(--ink-dark);
+  }
+
+  .topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 18px;
+  }
+
+  .tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--blue-bright);
+    background: rgba(37, 99, 235, 0.16);
+    border: 1px solid rgba(56, 189, 248, 0.35);
+    padding: 6px 14px;
+    border-radius: 999px;
+  }
+
+  .slide.light .tag {
+    color: #1D4ED8;
+    background: rgba(37, 99, 235, 0.10);
+    border-color: rgba(37, 99, 235, 0.28);
+  }
+
+  .slide-num {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    color: var(--text-muted);
+  }
+
+  .slide.light .slide-num { color: var(--ink-muted); }
+
+  h1, h2 {
+    font-family: 'Montserrat', 'Inter', sans-serif;
+    font-weight: 900;
+    letter-spacing: -0.02em;
+    line-height: 1.06;
+    text-transform: uppercase;
+  }
+
+  .hero-title { font-size: 56px; max-width: 960px; margin-bottom: 18px; }
+  .slide-title { font-size: 36px; margin-bottom: 10px; }
+  .subtitle { font-size: 18px; line-height: 1.48; color: var(--text-light); max-width: 950px; }
+  .slide.light .subtitle { color: var(--ink-muted); }
+
+  .accent { color: var(--blue-bright); }
+  .slide.light .accent { color: var(--blue-primary); }
+
+  .hl-pill {
+    display: inline-block;
+    background: var(--blue-primary);
+    color: #FFFFFF;
+    padding: 2px 12px;
+    border-radius: 6px;
+  }
+
+  .main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; margin-top: 18px; }
+  .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-top: 20px; }
+  .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-top: 20px; }
+  .grid-5 { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; margin-top: 22px; }
+  .grid-6 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 18px; }
+
+  .card {
+    background: rgba(15, 23, 42, 0.88);
+    border: 1px solid var(--border-dark);
+    border-radius: 14px;
+    padding: 20px 22px;
+  }
+
+  .slide.light .card {
+    background: #FFFFFF;
+    border-color: #CBD5E1;
+    box-shadow: 0 6px 20px rgba(15, 23, 42, 0.06);
+  }
+
+  .card-accent {
+    border-color: rgba(56, 189, 248, 0.55);
+    background: linear-gradient(160deg, rgba(37, 99, 235, 0.18) 0%, rgba(15, 23, 42, 0.94) 100%);
+  }
+
+  .slide.light .card-accent {
+    background: linear-gradient(160deg, #EFF6FF 0%, #FFFFFF 100%);
+    border: 2px solid #2563EB;
+  }
+
+  .card h3 {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 16px;
+    font-weight: 800;
+    margin-bottom: 8px;
+    color: var(--blue-bright);
+    text-transform: uppercase;
+  }
+
+  .slide.light .card h3 { color: #1D4ED8; }
+
+  .card p, .card li {
+    font-size: 14px;
+    line-height: 1.48;
+    color: var(--text-light);
+  }
+
+  .slide.light .card p, .slide.light .card li { color: #334155; }
+
+  .num-badge {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 28px;
+    font-weight: 900;
+    color: var(--blue-bright);
+    margin-bottom: 6px;
+  }
+
+  .slide.light .num-badge { color: #2563EB; }
+
+  .big-stat {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 38px;
+    font-weight: 900;
+    color: #FFFFFF;
+    margin-bottom: 4px;
+  }
+
+  .slide.light .big-stat { color: #0F172A; }
+
+  ul.clean { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+  ul.clean li { position: relative; padding-left: 22px; font-size: 14.5px; line-height: 1.45; }
+  ul.clean li::before {
+    content: '▸';
+    position: absolute; left: 0; top: 0;
+    color: var(--blue-bright); font-weight: 800;
+  }
+  ul.check li::before { content: '✓'; color: #38BDF8; }
+  ul.cross li::before { content: '✕'; color: #94A3B8; }
+
+  table.comp {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 18px;
+    background: rgba(15, 23, 42, 0.9);
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid var(--border-dark);
+  }
+  table.comp th, table.comp td {
+    padding: 14px 18px;
+    text-align: left;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.15);
+    font-size: 14px;
+    line-height: 1.4;
+  }
+  table.comp th {
+    background: rgba(37, 99, 235, 0.24);
+    font-family: 'Montserrat', sans-serif;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #E2E8F0;
+  }
+  table.comp th.win { background: #2563EB; color: #FFFFFF; }
+  table.comp td.win-col { background: rgba(37, 99, 235, 0.10); font-weight: 600; color: #FFFFFF; }
+
+  .slide.light table.comp { background: #FFFFFF; border-color: #CBD5E1; }
+  .slide.light table.comp th { background: #E2E8F0; color: #0F172A; }
+  .slide.light table.comp th.win { background: #2563EB; color: #FFFFFF; }
+  .slide.light table.comp td { color: #334155; border-bottom-color: #E2E8F0; }
+  .slide.light table.comp td.win-col { background: #EFF6FF; color: #0F172A; }
+
+  .notice {
+    margin-top: 14px;
+    padding: 11px 16px;
+    border-radius: 10px;
+    background: rgba(56, 189, 248, 0.10);
+    border-left: 4px solid var(--blue-bright);
+    font-size: 12.5px;
+    line-height: 1.45;
+    color: #CBD5E1;
+  }
+
+  .slide.light .notice {
+    background: #EFF6FF;
+    border-left-color: #2563EB;
+    color: #1E3A8A;
+  }
+
+  .footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 12px;
+    border-top: 1px solid rgba(148, 163, 184, 0.16);
+    font-size: 11.5px;
+    color: var(--text-muted);
+  }
+
+  .slide.light .footer {
+    border-top-color: #CBD5E1;
+    color: var(--ink-muted);
+  }
+
+  .brand-foot { font-weight: 800; letter-spacing: 0.08em; color: var(--blue-bright); }
+  .slide.light .brand-foot { color: #2563EB; }
+
+  .pyramid { display: flex; flex-direction: column; gap: 10px; }
+  .pyr-row {
+    padding: 12px 16px;
+    border-radius: 10px;
+    border: 1px solid rgba(56, 189, 248, 0.28);
+    background: rgba(15, 23, 42, 0.9);
+  }
+  .pyr-row strong { display: block; font-size: 14px; color: var(--blue-bright); margin-bottom: 2px; }
+  .pyr-row span { font-size: 13px; color: var(--text-light); }
+
+  .price-box {
+    background: linear-gradient(150deg, #1D4ED8 0%, #0F172A 100%);
+    border: 2px solid #38BDF8;
+    border-radius: 18px;
+    padding: 28px 30px;
+    text-align: center;
+  }
+  .price-old { font-size: 16px; color: #94A3B8; text-decoration: line-through; margin-bottom: 4px; }
+  .price-main { font-family: 'Montserrat', sans-serif; font-size: 54px; font-weight: 900; color: #FFFFFF; line-height: 1.05; }
+  .price-sub { font-size: 14px; color: #BAE6FD; margin-top: 8px; font-weight: 600; }
+</style>
+</head>
+<body>
+
+<!-- SLIDE 01 -->
+<section class="slide">
+  <div class="topbar">
+    <span class="tag">FRANQUIA HOME BASED KING SPORTS | EXPANSÃO 2026</span>
+    <span class="slide-num">01 / 16</span>
+  </div>
+  <div class="main">
+    <p style="font-size:15px; font-weight:700; letter-spacing:0.12em; color:#38BDF8; margin-bottom:14px;">MICROFRANQUIA ENXUTA — FÁBRICA CENTRAL EM SÃO PAULO</p>
+    <h1 class="hero-title">A NOVA GERAÇÃO DE <span class="accent">UNIDADES KING SPORTS</span></h1>
+    <p class="subtitle">Opere na sua região representando a indústria que veste da várzea ao futebol profissional — sem aluguel de loja, sem estoque parado e com toda a estrutura fabril de São Paulo produzindo para a sua empresa.</p>
+    <div class="grid-3" style="margin-top:34px;">
+      <div class="card card-accent">
+        <h3>Entrada Turnkey</h3>
+        <div class="big-stat" style="font-size:32px;">R$ 20.000</div>
+        <p>Taxa de franquia + Maleta King Sports Pro já inclusa.</p>
+      </div>
+      <div class="card">
+        <h3>Zero Estoque Local</h3>
+        <div class="big-stat" style="font-size:32px;">MOQ 10 pçs</div>
+        <p>Produção sob encomenda em SP com entrega direta ao cliente.</p>
+      </div>
+      <div class="card">
+        <h3>2 Trilhas na Rede</h3>
+        <div class="big-stat" style="font-size:32px;">Comercial / Design</div>
+        <p>Vendedores de campo ou designers gráficos em ME/SLU.</p>
+      </div>
+    </div>
+  </div>
+  <div class="footer">
+    <span class="brand-foot">KING SPORTS FRANCHISING</span>
+    <span>Material informativo preliminar sujeito à entrega da COF (Lei nº 13.966/2019)</span>
+  </div>
+</section>
+
+<!-- SLIDE 02 -->
+<section class="slide">
+  <div class="topbar">
+    <span class="tag">MERCADO & POSICIONAMENTO</span>
+    <span class="slide-num">02 / 16</span>
+  </div>
+  <div class="main">
+    <h2 class="slide-title">COMO GANHAR O JOGO NA <span class="accent">SUA REGIÃO</span></h2>
+    <p class="subtitle">O mercado de fardamento esportivo personalizado se renova todo semestre — e quem chega com mostruário físico na mão vence a concorrência online.</p>
+    <div class="grid-2" style="margin-top:22px; align-items:stretch;">
+      <div class="card" style="display:flex; flex-direction:column; justify-content:space-between;">
+        <div>
+          <h3>Por Que o Comprador Regional Prefere Você</h3>
+          <ul class="clean check" style="margin-top:12px;">
+            <li><strong>Toque Real na Malha:</strong> Times têm receio de comprar pela internet sem ver gramatura e costura.</li>
+            <li><strong>Grade Física de Prova (PP ao EXG):</strong> Elimina erro de tamanho antes de fechar o lote.</li>
+            <li><strong>Recorrência Natural:</strong> Campeonatos semestrais, entrada contínua de alunos em escolinhas e novos eventos corporativos.</li>
+            <li><strong>Barreira Baixa:</strong> Pedido mínimo de apenas <strong>10 unidades</strong> destrava fechamentos toda semana.</li>
+          </ul>
+        </div>
+        <div class="notice">Enquanto concorrentes digitais enviam fotos genéricas por WhatsApp, você leva o uniforme oficial na mão do capitão.</div>
+      </div>
+      <div class="pyramid">
+        <div class="pyr-row" style="border-left:4px solid #38BDF8;">
+          <strong>1. TOPO — CLUBES & LIGAS OFICIAIS</strong>
+          <span>Clubes de acesso, federações, copas regionais e eventos (lotes de 100 a 500+ peças).</span>
+        </div>
+        <div class="pyr-row" style="border-left:4px solid #2563EB;">
+          <strong>2. MEIO-ALTO — ARENAS & ESCOLINHAS</strong>
+          <span>Escolinhas de futebol, arenas de Beach Tennis, Crossfit e assessorias de corrida (recorrência mensal).</span>
+        </div>
+        <div class="pyr-row" style="border-left:4px solid #1D4ED8;">
+          <strong>3. MEIO — CORPORATIVO & UNIVERSITÁRIO</strong>
+          <span>Atléticas universitárias, interclasses escolares, SIPATs e campeonatos internos de empresas.</span>
+        </div>
+        <div class="pyr-row" style="border-left:4px solid #60A5FA;">
+          <strong>4. BASE MASSIVA — VÁRZEA & ESPORTE AMADOR</strong>
+          <span>Futebol amador, society, futsal, vôlei, basquete, ciclismo e grupos esportivos locais.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="footer">
+    <span class="brand-foot">KING SPORTS FRANCHISING</span>
+    <span>Mercado contínuo de reposição semestral</span>
+  </div>
+</section>
+
+<!-- SLIDE 03 -->
+<section class="slide light">
+  <div class="topbar">
+    <span class="tag">AUTORIDADE FABRIL — SÃO PAULO/SP</span>
+    <span class="slide-num">03 / 16</span>
+  </div>
+  <div class="main">
+    <h2 class="slide-title">O ECOSSISTEMA <span class="accent">KING SPORTS</span></h2>
+    <p class="subtitle">Uma estrutura industrial completa em São Paulo (CNPJ matriz constituído em 1995, mais de 10 anos de foco especializado em uniformes personalizados) trabalhando nos bastidores para cada unidade da rede.</p>
+    <div class="grid-4" style="margin-top:26px;">
+      <div class="card card-accent">
+        <div class="big-stat">100%</div>
+        <h3>Produção Própria</h3>
+        <p>Sublimação digital, calandra, corte a laser, bordado, TPU 3D e costura dentro de casa em SP.</p>
+      </div>
+      <div class="card">
+        <div class="big-stat">6</div>
+        <h3>Malhas Tecnológicas</h3>
+        <p>Slide Dry, Thermo Dry, Colmeia, AeroDry, Jacquard 3D e TecnoSport com proteção UV.</p>
+      </div>
+      <div class="card">
+        <div class="big-stat">10 pçs</div>
+        <h3>MOQ Acessível</h3>
+        <p>Pedido mínimo enxuto que atende desde times de society até grandes delegações.</p>
+      </div>
+      <div class="card">
+        <div class="big-stat">20–25</div>
+        <h3>Dias Úteis (SLA)</h3>
+        <p>Prazo industrial padronizado após aprovação formal do layout e compensação.</p>
+      </div>
+    </div>
+    <div class="notice" style="margin-top:24px;">
+      <strong>Acabamento que diferencia preço e margem:</strong> Gola retilínea, ribana canelada, escudo bordado, logo King em 3D emborrachado (TPU), selo de autenticidade e etiquetagem têxtil completa (Inmetro).
+    </div>
+  </div>
+  <div class="footer">
+    <span class="brand-foot">KING SPORTS FRANCHISING</span>
+    <span>Indústria Homologada: King Sports LTDA (São Paulo/SP)</span>
+  </div>
+</section>
+
+<!-- SLIDE 04 -->
+<section class="slide">
+  <div class="topbar">
+    <span class="tag">ARQUITETURA COMPETITIVA</span>
+    <span class="slide-num">04 / 16</span>
+  </div>
+  <div class="main">
+    <h2 class="slide-title">OS 4 PILARES QUE TORNAM A REDE <span class="accent">IMBATÍVEL NA PONTA</span></h2>
+    <p class="subtitle">Você concentra 100% da sua energia em prospectar, demonstrar e fechar vendas — enquanto São Paulo cuida da indústria, do sistema e da logística.</p>
+    <div class="grid-2" style="margin-top:22px;">
+      <div class="card card-accent">
+        <div class="num-badge">01</div>
+        <h3>Fábrica Central em SP (Zero Estoque)</h3>
+        <p>Você não investe em maquinário têxtil, não compra rolo de tecido e não contrata equipe de costura. Cada lote é fabricado sob demanda após aprovação do cliente.</p>
+      </div>
+      <div class="card">
+        <div class="num-badge">02</div>
+        <h3>Vantagem Tátil (Maleta King Sports Pro)</h3>
+        <p>8 peças piloto das linhas oficiais, bandeira sublimada com cores CMYK da calandra e grade física completa do PP ao EXG + Infantil para prova presencial.</p>
+      </div>
+      <div class="card">
+        <div class="num-badge">03</div>
+        <h3>Simulador 3D & Motor de Design</h3>
+        <p>Simulador 3D web para vendedores fecharem pedidos padrão na hora + Pack de Moldes Graduados e Macro CorelDRAW que reduzem o trabalho de fechamento para Designers.</p>
+      </div>
+      <div class="card card-accent">
+        <div class="num-badge">04</div>
+        <h3>Operação Triangular & Split Automático</h3>
+        <p>Sua ME/SLU fatura ao cliente final pelo Simples Nacional (Anexo I a partir de 4%), a fábrica despacha direto ao cliente (CFOP 5.923/6.923) e o Split liquida tudo na origem.</p>
+      </div>
+    </div>
+  </div>
+  <div class="footer">
+    <span class="brand-foot">KING SPORTS FRANCHISING</span>
+    <span>Eficiência industrial + agilidade comercial local</span>
+  </div>
+</section>
+
+<!-- SLIDE 05 -->
+<section class="slide">
+  <div class="topbar">
+    <span class="tag">PROPOSTA DE VALOR</span>
+    <span class="slide-num">05 / 16</span>
+  </div>
+  <div class="main">
+    <h2 class="slide-title">O QUE VOCÊ COMPRA: <span class="accent">FRANQUIA HOME BASED</span></h2>
+    <p class="subtitle">Um formato enxuto de "maleta e estúdio": você se torna o operador empresarial credenciado da King Sports na sua cidade, com autonomia e baixo custo fixo.</p>
+    <div class="grid-3" style="margin-top:26px;">
+      <div class="card">
+        <div class="num-badge">01</div>
+        <h3>Método & Mostruário Físico</h3>
+        <ul class="clean check" style="margin-top:10px;">
+          <li>Maleta King Sports Pro completa;</li>
+          <li>5 Manuais Operacionais e Comerciais;</li>
+          <li>Simulador 3D Web e King Sports Design Pack (moldes + macro).</li>
+        </ul>
+      </div>
+      <div class="card card-accent">
+        <div class="num-badge">02</div>
+        <h3>Credencial & Marca Oficial</h3>
+        <ul class="clean check" style="margin-top:10px;">
+          <li>Direito de uso da marca King Sports;</li>
+          <li>Área delimitada por faixa de CEP/Município (proteção condicionada);</li>
+          <li>Blindagem contratual regida pela Lei nº 13.966/2019.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="num-badge">03</div>
+        <h3>Acesso Fabril & Rede de Leads</h3>
+        <ul class="clean check" style="margin-top:10px;">
+          <li>Tabela industrial de transferência direta de SP;</li>
+          <li>Encaminhamento de leads da matriz no seu CEP (Lead Routing);</li>
+          <li>Treinamento de 15 dias + backoffice PCP/Comercial.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="footer">
+    <span class="brand-foot">KING SPORTS FRANCHISING</span>
+    <span>Atuação empresarial autônoma em ME ou SLU</span>
+  </div>
+</section>
+
+<!-- SLIDE 06 -->
+<section class="slide light">
+  <div class="topbar">
+    <span class="tag">ANCORAGEM DE MODELOS</span>
+    <span class="slide-num">06 / 16</span>
+  </div>
+  <div class="main">
+    <h2 class="slide-title">ONDE VOCÊ SE ENCAIXA: <span class="accent">LOJA FÍSICA OU HOME BASED?</span></h2>
+    <p class="subtitle">Comece com estrutura enxuta, valide sua carteira regional e mantenha 100% da sua entrada garantida como crédito para abrir seu showroom no futuro.</p>
+    <table class="comp">
+      <thead>
+        <tr>
+          <th style="width:24%;">Critério</th>
+          <th style="width:36%;">Franquia Loja / Showroom Regional</th>
+          <th class="win" style="width:40%;">Franquia Home Based King Sports</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Investimento de Entrada</strong></td>
+          <td>~R$ 120.000,00 (ponto + reforma + estoque)</td>
+          <td class="win-col">R$ 20.000,00 Turnkey (vira crédito integral p/ upgrade após 12 meses)</td>
+        </tr>
+        <tr>
+          <td><strong>Estrutura Exigida</strong></td>
+          <td>Ponto comercial, aluguel, mobiliário e 2–3 funcionários</td>
+          <td class="win-col">Home Office + Maleta Física + ME/SLU no Simples Nacional</td>
+        </tr>
+        <tr>
+          <td><strong>O Que Você Recebe</strong></td>
+          <td>Projeto arquitetônico + showroom + estoque local</td>
+          <td class="win-col">Maleta King Sports Pro + Design Pack 3D + Acesso Fabril SP + ERP/Split</td>
+        </tr>
+        <tr>
+          <td><strong>Custo Fixo Mensal</strong></td>
+          <td>Alto (aluguel, IPTU, folha de pagamento, energia)</td>
+          <td class="win-col">Enxuto (contador, CRM, internet, combustível e tráfego local)</td>
+        </tr>
+        <tr>
+          <td><strong>Originação de Clientes</strong></td>
+          <td>Fluxo de rua + tráfego regional</td>
+          <td class="win-col">Visitas ativas com Maleta + Leads da Matriz + Ads Geolocalizados</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="footer">
+    <span class="brand-foot">KING SPORTS FRANCHISING</span>
+    <span>Upgrade com aproveitamento integral de R$ 20.000 após 12 meses</span>
+  </div>
+</section>
+
+<!-- SLIDE 07 -->
+<section class="slide">
+  <div class="topbar">
+    <span class="tag">FILTRO DE PERFIL E ALINHAMENTO</span>
+    <span class="slide-num">07 / 16</span>
+  </div>
+  <div class="main">
+    <h2 class="slide-title">ISSO É PRA VOCÊ? <span class="accent">QUEM PROSPERA NA REDE</span></h2>
+    <p class="subtitle">Selecionamos operadores com perfil executor — vendedores natos ou designers gráficos que querem construir uma operação comercial real.</p>
+    <div class="grid-2" style="margin-top:22px;">
+      <div class="card card-accent">
+        <h3>É Para Você Se...</h3>
+        <ul class="clean check" style="margin-top:12px;">
+          <li>Tem perfil vendedor ou domínio técnico em CorelDRAW / Illustrator;</li>
+          <li>Tem trânsito no esporte local ou disposição para visitar quadras, arenas e empresas;</li>
+          <li>Quer operar em ME/SLU própria com uma indústria de São Paulo nos bastidores;</li>
+          <li>Dispõe de R$ 20k para entrada + reserva de giro (~R$ 8k–12k para abertura, tráfego e primeiros meses);</li>
+          <li>Tem disciplina para seguir aprovação formal de arte/grade e uso do Split.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3 style="color:#94A3B8;">Não É Para Este Modelo Se...</h3>
+        <ul class="clean cross" style="margin-top:12px;">
+          <li>Procura "renda passiva" ou espera clientes chegarem sem prospecção ativa;</li>
+          <li>Quer testar informalmente como autônomo/MEI sem compromisso contratual ou CNPJ ME/SLU;</li>
+          <li>Pretende montar confecção própria ou terceirizar pedidos em facções fora da fábrica de SP;</li>
+          <li>Não tem paciência para processos de conferência de grade e notas fiscais.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="footer">
+    <span class="brand-foot">KING SPORTS FRANCHISING</span>
+    <span>Critérios avaliados no Scorecard dos 5 Filtros antes da COF</span>
+  </div>
+</section>
+
+<!-- SLIDE 08 -->
+<section class="slide">
+  <div class="topbar">
+    <span class="tag">MODELO ECONÔMICO</span>
+    <span class="slide-num">08 / 16</span>
+  </div>
+  <div class="main">
+    <h2 class="slide-title">A ECONOMIA DA UNIDADE: <span class="accent">3 FONTES DE RECEITA</span></h2>
+    <p class="subtitle">Você opera em compra e revenda autônoma (sem promessa de renda garantida) e monetiza através de três frentes complementares dentro do ecossistema:</p>
+    <div class="grid-3" style="margin-top:22px;">
+      <div class="card card-accent">
+        <div class="num-badge">FONTE 01</div>
+        <h3>Venda Própria Local</h3>
+        <p>Você prospecta times, arenas e empresas na sua cidade e comanda a venda.</p>
+        <ul class="clean check" style="margin-top:10px;">
+          <li><strong>Perfil Comercial:</strong> ~41% a 43% de margem bruta (custo fabril 58,5%);</li>
+          <li><strong>Perfil Designer:</strong> ~45% a 47% de margem bruta (custo fabril 54,5% entregando arquivo fechado p/ RIP).</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="num-badge">FONTE 02</div>
+        <h3>Leads da Matriz (CEP)</h3>
+        <p>O tráfego digital nacional da King Sports capta orçamentos no seu CEP protegido.</p>
+        <ul class="clean check" style="margin-top:10px;">
+          <li>Você assume o atendimento local com a maleta (margem comercial padrão);</li>
+          <li>Ou recebe <strong>10% líquido</strong> se o cliente fechar 100% online direto na matriz no seu CEP.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="num-badge">FONTE 03</div>
+        <h3>Studio Design & Indicações</h3>
+        <p>Colaboração remunerada entre unidades da rede sem conflito de praça.</p>
+        <ul class="clean check" style="margin-top:10px;">
+          <li><strong>Designers:</strong> fecham layouts complexos para franqueados comerciais (ref. R$ 80–120/lote);</li>
+          <li><strong>Comerciais:</strong> indicam contas em CEPs de outras unidades com comissão de originação (5%–10%).</li>
+        </ul>
+      </div>
+    </div>
+    <div class="notice">Split Automático na origem (Asaas): 5% Royalties + 2% Fundo de Marketing + Custo Fabril + Frete separados automaticamente em cada pagamento.</div>
+  </div>
+  <div class="footer">
+    <span class="brand-foot">KING SPORTS FRANCHISING</span>
+    <span>Transparência total de margens e retenções via Split</span>
+  </div>
+</section>
+
+<!-- SLIDE 09 -->
+<section class="slide light">
+  <div class="topbar">
+    <span class="tag">SIMULAÇÃO FINANCEIRA ILUSTRATIVA</span>
+    <span class="slide-num">09 / 16</span>
+  </div>
+  <div class="main">
+    <h2 class="slide-title">EXEMPLO DE RESULTADO MENSAL <span class="accent">(CENÁRIOS DE TRAÇÃO)</span></h2>
+    <p class="subtitle">Simulação com Ticket Médio de <strong>R$ 2.150,00</strong> (~18 kits), Simples Nacional Anexo I (5,47%–6,80%), Gateway 2,2%, Royalties 5%, Marketing 2%, Provisão 1% e Despesas Fixas de R$ 1.750/mês:</p>
+    <div class="grid-3" style="margin-top:20px;">
+      <div class="card">
+        <h3>Conservador (8 pedidos/mês)</h3>
+        <p style="font-size:13px; color:#64748B;">Faturamento Bruto: <strong>R$ 17.200,00</strong></p>
+        <div class="big-stat" style="font-size:28px; margin-top:10px;">R$ 2.692 a R$ 3.380</div>
+        <p style="margin-top:6px;">Resultado operacional estimado (15,7% Comercial / 19,7% Designer) antes de pró-labore.</p>
+      </div>
+      <div class="card card-accent">
+        <h3>Base / Meta (15 pedidos/mês)</h3>
+        <p style="font-size:13px; color:#1E40AF;">Faturamento Bruto: <strong>R$ 32.250,00</strong></p>
+        <div class="big-stat" style="font-size:30px; margin-top:10px; color:#1D4ED8;">R$ 6.151 a R$ 7.441</div>
+        <p style="margin-top:6px;">Resultado operacional estimado (19,1% Comercial / 23,1% Designer). Payback s/ R$ 20k: ~4,5–5 meses.</p>
+      </div>
+      <div class="card">
+        <h3>Otimista (25 pedidos/mês)</h3>
+        <p style="font-size:13px; color:#64748B;">Faturamento Bruto: <strong>R$ 53.750,00</strong></p>
+        <div class="big-stat" style="font-size:28px; margin-top:10px;">R$ 11.418 a R$ 13.568</div>
+        <p style="margin-top:6px;">Resultado operacional estimado (21,2% Comercial / 25,2% Designer). Ponto de equilíbrio: ~3 pedidos/mês.</p>
+      </div>
+    </div>
+    <div class="notice">
+      <strong>Aviso Legal Obrigatório:</strong> Os valores acima são simulações matemáticas ilustrativas para avaliação do modelo. Não constituem promessa ou garantia de faturamento/lucro; os resultados reais dependem da dedicação comercial, custos locais e validação das unidades piloto.
+    </div>
+  </div>
+  <div class="footer">
+    <span class="brand-foot">KING SPORTS FRANCHISING</span>
+    <span>Ponto de equilíbrio operacional estimado: ~3 pedidos médios/mês</span>
+  </div>
+</section>
+
+<!-- SLIDE 10 -->
+<section class="slide">
+  <div class="topbar">
+    <span class="tag">JORNADA DE ENTRADA (15 A 30 DIAS)</span>
+    <span class="slide-num">10 / 16</span>
+  </div>
+  <div class="main">
+    <h2 class="slide-title">AS 5 ETAPAS DO <span class="accent">ONBOARDING DA UNIDADE</span></h2>
+    <p class="subtitle">Um cronograma estruturado passo a passo para tirar sua ME/SLU do papel e colocá-la vendendo com segurança jurídica e fiscal.</p>
+    <div class="grid-5">
+      <div class="card">
+        <div class="num-badge">01</div>
+        <h3>Setup ME/SLU</h3>
+        <p><strong>Dias 1–5:</strong> Abertura/ajuste do CNPJ (4781-4/00 + IE p/ NF-e) e ativação do Split Asaas.</p>
+      </div>
+      <div class="card card-accent">
+        <div class="num-badge">02</div>
+        <h3>Dia a Dia &amp; 7 Setores</h3>
+        <p><strong>100% Digital:</strong> Apresentação da rotina + treinamentos online de todos os setores (zero viagem à fábrica).</p>
+      </div>
+      <div class="card">
+        <div class="num-badge">03</div>
+        <h3>Teste Final</h3>
+        <p><strong>Banca Online:</strong> Apresentação prática de uma Venda + apresentação de uma Arte/Mockup.</p>
+      </div>
+      <div class="card card-accent">
+        <div class="num-badge">04</div>
+        <h3>Maleta Pro</h3>
+        <p><strong>Recebida em Casa:</strong> Conferência das 8 peças piloto, grade PP–EXG e bandeira CMYK enviada de SP.</p>
+      </div>
+      <div class="card">
+        <div class="num-badge">05</div>
+        <h3>Entrega: Hub Interno</h3>
+        <p><strong>Acesso Pleno:</strong> Liberação do Hub Digital King Sports (Artes, Mockups, CRM, PCP e Financeiro datados).</p>
+      </div>
+    </div>
+    <div class="notice">Nenhum pedido real é liberado sem aprovação no Teste Final (Venda + Arte) e liberação dos 11 itens do Checklist (Doc. 26).</div>
+  </div>
+  <div class="footer">
+    <span class="brand-foot">KING SPORTS FRANCHISING</span>
+    <span>Implantação assistida pela Mesa de Operações SP</span>
+  </div>
+</section>
+
+<!-- SLIDE 11 -->
+<section class="slide">
+  <div class="topbar">
+    <span class="tag">SUPORTE & SEGURANÇA OPERACIONAL</span>
+    <span class="slide-num">11 / 16</span>
+  </div>
+  <div class="main">
+    <h2 class="slide-title">VOCÊ NÃO OPERA SOZINHO: <span class="accent">BACKOFFICE E BLINDAGEM</span></h2>
+    <p class="subtitle">Mentoria empresarial contínua e revisão técnica de fábrica — preservando sua total autonomia como empresário franqueado (sem subordinação).</p>
+    <div class="grid-3" style="margin-top:26px;">
+      <div class="card card-accent">
+        <h3>Conferência Pré-Calandra</h3>
+        <p>O PCP de São Paulo audita fichas técnicas, grades e arquivos antes da impressão, reduzindo drasticamente retrabalhos que queimam a reputação local da sua unidade.</p>
+      </div>
+      <div class="card">
+        <h3>Blindagem Jurídica & Fiscal</h3>
+        <p>Contrato formatado sob a Lei nº 13.966/2019 com operação em Compra e Revenda Triangular (CFOP 5.118/5.923/5.120) e termos alinhados ao CDC e Inmetro.</p>
+      </div>
+      <div class="card card-accent">
+        <h3>Interesse Alinhado</h3>
+        <p>A fábrica e a franqueadora faturam no volume recorrente das suas vendas. Nosso incentivo direto é manter SLA de entrega em dia, tecido impecável e suporte ágil.</p>
+      </div>
+    </div>
+  </div>
+  <div class="footer">
+    <span class="brand-foot">KING SPORTS FRANCHISING</span>
+    <span>Suporte Comercial, PCP, Fiscal e Pós-Venda</span>
+  </div>
+</section>
+
+<!-- SLIDE 12 -->
+<section class="slide">
+  <div class="topbar">
+    <span class="tag">PLANO DE CRESCIMENTO NA REDE</span>
+    <span class="slide-num">12 / 16</span>
+  </div>
+  <div class="main">
+    <h2 class="slide-title">PARA ONDE VOCÊ EVOLUI: <span class="accent">3 CAMINHOS APÓS 12 MESES</span></h2>
+    <p class="subtitle">Com operação regular, adimplência e carteira construída no primeiro ano, você escolhe o próximo estágio do seu negócio dentro do Grupo King Sports:</p>
+    <div class="grid-3" style="margin-top:26px;">
+      <div class="card">
+        <div class="num-badge">01</div>
+        <h3>Consolidar Home Based</h3>
+        <p>Continua operando enxuto de casa, sem aluguel nem folha pesada, colhendo a recompra semestral dos times, escolinhas e empresas da sua base.</p>
+      </div>
+      <div class="card">
+        <div class="num-badge">02</div>
+        <h3>Expansão Regional / Contas</h3>
+        <p>Amplia equipe comercial própria dentro da sua ME/SLU ou atua na coordenação de grandes ligas e contas corporativas regionais conforme regras da rede.</p>
+      </div>
+      <div class="card card-accent">
+        <div class="num-badge">03</div>
+        <h3>Showroom Físico King Sports</h3>
+        <p>Abre espaço físico oficial na sua cidade para ligas e clubes, utilizando <strong>100% dos R$ 20.000,00</strong> investidos hoje como <strong>crédito integral</strong> na taxa de upgrade.</p>
+      </div>
+    </div>
+  </div>
+  <div class="footer">
+    <span class="brand-foot">KING SPORTS FRANCHISING</span>
+    <span>Cláusula 7ª contratual garante aproveitamento integral para upgrade</span>
+  </div>
+</section>
+
+<!-- SLIDE 13 -->
+<section class="slide light">
+  <div class="topbar">
+    <span class="tag">ENTREGÁVEIS INCLUSOS</span>
+    <span class="slide-num">13 / 16</span>
+  </div>
+  <div class="main">
+    <h2 class="slide-title">TUDO O QUE ENTRA NO <span class="accent">PACOTE DE R$ 20.000</span></h2>
+    <p class="subtitle">Entregáveis físicos, tecnológicos e operacionais definidos no Anexo II do Contrato:</p>
+    <div class="grid-6">
+      <div class="card card-accent">
+        <h3>1. Maleta King Sports Pro</h3>
+        <p>8 peças piloto reais + Grade Física de Prova (PP ao EXG e Infantil) + Bandeira Sublimada de Tecidos e Cores CMYK (R$ 1.800 já inclusos).</p>
+      </div>
+      <div class="card">
+        <h3>2. Design Pack & Simulador 3D</h3>
+        <p>Simulador 3D web para vendas rápidas + Moldes graduados (.CDR/.AI), mockups e Macro de nomes/números para o Perfil Designer.</p>
+      </div>
+      <div class="card">
+        <h3>3. Universidade King Sports</h3>
+        <p>Onboarding 100% digital em 7 setores (zero ida à fábrica) + Teste Final (Venda e Arte) para liberação da operação.</p>
+      </div>
+      <div class="card">
+        <h3>4. 5 Manuais Digitais</h3>
+        <p>Comercial, Produto/Design (RIP), Pedidos/Triangular, Financeiro da Unidade e Marca/Pós-Venda versionados.</p>
+      </div>
+      <div class="card">
+        <h3>5. Hub Digital Interno + Split</h3>
+        <p>Entrega final pós-teste: plataforma única com Artes, Mockups, CRM, PCP Fábrica SP, Financeiro/Split e registros datados.</p>
+      </div>
+      <div class="card card-accent">
+        <h3>6. Marca & Área por CEP</h3>
+        <p>Licença de uso da marca + área de preferência condicionada por CEP/Município + kit de criativos iniciais.</p>
+      </div>
+    </div>
+  </div>
+  <div class="footer">
+    <span class="brand-foot">KING SPORTS FRANCHISING</span>
+    <span>Fora do pacote: abertura ME/SLU, PC/softwares próprios, ads locais e capital de giro</span>
+  </div>
+</section>
+
+<!-- SLIDE 14 -->
+<section class="slide">
+  <div class="topbar">
+    <span class="tag">CONDIÇÕES COMERCIAIS E TRANSPARÊNCIA</span>
+    <span class="slide-num">14 / 16</span>
+  </div>
+  <div class="main">
+    <h2 class="slide-title">A OFERTA DE ENTRADA — <span class="accent">TURMA 2026</span></h2>
+    <div class="grid-2" style="margin-top:20px; align-items:center;">
+      <div style="display:flex; flex-direction:column; gap:14px;">
+        <div class="card">
+          <h3>Composição Transparente na COF (Inciso VIII)</h3>
+          <ul class="clean check" style="margin-top:8px;">
+            <li><strong>R$ 18.200,00</strong> — Taxa Inicial de Franquia (licença, treinamento, sistemas, Design Pack);</li>
+            <li><strong>R$ 1.800,00</strong> — Maleta King Sports Pro (<strong>já inclusa</strong> nos R$ 20k);</li>
+            <li><strong>Despesas Externas Estimadas (Terceiros/Giro):</strong> ~R$ 7.700 a R$ 16.300 (abertura ME/SLU + IE, PC/software se necessário, tráfego inicial e giro de 90 dias).</li>
+          </ul>
+        </div>
+        <div class="notice">
+          <strong>Regra Inegociável (Art. 2º, § 1º Lei 13.966/19):</strong> Nenhum valor ou sinal é cobrado hoje. O pagamento ocorre <strong>somente após a entrega da COF completa e o prazo legal de 10 dias corridos</strong>.
+        </div>
+      </div>
+      <div class="price-box">
+        <p style="font-size:12px; font-weight:700; letter-spacing:0.14em; color:#38BDF8; margin-bottom:10px;">PACOTE TURNKEY COMPLETO (TAXA + MALETA)</p>
+        <div class="price-old">Valor de Referência: R$ 25.000,00</div>
+        <div class="price-main">R$ 20.000</div>
+        <p class="price-sub">À vista ou parcelado em até 12x no cartão (conforme política aprovada)</p>
+        <div style="margin-top:18px; padding-top:14px; border-top:1px solid rgba(255,255,255,0.2); font-size:13px; color:#E2E8F0;">
+          Crédito integral de R$ 20.000 para upgrade a Showroom após 12 meses<br>
+          Vagas condicionadas à disponibilidade do CEP e capacidade fabril SP
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="footer">
+    <span class="brand-foot">KING SPORTS FRANCHISING</span>
+    <span>Royalties 5% + Fundo Mkt 2% s/ venda bruta via Split</span>
+  </div>
+</section>
+
+<!-- SLIDE 15 -->
+<section class="slide">
+  <div class="topbar">
+    <span class="tag">GOVERNANÇA E MITIGAÇÃO DE RISCOS</span>
+    <span class="slide-num">15 / 16</span>
+  </div>
+  <div class="main">
+    <h2 class="slide-title">POR QUE O MODELO É <span class="accent">ESTRUTURADO PARA PROTEGER VOCÊ</span></h2>
+    <p class="subtitle">Cada detalhe jurídico, fiscal e fabril foi desenhado para evitar amadorismo na entrada e passivos na operação:</p>
+    <div class="grid-3" style="margin-top:24px;">
+      <div class="card card-accent">
+        <div class="num-badge">01</div>
+        <h3>Ativo Físico & Sem Estoque</h3>
+        <p>Você não imobiliza R$ 40 mil em estoque encalhado na garagem. Só compra da fábrica quando o cliente aprova o layout (Doc. 35) e liquida o pagamento no link.</p>
+      </div>
+      <div class="card">
+        <div class="num-badge">02</div>
+        <h3>Rigor da Lei 13.966/2019</h3>
+        <p>COF completa com 23 incisos, balanços contábeis reais, marcas verificadas, 10 dias corridos de análise livre e contrato equilibrado com cláusulas transparentes.</p>
+      </div>
+      <div class="card card-accent">
+        <div class="num-badge">03</div>
+        <h3>Operação em ME/SLU Regular</h3>
+        <p>Enquadramento correto no Simples Nacional Anexo I (4% inicial) com Inscrição Estadual e NF-e triangular, evitando travas de teto do MEI ou risco trabalhista.</p>
+      </div>
+    </div>
+  </div>
+  <div class="footer">
+    <span class="brand-foot">KING SPORTS FRANCHISING</span>
+    <span>Segurança jurídica, fiscal e fabril ponta a ponta</span>
+  </div>
+</section>
+
+<!-- SLIDE 16 -->
+<section class="slide">
+  <div class="topbar">
+    <span class="tag">PRÓXIMOS PASSOS</span>
+    <span class="slide-num">16 / 16</span>
+  </div>
+  <div class="main" style="align-items:flex-start;">
+    <h1 class="hero-title" style="font-size:46px; max-width:1020px;">PARE DE DEIXAR OS TIMES DA SUA CIDADE <span class="accent">COMPRAREM DE FORA</span></h1>
+    <p class="subtitle" style="margin-top:8px;">Com mostruário físico na mão e a fábrica da King Sports em São Paulo na retaguarda, sua unidade lidera o mercado esportivo regional.</p>
+    <div class="grid-4" style="width:100%; margin-top:26px;">
+      <div class="card">
+        <div class="num-badge">1</div>
+        <h3>Consulta de CEP</h3>
+        <p>Validamos se a faixa de CEP da sua cidade está disponível e aprovamos os 5 filtros.</p>
+      </div>
+      <div class="card">
+        <div class="num-badge">2</div>
+        <h3>Tour Digital &amp; Teste</h3>
+        <p>Tour 100% online em vídeo pela fábrica SP + teste técnico caso escolha a trilha Designer.</p>
+      </div>
+      <div class="card card-accent">
+        <div class="num-badge">3</div>
+        <h3>COF (10 Dias)</h3>
+        <p>Recebe a COF Oficial com anexos e tem 10 dias corridos para analisar sem cobrar nada.</p>
+      </div>
+      <div class="card card-accent">
+        <div class="num-badge">4</div>
+        <h3>Onboarding &amp; Hub Interno</h3>
+        <p>Treinamentos online dos 7 setores, Teste Final (Venda + Arte) e liberação do Hub Digital King Sports.</p>
+      </div>
+    </div>
+    <div style="margin-top:24px; padding:14px 24px; border-radius:12px; background:#2563EB; color:#FFFFFF; font-weight:700; font-size:15px;">
+      Contato Comercial da Expansão: [INSERIR WHATSAPP / E-MAIL / LINK DE AGENDAMENTO OFICIAL]
+    </div>
+  </div>
+  <div class="footer">
+    <span class="brand-foot">KING SPORTS — NOSSA FÁBRICA PRODUZ. SUA UNIDADE DOMINA A REGIÃO.</span>
+    <span>São Paulo/SP • Brasil</span>
+  </div>
+</section>
+
+</body>
+</html>

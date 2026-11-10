@@ -1,0 +1,26 @@
+[Unit]
+Description=King Sports Franchising HTTP API & CRM Server
+After=network.target redis-server.service
+Wants=redis-server.service
+
+[Service]
+Type=simple
+User=kingsports
+Group=kingsports
+WorkingDirectory=/var/www/kingsports
+Environment=NODE_ENV=production
+Environment=SERVICE_NAME=king-api
+EnvironmentFile=/var/www/kingsports/.env
+ExecStart=/usr/bin/node /var/www/kingsports/server/app.js
+Restart=always
+RestartSec=5
+KillSignal=SIGTERM
+TimeoutStopSec=10
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=king-api
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

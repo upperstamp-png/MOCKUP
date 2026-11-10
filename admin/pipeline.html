@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pipeline Kanban | CRM King Sports</title>
+  <meta name="robots" content="noindex, nofollow" />
+  <meta name="theme-color" content="#02060E" />
+  <link rel="icon" href="/favicon.ico" sizes="any" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/assets/images/favicon-32x32.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/assets/images/apple-touch-icon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/admin/assets/css/admin.css" />
+</head>
+<body>
+  <div class="ad-shell">
+    <aside class="ad-sidebar" id="ad-sidebar"></aside>
+    <main class="ad-main">
+      <div class="ad-topbar">
+        <div>
+          <h1>Pipeline Kanban Comercial</h1>
+          <p class="ad-topbar-sub">Arraste os cartões entre estágios para salvar imediatamente no Supabase e disparar automações.</p>
+        </div>
+        <div class="ad-actions-row">
+          <button type="button" id="reload-kanban" class="ad-btn ad-btn-secondary">Atualizar Quadro</button>
+          <a href="/admin/leads.html" class="ad-btn ad-btn-primary">Ver em Lista</a>
+        </div>
+      </div>
+
+      <div id="ad-global-alert"></div>
+      <div id="kanban-board" class="ad-kanban-board">Carregando pipeline...</div>
+    </main>
+  </div>
+
+  <!-- Modal para Venda / Perdido / Desqualificado -->
+  <div class="ad-modal-backdrop" id="stage-modal">
+    <div class="ad-modal">
+      <h2 id="modal-title" style="font-family:var(--ad-font-display);font-size:1.5rem;text-transform:uppercase;margin-bottom:14px;">Confirmar Movimentação</h2>
+      <form id="stage-modal-form">
+        <div class="ad-field" id="modal-value-wrap" style="display:none;">
+          <label for="modal-value">Valor Real Contratado (R$)</label>
+          <input type="number" step="0.01" id="modal-value" class="ad-input" value="20000" />
+        </div>
+        <div class="ad-field" id="modal-reason-wrap" style="display:none;">
+          <label for="modal-reason">Motivo (obrigatório)</label>
+          <input type="text" id="modal-reason" class="ad-input" placeholder="Descreva o motivo..." />
+        </div>
+        <div class="ad-field">
+          <label for="modal-note">Observação (opcional)</label>
+          <textarea id="modal-note" class="ad-textarea" rows="3"></textarea>
+        </div>
+        <div style="display:flex;justify-content:flex-end;gap:10px;">
+          <button type="button" id="modal-cancel" class="ad-btn ad-btn-secondary">Cancelar</button>
+          <button type="submit" class="ad-btn ad-btn-primary">Confirmar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="/admin/assets/js/admin-core.js"></script>
+  <script>
+    (function () {
+      var stagesMap = {};
+      var pendingMove = null;
+
+      function openStageModal(oppId, targetStage) {
+        pendingMove = { oppId: oppId, targetStage: targetStage };
+        document.getElementById('modal-title').textContent = 'Mover para ' + targetStage.name;
+        document.getElementById('modal-value-wrap').style.display = targetStage.is_won ? 'block' : 'none';
+        document.getElementById('modal-reason-wrap').style.display = (targetStage.is_lost || targetStage.is_disqualified) ? 'block' : 'none';
+        document.getElementById('modal-reason').required = Boolean(targetStage.is_lost || targetStage.is_disqualified);
+        document.getElementById('stage-modal').classList.add('open');
+      }
+
+      async function persistMove(oppId, targetStage, extra) {
+        try {
+          await KingAdmin.apiFetch('/api/admin/opportunities/' + encodeURIComponent(oppId) + '/stage', {
+            method: 'PATCH',
+            body: JSON.stringify(Object.assign({ stage_id: targetStage.id }, extra || {}))
+          });
+          KingAdmin.showToast('Oportunidade movida para ' + targetStage.name + '.');
+          loadBoard();
+        } catch (err) {
+          KingAdmin.showToast(err.message, true);
+          loadBoard();
+        }
+      }
+
+      async function loadBoard() {
+        try {
+          var data = await KingAdmin.apiFetch('/api/admin/pipeline');
+          stagesMap = {};
+          data.stages.forEach(function (s) { stagesMap[s.id] = s; });
+
+          var board = document.getElementById('kanban-board');
+          board.innerHTML = data.columns.map(function (col) {
+            var cardsHtml = col.cards.map(function (card) {
+              var l = card.lead || {};
+              var qual = l.qualification || {};
+              var attr = (l.attributions && l.attributions[0]) || {};
+              return (
+                '<div class="ad-kanban-card" draggable="true" data-opp-id="' + KingAdmin.esc(card.id) + '" data-stage-id="' + KingAdmin.esc(col.id) + '">' +
+                '  <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:6px;">' +
+                '    <a href="/admin/lead-detalhes.html?id=' + encodeURIComponent(l.id) + '" style="font-weight:700;color:#FFFFFF;">' + KingAdmin.esc(l.full_name) + '</a>' +
+                '    <span class="ad-badge ad-badge-blue">' + (l.score_grade || 'C') + ' (' + (l.lead_score || 0) + ')</span>' +
+                '  </div>' +
+                '  <div style="font-size:0.8rem;color:#94A3B8;margin-bottom:8px;">' + KingAdmin.esc((l.city || '') + '/' + (l.state || '')) + ' • ' + KingAdmin.esc(qual.intended_track || 'comercial') + '</div>' +
+                '  <div style="display:flex;justify-content:space-between;align-items:center;font-size:0.78rem;">' +
+                '    <strong style="color:#68D8FF;">' + KingAdmin.formatBrl((card.actual_value_cents ?? card.estimated_value_cents ?? 2000000) / 100) + '</strong>' +
+                '    <span style="color:#AEBBD0;">' + KingAdmin.esc(attr.utm_source || 'direto') + '</span>' +
+                '  </div>' +
+                '</div>'
+              );
+            }).join('');
+
+            return (
+              '<section class="ad-kanban-col" data-col-stage-id="' + KingAdmin.esc(col.id) + '">' +
+              '  <div class="ad-kanban-head" style="border-bottom-color:' + KingAdmin.esc(col.color_hex || '#0356C5') + ';">' +
+              '    <h3>' + KingAdmin.esc(col.name) + '</h3>' +
+              '    <span class="ad-badge ad-badge-gray">' + col.count + '</span>' +
+              '  </div>' +
+              '  <div style="font-size:0.75rem;color:#94A3B8;">' + KingAdmin.formatBrl((col.total_value_cents || 0) / 100) + '</div>' +
+              (cardsHtml || '<p style="font-size:0.78rem;color:#64748B;padding:12px 0;">Sem oportunidades neste estágio.</p>') +
+              '</section>'
+            );
+          }).join('');
+
+          bindDragEvents();
+        } catch (err) {
+          KingAdmin.renderErrorState('ad-global-alert', err);
+        }
+      }
+
+      function bindDragEvents() {
+        var draggedOppId = null;
+        var draggedFromStage = null;
+
+        document.querySelectorAll('.ad-kanban-card').forEach(function (card) {
+          card.addEventListener('dragstart', function (e) {
+            draggedOppId = card.getAttribute('data-opp-id');
+            draggedFromStage = card.getAttribute('data-stage-id');
+            card.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+          });
+          card.addEventListener('dragend', function () {
+            card.classList.remove('dragging');
+          });
+        });
+
+        document.querySelectorAll('.ad-kanban-col').forEach(function (col) {
+          col.addEventListener('dragover', function (e) {
+            e.preventDefault();
+            col.classList.add('drag-over');
+          });
+          col.addEventListener('dragleave', function () {
+            col.classList.remove('drag-over');
+          });
+          col.addEventListener('drop', function (e) {
+            e.preventDefault();
+            col.classList.remove('drag-over');
+            var targetStageId = col.getAttribute('data-col-stage-id');
+            if (!draggedOppId || targetStageId === draggedFromStage) return;
+            var targetStage = stagesMap[targetStageId];
+            if (!targetStage) return;
+            if (targetStage.is_won || targetStage.is_lost || targetStage.is_disqualified) {
+              openStageModal(draggedOppId, targetStage);
+            } else {
+              persistMove(draggedOppId, targetStage);
+            }
+          });
+        });
+      }
+
+      document.getElementById('modal-cancel').addEventListener('click', function () {
+        document.getElementById('stage-modal').classList.remove('open');
+        pendingMove = null;
+      });
+
+      document.getElementById('stage-modal-form').addEventListener('submit', function (e) {
+        e.preventDefault();
+        if (!pendingMove) return;
+        var st = pendingMove.targetStage;
+        var extra = { note: document.getElementById('modal-note').value.trim() || null };
+        if (st.is_won) {
+          extra.actual_value_cents = Math.round(Number(document.getElementById('modal-value').value || 20000) * 100);
+        }
+        if (st.is_lost) {
+          extra.loss_reason = document.getElementById('modal-reason').value.trim();
+        }
+        if (st.is_disqualified) {
+          extra.disqualification_reason = document.getElementById('modal-reason').value.trim();
+        }
+        document.getElementById('stage-modal').classList.remove('open');
+        persistMove(pendingMove.oppId, st, extra);
+        pendingMove = null;
+      });
+
+      document.getElementById('reload-kanban').addEventListener('click', loadBoard);
+      document.addEventListener('DOMContentLoaded', async function () {
+        if (await KingAdmin.initProtectedPage('pipeline')) loadBoard();
+      });
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,471 @@
+/* ==========================================================================
+   KING SPORTS CRM ADMINISTRATIVO — ADMIN CSS
+   Design System Azul Institucional + Slate Dark + Branco
+   ========================================================================== */
+
+:root {
+  --ad-bg: #02060E;
+  --ad-sidebar: #050C1B;
+  --ad-surface: #071222;
+  --ad-surface-2: #0B1C32;
+  --ad-border: rgba(158, 201, 255, 0.2);
+  --ad-text: #F4F7FB;
+  --ad-text-muted: #AEBBD0;
+  --ad-blue: #0356C5;
+  --ad-sky: #68D8FF;
+  --ad-green: #168B48;
+  --ad-orange: #F59E0B;
+  --ad-red: #EF4444;
+  --ad-font-display: 'Barlow Condensed', 'Helvetica Neue', Arial, sans-serif;
+  --ad-font-body: 'IBM Plex Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: var(--ad-font-body);
+  background: var(--ad-bg);
+  color: var(--ad-text);
+  line-height: 1.5;
+  min-height: 100vh;
+}
+
+a { color: inherit; text-decoration: none; }
+button, input, select, textarea { font-family: inherit; }
+
+/* Layout Shell */
+.ad-shell {
+  display: flex;
+  min-height: 100vh;
+}
+
+.ad-sidebar {
+  width: 256px;
+  flex-shrink: 0;
+  background: var(--ad-sidebar);
+  border-right: 1px solid var(--ad-border);
+  display: flex;
+  flex-direction: column;
+  padding: 20px 14px;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+}
+
+.ad-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 8px 20px;
+  border-bottom: 1px solid var(--ad-border);
+  margin-bottom: 16px;
+}
+
+.ad-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.ad-nav a {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--ad-text-muted);
+  transition: background-color 0.16s ease, color 0.16s ease;
+}
+
+.ad-nav a:hover {
+  background: rgba(37, 99, 235, 0.12);
+  color: #FFFFFF;
+}
+
+.ad-nav a.active {
+  background: var(--ad-blue);
+  color: #FFFFFF;
+}
+
+.ad-user-box {
+  padding-top: 16px;
+  border-top: 1px solid var(--ad-border);
+  font-size: 0.84rem;
+}
+
+.ad-user-name {
+  font-weight: 700;
+  color: #FFFFFF;
+}
+
+.ad-user-role {
+  color: var(--ad-sky);
+  font-size: 0.76rem;
+  margin-bottom: 10px;
+}
+
+.ad-main {
+  flex: 1;
+  min-width: 0;
+  padding: 28px 32px 60px;
+}
+
+.ad-topbar {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.ad-topbar h1 {
+  font-family: var(--ad-font-display);
+  font-size: 1.95rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  line-height: 1;
+}
+
+.ad-topbar-sub {
+  font-size: 0.88rem;
+  color: var(--ad-text-muted);
+}
+
+.ad-actions-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+/* Botões & Inputs */
+.ad-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 9px 16px;
+  border-radius: 9px;
+  font-size: 0.86rem;
+  font-weight: 700;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: opacity 0.16s ease, background-color 0.16s ease;
+}
+
+.ad-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+.ad-btn-primary { background: var(--ad-blue); color: #FFFFFF; }
+.ad-btn-primary:hover:not(:disabled) { background: #166BD4; }
+.ad-btn-secondary { background: var(--ad-surface-2); color: #D6E2F1; border-color: var(--ad-border); }
+.ad-btn-secondary:hover:not(:disabled) { background: #112A4A; }
+.ad-btn-danger { background: rgba(239, 68, 68, 0.18); color: #FCA5A5; border-color: rgba(239, 68, 68, 0.4); }
+.ad-btn-sm { padding: 6px 11px; font-size: 0.78rem; }
+
+.ad-input, .ad-select, .ad-textarea {
+  background: var(--ad-bg);
+  color: var(--ad-text);
+  border: 1px solid var(--ad-border);
+  border-radius: 8px;
+  padding: 9px 12px;
+  font-size: 0.88rem;
+  width: 100%;
+}
+
+.ad-input:focus, .ad-select:focus, .ad-textarea:focus {
+  outline: none;
+  border-color: var(--ad-sky);
+}
+
+/* Cards & Grids */
+.ad-card {
+  background: var(--ad-surface);
+  border: 1px solid var(--ad-border);
+  border-radius: 14px;
+  padding: 20px;
+}
+
+.ad-card-title {
+  font-family: var(--ad-font-display);
+  font-size: 1.25rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  margin-bottom: 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+
+.ad-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(195px, 1fr));
+  gap: 14px;
+  margin-bottom: 22px;
+}
+
+.ad-kpi-card {
+  background: var(--ad-surface);
+  border: 1px solid var(--ad-border);
+  border-radius: 12px;
+  padding: 16px 18px;
+}
+
+.ad-kpi-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ad-text-muted);
+}
+
+.ad-kpi-value {
+  font-family: var(--ad-font-display);
+  font-size: 1.95rem;
+  font-weight: 700;
+  line-height: 1;
+  color: #FFFFFF;
+  margin-top: 6px;
+}
+
+.ad-kpi-sub {
+  font-size: 0.78rem;
+  color: var(--ad-sky);
+  margin-top: 4px;
+}
+
+.ad-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+}
+
+.ad-grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+}
+
+/* Barras Horizontais de 3 Faixas (Verde / Laranja / Vermelho — Section 7) */
+.ad-health-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.ad-health-item-head {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  margin-bottom: 6px;
+}
+
+.ad-health-track {
+  height: 11px;
+  background: rgba(148, 163, 184, 0.16);
+  border-radius: 999px;
+  overflow: hidden;
+  position: relative;
+}
+
+.ad-health-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.35s ease;
+}
+
+.ad-health-fill.green { background: var(--ad-green); }
+.ad-health-fill.orange { background: var(--ad-orange); }
+.ad-health-fill.red { background: var(--ad-red); }
+.ad-health-fill.neutral { background: #64748B; }
+
+/* Badges */
+.ad-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 0.73rem;
+  font-weight: 700;
+}
+
+.ad-badge-blue { background: rgba(37, 99, 235, 0.22); color: #93C5FD; }
+.ad-badge-green { background: rgba(16, 185, 129, 0.2); color: #6EE7B7; }
+.ad-badge-orange { background: rgba(245, 158, 11, 0.2); color: #FCD34D; }
+.ad-badge-red { background: rgba(239, 68, 68, 0.2); color: #FCA5A5; }
+.ad-badge-gray { background: rgba(148, 163, 184, 0.2); color: #CBD5E1; }
+
+/* Tabelas */
+.ad-table-wrap {
+  overflow-x: auto;
+}
+
+.ad-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.86rem;
+}
+
+.ad-table th, .ad-table td {
+  padding: 11px 12px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.14);
+  text-align: left;
+  vertical-align: middle;
+}
+
+.ad-table th {
+  font-size: 0.74rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ad-text-muted);
+  background: rgba(15, 23, 42, 0.7);
+}
+
+.ad-table tr:hover td {
+  background: rgba(37, 99, 235, 0.05);
+}
+
+/* Kanban Board */
+.ad-kanban-board {
+  display: flex;
+  gap: 14px;
+  overflow-x: auto;
+  padding-bottom: 18px;
+  align-items: flex-start;
+}
+
+.ad-kanban-col {
+  width: 285px;
+  flex-shrink: 0;
+  background: var(--ad-surface);
+  border: 1px solid var(--ad-border);
+  border-radius: 14px;
+  padding: 12px;
+  min-height: 460px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ad-kanban-col.drag-over {
+  border-color: var(--ad-sky);
+  background: rgba(37, 99, 235, 0.12);
+}
+
+.ad-kanban-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 10px;
+  border-bottom: 2px solid var(--ad-blue);
+}
+
+.ad-kanban-head h3 {
+  font-family: var(--ad-font-display);
+  font-size: 1.05rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.ad-kanban-card {
+  background: var(--ad-bg);
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  border-radius: 10px;
+  padding: 12px;
+  cursor: grab;
+  transition: border-color 0.15s ease, transform 0.15s ease;
+}
+
+.ad-kanban-card:hover {
+  border-color: var(--ad-sky);
+}
+
+.ad-kanban-card.dragging {
+  opacity: 0.45;
+}
+
+/* Alertas & Toast */
+.ad-alert {
+  padding: 13px 16px;
+  border-radius: 10px;
+  font-size: 0.88rem;
+  margin-bottom: 16px;
+  border: 1px solid;
+}
+
+.ad-alert-error { background: rgba(239, 68, 68, 0.14); border-color: rgba(239, 68, 68, 0.45); color: #FECACA; }
+.ad-alert-warn { background: rgba(245, 158, 11, 0.14); border-color: rgba(245, 158, 11, 0.45); color: #FDE68A; }
+.ad-alert-info { background: rgba(37, 99, 235, 0.16); border-color: rgba(56, 189, 248, 0.4); color: #BAE6FD; }
+
+.ad-toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  background: var(--ad-surface);
+  border: 1px solid var(--ad-sky);
+  color: #FFFFFF;
+  padding: 12px 18px;
+  border-radius: 10px;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.55);
+  z-index: 200;
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+/* Modal */
+.ad-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(2, 6, 23, 0.78);
+  display: none;
+  place-items: center;
+  padding: 20px;
+  z-index: 150;
+}
+
+.ad-modal-backdrop.open {
+  display: grid;
+}
+
+.ad-modal {
+  background: var(--ad-surface);
+  border: 1px solid var(--ad-border);
+  border-radius: 16px;
+  padding: 24px;
+  width: 100%;
+  max-width: 560px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.ad-field { margin-bottom: 14px; }
+.ad-field label {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--ad-text-muted);
+  margin-bottom: 5px;
+}
+
+.ad-mobile-toggle {
+  display: none;
+}
+
+@media (max-width: 960px) {
+  .ad-shell { flex-direction: column; }
+  .ad-sidebar {
+    width: 100%;
+    height: auto;
+    position: relative;
+  }
+  .ad-nav { display: none; }
+  .ad-nav.open { display: flex; }
+  .ad-mobile-toggle { display: inline-flex; }
+  .ad-main { padding: 18px 16px 40px; }
+  .ad-grid-2, .ad-grid-3 { grid-template-columns: 1fr; }
+}

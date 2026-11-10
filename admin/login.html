@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Login CRM Administrativo | King Sports Franchising</title>
+  <meta name="robots" content="noindex, nofollow" />
+  <meta name="theme-color" content="#02060E" />
+  <link rel="icon" href="/favicon.ico" sizes="any" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/assets/images/favicon-32x32.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/assets/images/apple-touch-icon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/admin/assets/css/admin.css" />
+</head>
+<body style="display:grid;place-items:center;padding:24px;">
+  <main style="width:100%;max-width:430px;">
+    <div style="text-align:center;margin-bottom:24px;">
+      <img src="/assets/images/logo-king-dark-bg.png" alt="King Sports Franchising" height="40" style="margin:0 auto 12px;" />
+      <p style="color:#AEBBD0;font-size:0.9rem;">Painel Administrativo • CRM, Marketing &amp; Automações</p>
+    </div>
+
+    <div class="ad-card" style="padding:28px;">
+      <div id="login-alert"></div>
+      <div id="env-warning"></div>
+
+      <form id="login-form">
+        <h1 style="font-family:var(--ad-font-display);font-size:1.75rem;text-transform:uppercase;margin-bottom:18px;">Acessar Painel</h1>
+        <div class="ad-field">
+          <label for="email">E-mail corporativo</label>
+          <input type="email" id="email" class="ad-input" required autocomplete="email" placeholder="admin@kingsportsoficial.com.br" />
+        </div>
+        <div class="ad-field">
+          <label for="password">Senha</label>
+          <input type="password" id="password" class="ad-input" required autocomplete="current-password" placeholder="••••••••" />
+        </div>
+        <button type="submit" id="login-btn" class="ad-btn ad-btn-primary" style="width:100%;padding:12px;">
+          Entrar no CRM
+        </button>
+      </form>
+
+      <div style="margin-top:16px;display:flex;justify-content:space-between;align-items:center;font-size:0.84rem;color:#AEBBD0;">
+        <button type="button" id="toggle-forgot" style="background:none;border:none;color:#68D8FF;cursor:pointer;font-weight:600;">
+          Esqueci minha senha
+        </button>
+        <a href="/">← Voltar à Landing Page</a>
+      </div>
+
+      <form id="forgot-form" style="display:none;margin-top:18px;padding-top:18px;border-top:1px solid rgba(148,163,184,0.2);">
+        <div class="ad-field">
+          <label for="forgot-email">E-mail para recuperação via Supabase Auth</label>
+          <input type="email" id="forgot-email" class="ad-input" required placeholder="seu@email.com.br" />
+        </div>
+        <button type="submit" class="ad-btn ad-btn-secondary" style="width:100%;">Enviar link de recuperação</button>
+      </form>
+    </div>
+  </main>
+
+  <script>
+    (function () {
+      fetch('/api/health').then(function (r) { return r.json(); }).then(function (h) {
+        if (!h.dependencies || !h.dependencies.supabase || !h.dependencies.supabase.configured) {
+          document.getElementById('env-warning').innerHTML =
+            '<div class="ad-alert ad-alert-warn"><strong>Supabase não configurado:</strong> Configure <code>SUPABASE_URL</code>, <code>SUPABASE_ANON_KEY</code> e <code>SUPABASE_SERVICE_ROLE_KEY</code> no <code>.env</code> para habilitar o login administrativo.</div>';
+        }
+      }).catch(function () {});
+
+      fetch('/api/admin/auth/me', { credentials: 'same-origin' }).then(function (r) {
+        if (r.ok) window.location.href = '/admin/dashboard.html';
+      }).catch(function () {});
+
+      document.getElementById('toggle-forgot').addEventListener('click', function () {
+        var f = document.getElementById('forgot-form');
+        f.style.display = f.style.display === 'none' ? 'block' : 'none';
+      });
+
+      document.getElementById('login-form').addEventListener('submit', async function (e) {
+        e.preventDefault();
+        var alertEl = document.getElementById('login-alert');
+        var btn = document.getElementById('login-btn');
+        alertEl.innerHTML = '';
+        btn.disabled = true;
+        btn.textContent = 'Autenticando...';
+        try {
+          var resp = await fetch('/api/admin/auth/login', {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              email: document.getElementById('email').value.trim(),
+              password: document.getElementById('password').value
+            })
+          });
+          var data = await resp.json().catch(function () { return {}; });
+          if (!resp.ok) throw new Error(data?.error?.message || 'Falha no login.');
+          window.location.href = '/admin/dashboard.html';
+        } catch (err) {
+          alertEl.innerHTML = '<div class="ad-alert ad-alert-error">' + err.message + '</div>';
+          btn.disabled = false;
+          btn.textContent = 'Entrar no CRM';
+        }
+      });
+
+      document.getElementById('forgot-form').addEventListener('submit', async function (e) {
+        e.preventDefault();
+        var alertEl = document.getElementById('login-alert');
+        try {
+          var resp = await fetch('/api/admin/auth/forgot-password', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: document.getElementById('forgot-email').value.trim() })
+          });
+          var data = await resp.json().catch(function () { return {}; });
+          if (!resp.ok) throw new Error(data?.error?.message || 'Erro ao solicitar recuperação.');
+          alertEl.innerHTML = '<div class="ad-alert ad-alert-info">' + data.message + '</div>';
+        } catch (err) {
+          alertEl.innerHTML = '<div class="ad-alert ad-alert-error">' + err.message + '</div>';
+        }
+      });
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Analytics &amp; Tracking | CRM King Sports</title>
+  <meta name="robots" content="noindex, nofollow" />
+  <meta name="theme-color" content="#02060E" />
+  <link rel="icon" href="/favicon.ico" sizes="any" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/assets/images/favicon-32x32.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/assets/images/apple-touch-icon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/admin/assets/css/admin.css" />
+</head>
+<body>
+  <div class="ad-shell">
+    <aside class="ad-sidebar" id="ad-sidebar"></aside>
+
+    <main class="ad-main">
+      <div class="ad-topbar">
+        <div>
+          <h1>Analytics, Atribuição &amp; Tracking Server-Side</h1>
+          <p class="ad-topbar-sub">Funil regional por UF, logs de deduplicação, envios Meta CAPI / GA4 MP e catálogo LGPD.</p>
+        </div>
+        <div class="ad-actions-row">
+          <select id="period-days" class="ad-select" style="width:auto;">
+            <option value="7">7 dias</option>
+            <option value="30" selected>30 dias</option>
+            <option value="90">90 dias</option>
+            <option value="360">360 dias</option>
+          </select>
+          <button type="button" id="refresh-all" class="ad-btn ad-btn-primary">Atualizar</button>
+        </div>
+      </div>
+
+      <div id="ad-global-alert"></div>
+
+      <div class="ad-grid-2" style="margin-bottom:18px;">
+        <section class="ad-card">
+          <div class="ad-card-title"><span>Conversão por Estado (UF)</span></div>
+          <div class="ad-table-wrap" id="uf-table-wrap">Carregando...</div>
+        </section>
+
+        <section class="ad-card">
+          <div class="ad-card-title"><span>Distribuição por Estágio do Funil</span></div>
+          <div class="ad-table-wrap" id="stage-table-wrap">Carregando...</div>
+        </section>
+      </div>
+
+      <section class="ad-card" style="margin-bottom:18px;">
+        <div class="ad-card-title">
+          <span>Fila &amp; Auditoria de Conversões Server-Side (`conversion_events`)</span>
+          <div class="ad-actions-row">
+            <select id="filter-platform" class="ad-select" style="width:auto;">
+              <option value="">Todas plataformas</option>
+              <option value="meta_capi">Meta CAPI</option>
+              <option value="ga4_mp">GA4 Measurement Protocol</option>
+              <option value="google_ads_offline">Google Ads Offline</option>
+              <option value="internal">CRM Interno</option>
+            </select>
+            <select id="filter-status" class="ad-select" style="width:auto;">
+              <option value="">Todos status</option>
+              <option value="sent">Enviado</option>
+              <option value="queued">Na fila</option>
+              <option value="pending">Pendente</option>
+              <option value="skipped_no_consent">Bloqueado (LGPD)</option>
+              <option value="skipped_no_credentials">Não configurado</option>
+              <option value="failed">Falhou</option>
+              <option value="dlq">DLQ</option>
+            </select>
+          </div>
+        </div>
+        <div class="ad-table-wrap" id="conv-table-wrap">Carregando...</div>
+      </section>
+
+      <section class="ad-card" style="margin-bottom:18px;">
+        <div class="ad-card-title"><span>Eventos de Navegação &amp; Microconversões (`marketing_events`)</span></div>
+        <div class="ad-table-wrap" id="mkt-table-wrap">Carregando...</div>
+      </section>
+
+      <section class="ad-card">
+        <div class="ad-card-title"><span>Documentação Oficial de Eventos &amp; Regras LGPD</span></div>
+        <div class="ad-table-wrap" id="catalog-table-wrap">Carregando...</div>
+      </section>
+    </main>
+  </div>
+
+  <script src="/admin/assets/js/admin-core.js"></script>
+  <script>
+    (function () {
+      function statusBadge(st) {
+        if (st === 'sent') return '<span class="ad-badge ad-badge-green">Enviado</span>';
+        if (st === 'queued' || st === 'pending') return '<span class="ad-badge ad-badge-blue">' + (st === 'queued' ? 'Na fila' : 'Pendente') + '</span>';
+        if (st === 'skipped_no_consent') return '<span class="ad-badge ad-badge-orange">Bloqueado LGPD</span>';
+        if (st === 'skipped_no_credentials') return '<span class="ad-badge ad-badge-gray">Não configurado</span>';
+        if (st === 'failed' || st === 'dlq') return '<span class="ad-badge ad-badge-red">' + KingAdmin.esc(st.toUpperCase()) + '</span>';
+        return '<span class="ad-badge ad-badge-gray">' + KingAdmin.esc(st) + '</span>';
+      }
+
+      async function loadAnalytics() {
+        var days = document.getElementById('period-days').value;
+        var platform = document.getElementById('filter-platform').value;
+        var status = document.getElementById('filter-status').value;
+
+        try {
+          var results = await Promise.all([
+            KingAdmin.apiFetch('/api/admin/dashboard?days=' + encodeURIComponent(days)),
+            KingAdmin.apiFetch('/api/admin/tracking/events?platform=' + encodeURIComponent(platform) + '&status=' + encodeURIComponent(status))
+          ]);
+          var dash = results[0];
+          var trk = results[1];
+
+          var ufs = dash.regional_performance || [];
+          document.getElementById('uf-table-wrap').innerHTML = ufs.length
+            ? '<table class="ad-table"><thead><tr><th>UF</th><th>Leads</th><th>Qualificados</th><th>Vendas</th></tr></thead><tbody>' +
+              ufs.map(function (r) {
+                return '<tr><td><strong>' + KingAdmin.esc(r.state) + '</strong></td><td>' + r.leads + '</td><td>' + r.qualified + '</td><td>' + r.sales + '</td></tr>';
+              }).join('') + '</tbody></table>'
+            : '<p style="color:#94A3B8;">Sem dados regionais no período.</p>';
+
+          var stages = dash.stage_breakdown || [];
+          document.getElementById('stage-table-wrap').innerHTML = stages.length
+            ? '<table class="ad-table"><thead><tr><th>Estágio</th><th>Oportunidades</th></tr></thead><tbody>' +
+              stages.map(function (s) {
+                return '<tr><td>' + KingAdmin.esc(s.name) + '</td><td><strong>' + s.count + '</strong></td></tr>';
+              }).join('') + '</tbody></table>'
+            : '<p style="color:#94A3B8;">Sem estágios carregados.</p>';
+
+          var convs = trk.conversions || [];
+          document.getElementById('conv-table-wrap').innerHTML = convs.length
+            ? '<table class="ad-table"><thead><tr><th>Data</th><th>Evento</th><th>Plataforma</th><th>event_id (Dedup.)</th><th>Lead</th><th>Status</th><th>Tentativas</th><th>Detalhe</th></tr></thead><tbody>' +
+              convs.map(function (c) {
+                return (
+                  '<tr>' +
+                  '  <td>' + KingAdmin.esc(KingAdmin.formatDate(c.created_at)) + '</td>' +
+                  '  <td><strong>' + KingAdmin.esc(c.event_name) + '</strong></td>' +
+                  '  <td>' + KingAdmin.esc(c.platform) + '</td>' +
+                  '  <td><code>' + KingAdmin.esc(c.event_id) + '</code></td>' +
+                  '  <td>' + KingAdmin.esc(c.lead ? c.lead.full_name + ' (' + c.lead.state + ')' : '—') + '</td>' +
+                  '  <td>' + statusBadge(c.status) + '</td>' +
+                  '  <td>' + (c.attempts || 0) + '</td>' +
+                  '  <td style="font-size:0.78rem;color:#94A3B8;">' + KingAdmin.esc(c.error_message || (c.response_status ? 'HTTP ' + c.response_status : '—')) + '</td>' +
+                  '</tr>'
+                );
+              }).join('') + '</tbody></table>'
+            : '<p style="color:#94A3B8;">Nenhuma conversão server-side registrada ainda.</p>';
+
+          var mkt = trk.marketing_events || [];
+          document.getElementById('mkt-table-wrap').innerHTML = mkt.length
+            ? '<table class="ad-table"><thead><tr><th>Data</th><th>Evento</th><th>Origem</th><th>Sessão</th><th>event_id</th><th>URL</th></tr></thead><tbody>' +
+              mkt.slice(0, 35).map(function (m) {
+                return (
+                  '<tr>' +
+                  '  <td>' + KingAdmin.esc(KingAdmin.formatDate(m.created_at)) + '</td>' +
+                  '  <td><strong>' + KingAdmin.esc(m.event_name) + '</strong></td>' +
+                  '  <td>' + KingAdmin.esc(m.source) + '</td>' +
+                  '  <td><code>' + KingAdmin.esc((m.session_id || '').slice(0, 14)) + '</code></td>' +
+                  '  <td><code>' + KingAdmin.esc(m.event_id) + '</code></td>' +
+                  '  <td style="font-size:0.78rem;color:#94A3B8;max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + KingAdmin.esc(m.page_url || '—') + '</td>' +
+                  '</tr>'
+                );
+              }).join('') + '</tbody></table>'
+            : '<p style="color:#94A3B8;">Nenhum evento de página registrado.</p>';
+
+          var catalog = trk.catalog || [];
+          document.getElementById('catalog-table-wrap').innerHTML =
+            '<table class="ad-table"><thead><tr><th>Evento</th><th>GA4 / Meta</th><th>Origem</th><th>Destinos</th><th>Regra LGPD</th><th>Deduplicação</th><th>Finalidade</th></tr></thead><tbody>' +
+            catalog.map(function (row) {
+              return (
+                '<tr>' +
+                '  <td><code>' + KingAdmin.esc(row.event_name) + '</code></td>' +
+                '  <td style="font-size:0.8rem;">GA4: <code>' + KingAdmin.esc(row.ga4_name || '—') + '</code><br/>Meta: <code>' + KingAdmin.esc(row.meta_name || '—') + '</code></td>' +
+                '  <td>' + KingAdmin.esc(row.origin) + '</td>' +
+                '  <td>' + KingAdmin.esc((row.destinations || []).join(', ')) + '</td>' +
+                '  <td style="font-size:0.8rem;">' + KingAdmin.esc(row.consent_required) + '</td>' +
+                '  <td style="font-size:0.8rem;color:#CBD5E1;">' + KingAdmin.esc(row.deduplication_rule) + '</td>' +
+                '  <td style="font-size:0.8rem;color:#94A3B8;">' + KingAdmin.esc(row.purpose) + '</td>' +
+                '</tr>'
+              );
+            }).join('') + '</tbody></table>';
+        } catch (err) {
+          KingAdmin.renderErrorState('ad-global-alert', err);
+        }
+      }
+
+      document.getElementById('refresh-all').addEventListener('click', loadAnalytics);
+      document.getElementById('period-days').addEventListener('change', loadAnalytics);
+      document.getElementById('filter-platform').addEventListener('change', loadAnalytics);
+      document.getElementById('filter-status').addEventListener('change', loadAnalytics);
+
+      document.addEventListener('DOMContentLoaded', async function () {
+        if (await KingAdmin.initProtectedPage('analytics')) loadAnalytics();
+      });
+    })();
+  </script>
+</body>
+</html>

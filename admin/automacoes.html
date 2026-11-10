@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Automações &amp; Filas | CRM King Sports</title>
+  <meta name="robots" content="noindex, nofollow" />
+  <meta name="theme-color" content="#02060E" />
+  <link rel="icon" href="/favicon.ico" sizes="any" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/assets/images/favicon-32x32.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/assets/images/apple-touch-icon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/admin/assets/css/admin.css" />
+</head>
+<body>
+  <div class="ad-shell">
+    <aside class="ad-sidebar" id="ad-sidebar"></aside>
+
+    <main class="ad-main">
+      <div class="ad-topbar">
+        <div>
+          <h1>Automações Comerciais &amp; Filas BullMQ</h1>
+          <p class="ad-topbar-sub">Regras ativas de CRM, SLA de primeiro atendimento, retries e Dead Letter Queue.</p>
+        </div>
+        <div class="ad-actions-row">
+          <button type="button" id="run-sla-btn" class="ad-btn ad-btn-secondary">Executar Varredura SLA Agora</button>
+          <button type="button" id="refresh-auto-btn" class="ad-btn ad-btn-primary">Atualizar Filas</button>
+        </div>
+      </div>
+
+      <div id="ad-global-alert"></div>
+      <div id="queue-metrics-grid" class="ad-kpi-grid"></div>
+
+      <section class="ad-card" style="margin-bottom:18px;">
+        <div class="ad-card-title"><span>Regras de Automação do Sistema</span></div>
+        <div class="ad-table-wrap" id="rules-table-wrap">Carregando regras...</div>
+      </section>
+
+      <section class="ad-card">
+        <div class="ad-card-title"><span>Histórico Recente de Execução de Jobs (`automation_jobs`)</span></div>
+        <div class="ad-table-wrap" id="jobs-table-wrap">Carregando jobs...</div>
+      </section>
+    </main>
+  </div>
+
+  <script src="/admin/assets/js/admin-core.js"></script>
+  <script>
+    (function () {
+      function jobBadge(st) {
+        if (st === 'completed') return '<span class="ad-badge ad-badge-green">Concluído</span>';
+        if (st === 'active') return '<span class="ad-badge ad-badge-blue">Processando</span>';
+        if (st === 'pending_worker') return '<span class="ad-badge ad-badge-orange">Aguardando Worker</span>';
+        if (st === 'queued') return '<span class="ad-badge ad-badge-gray">Na fila</span>';
+        if (st === 'failed' || st === 'dlq') return '<span class="ad-badge ad-badge-red">' + KingAdmin.esc(st.toUpperCase()) + '</span>';
+        return '<span class="ad-badge ad-badge-gray">' + KingAdmin.esc(st) + '</span>';
+      }
+
+      async function loadAutomations() {
+        try {
+          var data = await KingAdmin.apiFetch('/api/admin/automations');
+          var qm = data.queue_metrics || {};
+
+          if (!qm.available) {
+            document.getElementById('queue-metrics-grid').innerHTML =
+              '<div class="ad-kpi-card" style="grid-column:1/-1;"><div class="ad-kpi-label">Estado das Filas Redis / BullMQ</div><div class="ad-kpi-value" style="color:#F59E0B;">Indisponível / Não conectado</div><div class="ad-kpi-sub">' + KingAdmin.esc(qm.error || 'Redis não configurado ou offline.') + '</div></div>';
+          } else {
+            var qEntries = Object.entries(qm.queues || {});
+            document.getElementById('queue-metrics-grid').innerHTML = qEntries.map(function (entry) {
+              var name = entry[0];
+              var c = entry[1];
+              return (
+                '<div class="ad-kpi-card">' +
+                '  <div class="ad-kpi-label">Fila: ' + KingAdmin.esc(name) + '</div>' +
+                '  <div class="ad-kpi-value">' + (c.waiting || 0) + ' aguardando</div>' +
+                '  <div class="ad-kpi-sub">Ativos: ' + (c.active || 0) + ' • Concluídos: ' + (c.completed || 0) + ' • Falhas: ' + (c.failed || 0) + '</div>' +
+                '</div>'
+              );
+            }).join('');
+          }
+
+          var rules = data.rules || [];
+          document.getElementById('rules-table-wrap').innerHTML = rules.length
+            ? '<table class="ad-table"><thead><tr><th>Regra</th><th>Gatilho</th><th>Descrição</th><th>Configuração</th><th>Status</th><th>Ação</th></tr></thead><tbody>' +
+              rules.map(function (r) {
+                return (
+                  '<tr>' +
+                  '  <td><strong>' + KingAdmin.esc(r.name) + '</strong><div style="font-size:0.75rem;color:#94A3B8;"><code>' + KingAdmin.esc(r.rule_key) + '</code></div></td>' +
+                  '  <td><code>' + KingAdmin.esc(r.trigger_event) + '</code></td>' +
+                  '  <td style="font-size:0.84rem;color:#CBD5E1;">' + KingAdmin.esc(r.description) + '</td>' +
+                  '  <td><code style="font-size:0.76rem;">' + KingAdmin.esc(JSON.stringify(r.config || {})) + '</code></td>' +
+                  '  <td>' + (r.is_active ? '<span class="ad-badge ad-badge-green">Ativa</span>' : '<span class="ad-badge ad-badge-gray">Pausada</span>') + '</td>' +
+                  '  <td><button type="button" class="ad-btn ad-btn-secondary ad-btn-sm toggle-rule-btn" data-id="' + KingAdmin.esc(r.id) + '" data-next="' + (!r.is_active) + '">' + (r.is_active ? 'Pausar' : 'Ativar') + '</button></td>' +
+                  '</tr>'
+                );
+              }).join('') + '</tbody></table>'
+            : '<p style="color:#94A3B8;">Nenhuma regra encontrada.</p>';
+
+          document.querySelectorAll('.toggle-rule-btn').forEach(function (btn) {
+            btn.addEventListener('click', async function () {
+              try {
+                await KingAdmin.apiFetch('/api/admin/automations/rules/' + encodeURIComponent(btn.dataset.id), {
+                  method: 'PATCH',
+                  body: JSON.stringify({ is_active: btn.dataset.next === 'true' })
+                });
+                KingAdmin.showToast('Regra atualizada.');
+                loadAutomations();
+              } catch (err) {
+                KingAdmin.showToast(err.message, true);
+              }
+            });
+          });
+
+          var jobs = data.jobs || [];
+          document.getElementById('jobs-table-wrap').innerHTML = jobs.length
+            ? '<table class="ad-table"><thead><tr><th>Criado em</th><th>Fila</th><th>Job</th><th>Lead</th><th>Tentativas</th><th>Status</th><th>Erro</th><th>Ação</th></tr></thead><tbody>' +
+              jobs.map(function (j) {
+                var canRetry = j.status === 'failed' || j.status === 'dlq';
+                return (
+                  '<tr>' +
+                  '  <td>' + KingAdmin.esc(KingAdmin.formatDate(j.created_at)) + '</td>' +
+                  '  <td><code>' + KingAdmin.esc(j.queue_name) + '</code></td>' +
+                  '  <td><strong>' + KingAdmin.esc(j.job_name) + '</strong></td>' +
+                  '  <td>' + KingAdmin.esc(j.lead ? j.lead.full_name : '—') + '</td>' +
+                  '  <td>' + (j.attempts || 0) + '/' + (j.max_attempts || 5) + '</td>' +
+                  '  <td>' + jobBadge(j.status) + '</td>' +
+                  '  <td style="font-size:0.78rem;color:#FCA5A5;">' + KingAdmin.esc(j.error_message || '—') + '</td>' +
+                  '  <td>' + (canRetry ? '<button type="button" class="ad-btn ad-btn-secondary ad-btn-sm retry-job-btn" data-id="' + KingAdmin.esc(j.id) + '">Reprocessar</button>' : '—') + '</td>' +
+                  '</tr>'
+                );
+              }).join('') + '</tbody></table>'
+            : '<p style="color:#94A3B8;">Nenhum job enfileirado ainda.</p>';
+
+          document.querySelectorAll('.retry-job-btn').forEach(function (btn) {
+            btn.addEventListener('click', async function () {
+              try {
+                await KingAdmin.apiFetch('/api/admin/automations/jobs/' + encodeURIComponent(btn.dataset.id) + '/retry', {
+                  method: 'POST',
+                  body: '{}'
+                });
+                KingAdmin.showToast('Job reenviado para fila.');
+                loadAutomations();
+              } catch (err) {
+                KingAdmin.showToast(err.message, true);
+              }
+            });
+          });
+        } catch (err) {
+          KingAdmin.renderErrorState('ad-global-alert', err);
+        }
+      }
+
+      document.getElementById('refresh-auto-btn').addEventListener('click', loadAutomations);
+      document.getElementById('run-sla-btn').addEventListener('click', async function () {
+        try {
+          var res = await KingAdmin.apiFetch('/api/admin/automations/sla-scan', { method: 'POST', body: '{}' });
+          KingAdmin.showToast('Varredura SLA concluída: ' + (res.escalated || 0) + ' lead(s) escalado(s).');
+          loadAutomations();
+        } catch (err) {
+          KingAdmin.showToast(err.message, true);
+        }
+      });
+
+      document.addEventListener('DOMContentLoaded', async function () {
+        if (await KingAdmin.initProtectedPage('automacoes')) loadAutomations();
+      });
+    })();
+  </script>
+</body>
+</html>

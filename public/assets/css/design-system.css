@@ -1,0 +1,450 @@
+/* ==========================================================================
+   KING SPORTS FRANCHISING — DESIGN SYSTEM CSS OFICIAL
+   Identidade Oficial King Sports (kingsports.com.br):
+   Midnight #02060E · Royal Blue #0356C5 · Sky Cyan #68D8FF · Ice #F4F7FB · Action Emerald #168B48
+   ========================================================================== */
+
+:root {
+  --ks-midnight: #02060E;
+  --ks-navy: #0B1C32;
+  --ks-navy-deep: #071A34;
+  --ks-blue: #0356C5;
+  --ks-blue-dark: #06469D;
+  --ks-blue-soft: #166BD4;
+  --ks-blue-deep: #0A3E87;
+  --ks-sky: #68D8FF;
+  --ks-blue-ink-dark: #9EC9FF;
+  --ks-sky-soft: rgba(104, 216, 255, 0.14);
+
+  --ks-bg-black: #02060E;
+  --ks-bg-dark: #02060E;
+  --ks-bg-surface: #071222;
+  --ks-bg-surface-2: #0B1C32;
+
+  --ks-bg-white: #FFFFFF;
+  --ks-bg-light: #F4F7FB;
+  --ks-bg-gray: #E8EDF4;
+
+  --ks-text-white: #FFFFFF;
+  --ks-text-light: #D6E2F1;
+  --ks-text-muted: #AEBBD0;
+  --ks-ink: #02060E;
+  --ks-ink-muted: #5F6978;
+
+  --ks-border-dark: rgba(255, 255, 255, 0.2);
+  --ks-border-light: rgba(2, 6, 14, 0.16);
+
+  --ks-green: #168B48;
+  --ks-green-hover: #08753A;
+  --ks-orange: #F59E0B;
+  --ks-red: #B42318;
+
+  --ks-font-display: 'Barlow Condensed', 'Helvetica Neue', 'Segoe UI', Arial, sans-serif;
+  --ks-font-body: 'IBM Plex Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --ks-font-mono: 'Courier New', ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --ks-grad-blue: linear-gradient(90deg, #68D8FF 0%, #166BD4 50%, #0356C5 100%);
+  --ks-grad-kv: linear-gradient(32deg, #02060E -8%, #0356C5 52%, #166BD4 112%);
+  --ks-grad-kv-top: radial-gradient(130% 115% at 50% -12%, #166BD4 0%, #0356C5 34%, #02060E 84%);
+
+  --ks-radius-sm: 8px;
+  --ks-radius-md: 16px;
+  --ks-radius-lg: 24px;
+  --ks-radius-pill: 999px;
+
+  --ks-shadow-sm: 0 4px 16px rgba(2, 6, 14, 0.08);
+  --ks-shadow-lg: 0 24px 64px rgba(2, 6, 14, 0.45);
+  --ks-shadow-blue: 0 14px 36px rgba(3, 86, 197, 0.36);
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+  font-size: 16px;
+}
+
+body {
+  font-family: var(--ks-font-body);
+  background: var(--ks-midnight);
+  color: var(--ks-text-white);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button, input, select, textarea {
+  font-family: inherit;
+}
+
+.ks-container {
+  width: 100%;
+  max-width: 1160px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+.ks-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--ks-font-mono);
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ks-blue-ink-dark);
+  background: rgba(3, 86, 197, 0.22);
+  border: 1px solid rgba(104, 216, 255, 0.36);
+  padding: 7px 14px;
+  border-radius: var(--ks-radius-pill);
+}
+
+.ks-section-light .ks-tag {
+  color: var(--ks-blue);
+  background: rgba(3, 86, 197, 0.08);
+  border-color: rgba(3, 86, 197, 0.24);
+}
+
+.ks-accent {
+  color: var(--ks-sky);
+}
+
+.ks-section-light .ks-accent {
+  color: var(--ks-blue);
+}
+
+.ks-divider-bar {
+  width: 72px;
+  height: 4px;
+  border-radius: 4px;
+  background: linear-gradient(90deg, var(--ks-blue), var(--ks-sky));
+  margin: 18px auto 20px;
+}
+
+.ks-divider-bar.left {
+  margin-left: 0;
+}
+
+/* Botões no padrão oficial King Sports + Alta Conversão */
+.ks-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  font-family: var(--ks-font-body);
+  font-weight: 700;
+  font-size: 0.96rem;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  padding: 16px 28px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease, border-color 0.2s ease;
+  text-align: center;
+}
+
+.ks-btn:focus-visible {
+  outline: 2px solid var(--ks-sky);
+  outline-offset: 3px;
+}
+
+.ks-btn-primary {
+  background: var(--ks-green);
+  color: #FFFFFF;
+  box-shadow: 0 12px 30px rgba(22, 139, 72, 0.28);
+}
+
+.ks-btn-primary:hover {
+  background: var(--ks-green-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 16px 36px rgba(8, 117, 58, 0.42);
+}
+
+.ks-btn-blue {
+  background: var(--ks-blue);
+  color: #FFFFFF;
+  box-shadow: var(--ks-shadow-blue);
+}
+
+.ks-btn-blue:hover {
+  background: var(--ks-blue-soft);
+  transform: translateY(-2px);
+}
+
+.ks-btn-secondary {
+  background: rgba(255, 255, 255, 0.08);
+  color: #FFFFFF;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+}
+
+.ks-btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.16);
+  border-color: var(--ks-sky);
+}
+
+.ks-btn-sm {
+  padding: 10px 18px;
+  font-size: 0.78rem;
+  border-radius: 999px;
+}
+
+.ks-btn-lg {
+  padding: 18px 34px;
+  font-size: 1rem;
+}
+
+.ks-link-btn {
+  background: none;
+  border: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  padding: 0;
+  text-align: left;
+}
+
+/* Header & Footer Compartilhados (Blog + Páginas Legais) */
+.ks-header {
+  position: sticky;
+  top: 0;
+  z-index: 60;
+  background: rgba(2, 6, 14, 0.88);
+  backdrop-filter: blur(18px) saturate(1.12);
+  -webkit-backdrop-filter: blur(18px) saturate(1.12);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+.ks-header-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  height: 76px;
+}
+
+.ks-logo-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.ks-logo-link img {
+  height: 32px;
+  width: auto;
+}
+
+.ks-nav {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.ks-nav a {
+  font-family: var(--ks-font-mono);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ks-text-light);
+  transition: color 0.18s ease;
+}
+
+.ks-nav a:hover,
+.ks-nav a.active {
+  color: var(--ks-sky);
+}
+
+.ks-hamburger {
+  display: none;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  color: #FFFFFF;
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.ks-mobile-drawer {
+  display: none;
+  flex-direction: column;
+  gap: 14px;
+  padding: 20px 24px 28px;
+  background: var(--ks-midnight);
+  border-bottom: 1px solid var(--ks-border-dark);
+}
+
+.ks-mobile-drawer.open {
+  display: flex;
+}
+
+.ks-mobile-drawer a {
+  font-weight: 600;
+  color: var(--ks-text-white);
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.ks-footer {
+  background: var(--ks-midnight);
+  border-top: 1px solid rgba(255, 255, 255, 0.14);
+  padding: 60px 0 36px;
+  color: var(--ks-text-muted);
+}
+
+.ks-footer-grid {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr 1fr;
+  gap: 40px;
+  padding-bottom: 40px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.ks-footer h4 {
+  font-family: var(--ks-font-mono);
+  color: var(--ks-blue-ink-dark);
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  margin-bottom: 14px;
+}
+
+.ks-footer ul {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font-size: 0.9rem;
+}
+
+.ks-footer a:hover,
+.ks-footer button:hover {
+  color: var(--ks-sky);
+}
+
+.ks-footer-note {
+  margin-top: 14px;
+  font-size: 0.88rem;
+  max-width: 390px;
+  line-height: 1.6;
+  color: var(--ks-text-muted);
+}
+
+.ks-footer-bottom {
+  padding-top: 24px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 0.82rem;
+}
+
+/* Cookie Consent LGPD Banner */
+.ks-cookie-banner {
+  position: fixed;
+  bottom: 20px;
+  left: 20px;
+  right: 20px;
+  max-width: 680px;
+  margin: 0 auto;
+  background: rgba(2, 6, 14, 0.96);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(104, 216, 255, 0.38);
+  border-radius: 16px;
+  padding: 20px 24px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.65);
+  z-index: 120;
+  color: #FFFFFF;
+  display: none;
+}
+
+.ks-cookie-banner.visible {
+  display: block;
+}
+
+.ks-cookie-banner h3 {
+  font-family: var(--ks-font-display);
+  font-size: 1.25rem;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+  color: #FFFFFF;
+}
+
+.ks-cookie-banner p {
+  font-size: 0.86rem;
+  color: var(--ks-text-light);
+  margin-bottom: 14px;
+}
+
+.ks-cookie-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.ks-cookie-prefs-panel {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(255, 255, 255, 0.16);
+  display: none;
+  flex-direction: column;
+  gap: 10px;
+  font-size: 0.85rem;
+}
+
+.ks-cookie-prefs-panel.open {
+  display: flex;
+}
+
+.ks-cookie-toggle {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+@media (max-width: 960px) {
+  .ks-nav,
+  .ks-header-cta {
+    display: none;
+  }
+  .ks-hamburger {
+    display: inline-flex;
+  }
+  .ks-footer-grid {
+    grid-template-columns: 1fr;
+    gap: 28px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *, *::before, *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}

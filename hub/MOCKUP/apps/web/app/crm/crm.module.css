@@ -1,0 +1,30 @@
+.crm { min-height: 100vh; padding: clamp(16px,3vw,34px); background: #101010; color: #f6f6f6; color-scheme: dark; }
+.crm h1,.crm h2,.crm h3 { color: inherit; }
+.crm h1 { font-size: clamp(24px,4vw,36px); }
+.crm h2 { font-size: 17px; }
+.crm p { color: #c8c8c8; margin: 4px 0; overflow-wrap: anywhere; }
+.crm a { color: #a9c3ff; }
+.crm :focus-visible { outline: 2px solid #91b3ff; outline-offset: 3px; }
+.header,.actions,.form { display: flex; flex-wrap: wrap; gap: 12px; align-items: end; }
+.header { justify-content: space-between; margin-bottom: 16px; }
+.actions,.form { margin: 12px 0; }
+.crm button { background: #262626; border: 1px solid #414141; border-radius: 7px; padding: 8px 12px; }
+.crm button:hover,.crm button[aria-pressed=true],.form button[type=submit],.form button:not([type]) { background: #244dbd; }
+.crm button:disabled { opacity: .5; cursor: not-allowed; }
+.crm label { display: grid; gap: 4px; min-width: 0; font-size: 13px; }
+.crm input:not([type=checkbox]),.crm select,.crm textarea { border: 1px solid #4b4b4b; background: #171717; border-radius: 6px; padding: 8px; max-width: 100%; }
+.board,.table { overflow-x: auto; max-width: 100%; padding-bottom: 10px; }
+.board { display: grid; grid-auto-flow: column; grid-auto-columns: min(300px, 84vw); gap: 12px; }
+.column,.panel,.card { background: #181818; border: 1px solid #343434; border-radius: 10px; padding: 12px; min-width: 0; }
+.column > p { font-size: 13px; }
+.column .card { margin-top: 8px; background: #222; }
+.crm .titleButton { text-align: left; border: 0; background: transparent; padding: 3px 0; font-weight: 800; color: #b8ccff; }
+.crm .titleButton:hover { background: transparent; text-decoration: underline; }
+.table table { border-collapse: collapse; width: 100%; text-align: left; }
+.table :is(td,th) { padding: 8px 12px; border-bottom: 1px solid #383838; white-space: nowrap; }
+.list { display: grid; grid-template-columns: repeat(auto-fit,minmax(min(100%,240px),1fr)); gap: 10px; }
+.panel { margin: 14px 0; }
+.panel details,.panel ol { margin: 12px 0; }
+.panel summary { cursor: pointer; color: #b8ccff; }
+.panel li { padding: 8px 0; border-bottom: 1px solid #373737; }
+.crm .late { color: #ffb6ad; }

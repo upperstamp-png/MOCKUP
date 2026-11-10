@@ -1,46 +1,42 @@
 # Dependencies
 node_modules/
-.pnp
-.pnp.js
-
-# Testing & Coverage
-coverage/
-.nyc_output
+**/node_modules/
 
 # Production & Build outputs
 dist/
+**/dist/
 build/
 .next/
+**/.next/
 out/
+.turbo/
+coverage/
+*.tsbuildinfo
 
-# Environment Variables
+# Environment Variables & Secrets
 .env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+.env.*
+**/.env
+**/.env.*
+!.env.example
+!.env.*.example
+!**/.env.example
+!**/.env.*.example
 
 # Logs
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
 *.log
+npm-debug.log*
+logs/
 
-# IDE & OS
-.DS_Store
-Thumbs.db
-.vscode/
-.idea/
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
-
-# Turbo
-.turbo
-
-# Temporary / Scratch
+# Temporary / Scratch / Local tooling
 .system_generated/
 scratch/
+supabase/.branches/
+supabase/.temp/
+hub/MOCKUP/supabase/.temp/
+tmp/
+*.tmp
+
+# OS
+.DS_Store
+Thumbs.db

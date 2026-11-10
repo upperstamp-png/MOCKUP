@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Detalhes do Lead 360° | CRM King Sports</title>
+  <meta name="robots" content="noindex, nofollow" />
+  <meta name="theme-color" content="#02060E" />
+  <link rel="icon" href="/favicon.ico" sizes="any" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/assets/images/favicon-32x32.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/assets/images/apple-touch-icon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/admin/assets/css/admin.css" />
+</head>
+<body>
+  <div class="ad-shell">
+    <aside class="ad-sidebar" id="ad-sidebar"></aside>
+    <main class="ad-main">
+      <div class="ad-topbar">
+        <div>
+          <a href="/admin/leads.html" style="color:#68D8FF;font-size:0.84rem;">← Voltar para Leads</a>
+          <h1 id="lead-title">Carregando lead...</h1>
+          <p class="ad-topbar-sub" id="lead-sub"></p>
+        </div>
+        <div class="ad-actions-row">
+          <a href="#" id="wa-btn" target="_blank" rel="noopener noreferrer" class="ad-btn ad-btn-primary">Abrir WhatsApp</a>
+          <a href="/admin/pipeline.html" class="ad-btn ad-btn-secondary">Ver no Kanban</a>
+        </div>
+      </div>
+
+      <div id="ad-global-alert"></div>
+
+      <div class="ad-grid-2" style="align-items:start;">
+        <!-- COLUNA ESQUERDA: DADOS, ORIGEM, SCORECARD & CONTROLE -->
+        <div style="display:flex;flex-direction:column;gap:18px;">
+          <section class="ad-card" id="lead-profile-card">Carregando...</section>
+
+          <section class="ad-card">
+            <div class="ad-card-title"><span>Estágio, Prioridade &amp; Follow-up</span></div>
+            <form id="lead-meta-form">
+              <div class="ad-grid-2">
+                <div class="ad-field">
+                  <label>Estágio Comercial</label>
+                  <select id="m-stage" class="ad-select"></select>
+                </div>
+                <div class="ad-field">
+                  <label>Prioridade</label>
+                  <select id="m-priority" class="ad-select">
+                    <option value="low">Baixa</option>
+                    <option value="normal">Normal</option>
+                    <option value="high">Alta</option>
+                    <option value="urgent">Urgente</option>
+                  </select>
+                </div>
+              </div>
+              <div class="ad-grid-2">
+                <div class="ad-field">
+                  <label>Valor da Oportunidade (R$)</label>
+                  <input type="number" id="m-value" class="ad-input" step="100" />
+                </div>
+                <div class="ad-field">
+                  <label>Próximo Follow-up</label>
+                  <input type="datetime-local" id="m-followup" class="ad-input" />
+                </div>
+              </div>
+              <button type="submit" class="ad-btn ad-btn-primary ad-btn-sm">Salvar Alterações</button>
+            </form>
+          </section>
+
+          <section class="ad-card">
+            <div class="ad-card-title"><span>Scorecard dos 5 Filtros (Doc. 23 • Corte ≥ 18/25)</span></div>
+            <form id="scorecard-form">
+              <div class="ad-field">
+                <label>1. Capacidade Financeira (R$ 20k + giro R$ 8–12k)</label>
+                <select id="sc-fin" class="ad-select"><option value="5">5 pts — Atende plenamente</option><option value="3">3 pts — Parcelado c/ reserva justa</option><option value="0">0 pt — Sem capital (Desqualificar)</option></select>
+              </div>
+              <div class="ad-field">
+                <label>2. Disponibilidade de Praça / CEP</label>
+                <select id="sc-ter" class="ad-select"><option value="5">5 pts — CEP livre</option><option value="3">3 pts — CEP vizinho disponível</option><option value="0">0 pt — Praça ocupada</option></select>
+              </div>
+              <div class="ad-field">
+                <label>3. Aderência de Trilha (Comercial ou Designer)</label>
+                <select id="sc-pro" class="ad-select"><option value="5">5 pts — Forte inserção esportiva/design</option><option value="3">3 pts — Boa base treinável</option><option value="0">0 pt — Sem perfil vendedor/design</option></select>
+              </div>
+              <div class="ad-field">
+                <label>4. Dedicação Operacional (≥ 20h/sem)</label>
+                <select id="sc-ded" class="ad-select"><option value="5">5 pts — Dedicação integral</option><option value="3">3 pts — Transição ≥ 20h/sem</option><option value="0">0 pt — Busca renda passiva</option></select>
+              </div>
+              <div class="ad-field">
+                <label>5. Alinhamento às Regras (ME/SLU + Fábrica SP + Split)</label>
+                <select id="sc-com" class="ad-select"><option value="5">5 pts — Concorda 100%</option><option value="3">3 pts — Dúvidas sanáveis</option><option value="0">0 pt — Rejeita regras</option></select>
+              </div>
+              <div class="ad-field">
+                <label>Parecer da Call</label>
+                <input type="text" id="sc-notes" class="ad-input" placeholder="Observações do apresentador..." />
+              </div>
+              <button type="submit" class="ad-btn ad-btn-primary ad-btn-sm">Registrar Scorecard</button>
+            </form>
+          </section>
+
+          <section class="ad-card" id="attribution-card">Carregando atribuição...</section>
+        </div>
+
+        <!-- COLUNA DIREITA: NOTAS, TAREFAS, REUNIÕES & HISTÓRICO -->
+        <div style="display:flex;flex-direction:column;gap:18px;">
+          <section class="ad-card">
+            <div class="ad-card-title"><span>Registrar Atividade / Nota</span></div>
+            <form id="activity-form">
+              <div class="ad-grid-2">
+                <div class="ad-field">
+                  <label>Tipo</label>
+                  <select id="act-type" class="ad-select">
+                    <option value="note">Nota Interna</option>
+                    <option value="call">Ligação</option>
+                    <option value="whatsapp">WhatsApp</option>
+                    <option value="email">E-mail</option>
+                    <option value="cof_delivered">COF Entregue (Início 10 dias)</option>
+                  </select>
+                </div>
+                <div class="ad-field">
+                  <label>Título</label>
+                  <input type="text" id="act-title" class="ad-input" required placeholder="Ex.: Call de pré-qualificação" />
+                </div>
+              </div>
+              <div class="ad-field">
+                <label>Descrição</label>
+                <textarea id="act-desc" class="ad-textarea" rows="2"></textarea>
+              </div>
+              <button type="submit" class="ad-btn ad-btn-primary ad-btn-sm">Salvar Atividade</button>
+            </form>
+          </section>
+
+          <section class="ad-card">
+            <div class="ad-card-title"><span>Agendar Reunião</span></div>
+            <form id="meeting-form">
+              <div class="ad-grid-2">
+                <div class="ad-field">
+                  <label>Título</label>
+                  <input type="text" id="mt-title" class="ad-input" required value="Apresentação Executiva King Sports (16 Slides)" />
+                </div>
+                <div class="ad-field">
+                  <label>Tipo</label>
+                  <select id="mt-type" class="ad-select">
+                    <option value="pre_qualificacao">Pré-qualificação (15 min)</option>
+                    <option value="apresentacao" selected>Apresentação 16 Slides</option>
+                    <option value="tour_fabrica">Tour Fábrica SP</option>
+                    <option value="comite">Comitê de Aprovação</option>
+                    <option value="fechamento">Fechamento Pós-COF</option>
+                  </select>
+                </div>
+              </div>
+              <div class="ad-grid-2">
+                <div class="ad-field">
+                  <label>Data e Hora</label>
+                  <input type="datetime-local" id="mt-date" class="ad-input" required />
+                </div>
+                <div class="ad-field">
+                  <label>Link da Sala</label>
+                  <input type="url" id="mt-url" class="ad-input" placeholder="https://meet.google.com/..." />
+                </div>
+              </div>
+              <button type="submit" class="ad-btn ad-btn-primary ad-btn-sm">Agendar Reunião</button>
+            </form>
+            <div id="meetings-list" style="margin-top:14px;"></div>
+          </section>
+
+          <section class="ad-card">
+            <div class="ad-card-title"><span>Tarefas</span></div>
+            <form id="task-form" style="display:flex;gap:8px;margin-bottom:12px;">
+              <input type="text" id="tk-title" class="ad-input" required placeholder="Nova tarefa de follow-up..." />
+              <button type="submit" class="ad-btn ad-btn-secondary ad-btn-sm">Adicionar</button>
+            </form>
+            <div id="tasks-list"></div>
+          </section>
+
+          <section class="ad-card">
+            <div class="ad-card-title"><span>Linha do Tempo de Atividades</span></div>
+            <div id="activities-list"></div>
+          </section>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="/admin/assets/js/admin-core.js"></script>
+  <script>
+    (function () {
+      var leadId = new URLSearchParams(window.location.search).get('id');
+      var currentLead = null;
+      var currentOpp = null;
+
+      async function loadDetails() {
+        if (!leadId) {
+          KingAdmin.renderErrorState('ad-global-alert', new Error('ID do lead ausente na URL.'));
+          return;
+        }
+        try {
+          var [leadRes, pipelineRes] = await Promise.all([
+            KingAdmin.apiFetch('/api/admin/leads/' + encodeURIComponent(leadId)),
+            KingAdmin.apiFetch('/api/admin/pipeline')
+          ]);
+          var l = leadRes.lead;
+          currentLead = l;
+          currentOpp = (l.opportunities && l.opportunities[0]) || null;
+          var q = l.qualification || {};
+
+          document.getElementById('lead-title').textContent = l.full_name;
+          document.getElementById('lead-sub').textContent =
+            l.city + '/' + l.state + ' • Score ' + l.lead_score + '/100 (Grade ' + l.score_grade + ') • Status: ' + l.qualification_status;
+          var cleanWa = String(l.whatsapp || '').replace(/\D/g, '');
+          document.getElementById('wa-btn').href = 'https://wa.me/' + (cleanWa.startsWith('55') ? cleanWa : '55' + cleanWa);
+
+          document.getElementById('lead-profile-card').innerHTML =
+            '<div class="ad-card-title"><span>Dados Pessoais &amp; Qualificação</span></div>' +
+            '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:0.86rem;">' +
+            '  <div><strong style="color:#94A3B8;">WhatsApp:</strong><br/>' + KingAdmin.esc(l.whatsapp) + '</div>' +
+            '  <div><strong style="color:#94A3B8;">E-mail:</strong><br/>' + KingAdmin.esc(l.email) + '</div>' +
+            '  <div><strong style="color:#94A3B8;">Trilha Pretendida:</strong><br/>' + KingAdmin.esc(q.intended_track || '—') + '</div>' +
+            '  <div><strong style="color:#94A3B8;">Profissão Atual:</strong><br/>' + KingAdmin.esc(q.current_profession || '—') + '</div>' +
+            '  <div><strong style="color:#94A3B8;">Experiência:</strong><br/>' + KingAdmin.esc(q.commercial_experience || '—') + '</div>' +
+            '  <div><strong style="color:#94A3B8;">Capital:</strong><br/>' + KingAdmin.esc(q.available_capital_range || '—') + '</div>' +
+            '  <div><strong style="color:#94A3B8;">Prazo Início:</strong><br/>' + KingAdmin.esc(q.desired_start_timeframe || '—') + '</div>' +
+            '  <div><strong style="color:#94A3B8;">Scorecard 5 Filtros:</strong><br/>' + (q.scorecard_total != null ? q.scorecard_total + ' / 25 pts' : 'Não avaliado') + '</div>' +
+            '</div>';
+
+          var stageSel = document.getElementById('m-stage');
+          stageSel.innerHTML = pipelineRes.stages.map(function (st) {
+            var selected = currentOpp && currentOpp.stage_id === st.id ? 'selected' : '';
+            return '<option value="' + st.id + '" ' + selected + '>' + KingAdmin.esc(st.name) + '</option>';
+          }).join('');
+          document.getElementById('m-priority').value = l.priority || 'normal';
+          document.getElementById('m-value').value = currentOpp ? Math.round((currentOpp.estimated_value_cents || 2000000) / 100) : 20000;
+          if (currentOpp && currentOpp.next_follow_up_at) {
+            document.getElementById('m-followup').value = currentOpp.next_follow_up_at.slice(0, 16);
+          }
+
+          var attrs = l.attributions || [];
+          document.getElementById('attribution-card').innerHTML =
+            '<div class="ad-card-title"><span>Origem Comercial &amp; Atribuição</span></div>' +
+            (attrs.length ? attrs.map(function (a) {
+              return '<div style="padding:8px 0;border-bottom:1px solid rgba(148,163,184,0.14);font-size:0.82rem;"><strong>' +
+                KingAdmin.esc(a.touch_type) + '</strong> • ' + KingAdmin.esc(a.utm_source || 'direto') + ' / ' +
+                KingAdmin.esc(a.utm_medium || '—') + ' / ' + KingAdmin.esc(a.utm_campaign || '—') +
+                (a.gclid ? ' • GCLID: ' + KingAdmin.esc(a.gclid.slice(0, 14)) + '...' : '') +
+                '</div>';
+            }).join('') : '<p style="color:#94A3B8;font-size:0.85rem;">Sem registros de atribuição.</p>');
+
+          var meetings = l.meetings || [];
+          document.getElementById('meetings-list').innerHTML = meetings.map(function (m) {
+            return '<div style="padding:8px 10px;background:#060B16;border-radius:8px;margin-top:8px;font-size:0.82rem;display:flex;justify-content:space-between;align-items:center;">' +
+              '<div><strong>' + KingAdmin.esc(m.title) + '</strong><br/><span style="color:#94A3B8;">' + KingAdmin.esc(KingAdmin.formatDate(m.scheduled_for)) + ' • ' + KingAdmin.esc(m.status) + '</span></div>' +
+              (m.status === 'scheduled' ? '<button type="button" class="ad-btn ad-btn-secondary ad-btn-sm" data-complete-meeting="' + m.id + '">Concluir</button>' : '') +
+              '</div>';
+          }).join('');
+
+          document.querySelectorAll('[data-complete-meeting]').forEach(function (btn) {
+            btn.onclick = async function () {
+              await KingAdmin.apiFetch('/api/admin/meetings/' + btn.getAttribute('data-complete-meeting'), {
+                method: 'PATCH',
+                body: JSON.stringify({ status: 'completed' })
+              });
+              KingAdmin.showToast('Reunião marcada como realizada.');
+              loadDetails();
+            };
+          });
+
+          var tasks = l.tasks || [];
+          document.getElementById('tasks-list').innerHTML = tasks.map(function (t) {
+            return '<div style="padding:8px 10px;background:#060B16;border-radius:8px;margin-bottom:6px;font-size:0.83rem;display:flex;justify-content:space-between;align-items:center;">' +
+              '<span style="' + (t.status === 'completed' ? 'text-decoration:line-through;color:#64748B;' : '') + '">' + KingAdmin.esc(t.title) + '</span>' +
+              (t.status !== 'completed' ? '<button type="button" class="ad-btn ad-btn-secondary ad-btn-sm" data-complete-task="' + t.id + '">Concluir</button>' : '<span class="ad-badge ad-badge-green">OK</span>') +
+              '</div>';
+          }).join('');
+
+          document.querySelectorAll('[data-complete-task]').forEach(function (btn) {
+            btn.onclick = async function () {
+              await KingAdmin.apiFetch('/api/admin/tasks/' + btn.getAttribute('data-complete-task'), {
+                method: 'PATCH',
+                body: JSON.stringify({ status: 'completed' })
+              });
+              loadDetails();
+            };
+          });
+
+          var acts = (l.activities || []).slice().sort(function (a, b) { return b.created_at.localeCompare(a.created_at); });
+          document.getElementById('activities-list').innerHTML = acts.map(function (a) {
+            return '<div style="padding:10px 0;border-bottom:1px solid rgba(148,163,184,0.12);font-size:0.84rem;">' +
+              '<div style="display:flex;justify-content:space-between;"><strong>' + KingAdmin.esc(a.title) + '</strong><span style="color:#64748B;font-size:0.75rem;">' + KingAdmin.esc(KingAdmin.formatDate(a.created_at)) + '</span></div>' +
+              (a.description ? '<p style="color:#CBD5E1;margin-top:4px;">' + KingAdmin.esc(a.description) + '</p>' : '') +
+              '</div>';
+          }).join('');
+        } catch (err) {
+          KingAdmin.renderErrorState('ad-global-alert', err);
+        }
+      }
+
+      document.getElementById('lead-meta-form').addEventListener('submit', async function (e) {
+        e.preventDefault();
+        try {
+          var newStageId = document.getElementById('m-stage').value;
+          if (currentOpp && newStageId !== currentOpp.stage_id) {
+            await KingAdmin.apiFetch('/api/admin/opportunities/' + currentOpp.id + '/stage', {
+              method: 'PATCH',
+              body: JSON.stringify({ stage_id: newStageId })
+            });
+          }
+          var fu = document.getElementById('m-followup').value;
+          await KingAdmin.apiFetch('/api/admin/leads/' + leadId, {
+            method: 'PATCH',
+            body: JSON.stringify({
+              priority: document.getElementById('m-priority').value,
+              estimated_value_cents: Math.round(Number(document.getElementById('m-value').value || 20000) * 100),
+              next_follow_up_at: fu ? new Date(fu).toISOString() : null
+            })
+          });
+          KingAdmin.showToast('Dados do lead atualizados.');
+          loadDetails();
+        } catch (err) { KingAdmin.showToast(err.message, true); }
+      });
+
+      document.getElementById('scorecard-form').addEventListener('submit', async function (e) {
+        e.preventDefault();
+        try {
+          await KingAdmin.apiFetch('/api/admin/leads/' + leadId + '/scorecard', {
+            method: 'POST',
+            body: JSON.stringify({
+              scorecard_financial: Number(document.getElementById('sc-fin').value),
+              scorecard_territory: Number(document.getElementById('sc-ter').value),
+              scorecard_profile: Number(document.getElementById('sc-pro').value),
+              scorecard_dedication: Number(document.getElementById('sc-ded').value),
+              scorecard_compliance: Number(document.getElementById('sc-com').value),
+              notes: document.getElementById('sc-notes').value.trim()
+            })
+          });
+          KingAdmin.showToast('Scorecard 5 Filtros registrado.');
+          loadDetails();
+        } catch (err) { KingAdmin.showToast(err.message, true); }
+      });
+
+      document.getElementById('activity-form').addEventListener('submit', async function (e) {
+        e.preventDefault();
+        try {
+          await KingAdmin.apiFetch('/api/admin/leads/' + leadId + '/activities', {
+            method: 'POST',
+            body: JSON.stringify({
+              activity_type: document.getElementById('act-type').value,
+              title: document.getElementById('act-title').value.trim(),
+              description: document.getElementById('act-desc').value.trim()
+            })
+          });
+          document.getElementById('act-title').value = '';
+          document.getElementById('act-desc').value = '';
+          KingAdmin.showToast('Atividade registrada.');
+          loadDetails();
+        } catch (err) { KingAdmin.showToast(err.message, true); }
+      });
+
+      document.getElementById('meeting-form').addEventListener('submit', async function (e) {
+        e.preventDefault();
+        try {
+          await KingAdmin.apiFetch('/api/admin/leads/' + leadId + '/meetings', {
+            method: 'POST',
+            body: JSON.stringify({
+              title: document.getElementById('mt-title').value.trim(),
+              meeting_type: document.getElementById('mt-type').value,
+              scheduled_for: new Date(document.getElementById('mt-date').value).toISOString(),
+              meeting_url: document.getElementById('mt-url').value.trim()
+            })
+          });
+          KingAdmin.showToast('Reunião agendada e sincronizada com pipeline.');
+          loadDetails();
+        } catch (err) { KingAdmin.showToast(err.message, true); }
+      });
+
+      document.getElementById('task-form').addEventListener('submit', async function (e) {
+        e.preventDefault();
+        try {
+          await KingAdmin.apiFetch('/api/admin/leads/' + leadId + '/tasks', {
+            method: 'POST',
+            body: JSON.stringify({ title: document.getElementById('tk-title').value.trim() })
+          });
+          document.getElementById('tk-title').value = '';
+          loadDetails();
+        } catch (err) { KingAdmin.showToast(err.message, true); }
+      });
+
+      document.addEventListener('DOMContentLoaded', async function () {
+        if (await KingAdmin.initProtectedPage('leads')) loadDetails();
+      });
+    })();
+  </script>
+</body>
+</html>

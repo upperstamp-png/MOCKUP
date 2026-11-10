@@ -1,4 +1,4 @@
-name: CI/CD Pipeline - TexCraft QuickMockup B2B SaaS
+name: CI - King Sports Plataforma Unificada
 
 on:
   push:
@@ -8,7 +8,7 @@ on:
 
 jobs:
   validate:
-    name: Lint, Typecheck, Test & Build
+    name: Lint, Build & Testes Unitários
     runs-on: ubuntu-latest
 
     strategy:
@@ -23,24 +23,19 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
-          cache: 'npm'
 
-      - name: Instalar Dependências
-        run: npm ci
-
-      - name: Typecheck & Compilação de Pacotes
+      - name: Instalar Dependências (Raiz + HUB)
         run: |
-          npm run build --workspace=@mockup/types
-          npm run build --workspace=@mockup/validation
-          npm run build --workspace=@mockup/canvas-engine
-          npm run build --workspace=@mockup/api
+          npm ci
+          npm --prefix hub/MOCKUP ci
 
-      - name: Executar Testes Unitários (Canvas Engine & Fastify API)
-        run: |
-          node --test packages/canvas-engine/tests/canvas.test.ts
-          node --test apps/api/tests/api.test.ts
-
-      - name: Build da Aplicação Web Next.js 14
-        run: npm run build --workspace=@mockup/web
+      - name: Validar Sintaxe & Compilar Projeto Unificado
+        run: npm run build
         env:
-          NEXT_PUBLIC_API_URL: http://localhost:4000/api/v1
+          NEXT_PUBLIC_PORTAL_API_BASE: /api/v1
+
+      - name: Executar Testes Unitários (Raiz, Canvas Engine & API)
+        run: |
+          npm run test:unit
+          node --test hub/MOCKUP/packages/canvas-engine/tests/canvas.test.ts
+          npm --prefix hub/MOCKUP exec tsx -- apps/api/tests/api.test.ts

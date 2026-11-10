@@ -1,0 +1,25 @@
+{
+  "name": "mockup-platform",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Plataforma B2B de Mockups Interativos de Uniformes e Vestuário",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspaces --if-present",
+    "dev:web": "npm run dev --workspace=@mockup/web",
+    "dev:api": "npm run dev --workspace=@mockup/api",
+    "build": "npm run build --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present",
+    "clean": "rimraf node_modules apps/*/node_modules packages/*/node_modules"
+  },
+  "devDependencies": {
+    "@isomorphic-git/lightning-fs": "^4.7.0",
+    "isomorphic-git": "^1.41.9",
+    "rimraf": "^5.0.5",
+    "typescript": "^5.4.5"
+  }
+}

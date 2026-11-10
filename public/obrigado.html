@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Candidatura Recebida | King Sports Franchising</title>
+  <meta name="robots" content="noindex, nofollow, noarchive" />
+  <meta name="theme-color" content="#02060E" />
+  <link rel="icon" href="/favicon.ico" sizes="any" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/assets/images/favicon-32x32.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="/assets/images/favicon-16x16.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/assets/images/apple-touch-icon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/assets/css/design-system.css" />
+  <link rel="stylesheet" href="/assets/css/landing.css" />
+</head>
+<body class="ks-bg-dark ks-on-dark" style="min-height:100vh;display:flex;flex-direction:column;">
+  <header class="ks-header">
+    <div class="ks-container ks-header-inner">
+      <a href="/" class="ks-logo-link" aria-label="King Sports Franchising">
+        <img src="/assets/images/logo-king-dark-bg.png" alt="King Sports Franchising" width="136" height="34" />
+      </a>
+      <a href="/blog" class="ks-btn ks-btn-secondary ks-btn-sm">Explorar Blog Técnico</a>
+    </div>
+  </header>
+
+  <main class="ks-sec ks-bg-dark ks-on-dark" style="flex:1;display:flex;align-items:center;padding:56px 0;">
+    <div class="ks-lp-wrap" style="max-width:920px;">
+      <div class="ks-feat" style="padding:40px;border-color:rgba(104,216,255,0.34);background:rgba(11,28,50,0.72);">
+        <p class="ks-eyebrow">CANDIDATURA REGISTRADA COM SUCESSO</p>
+        <h1 class="ks-display ks-h-md" style="margin:18px 0 14px;color:#FFFFFF;">
+          Obrigado<span id="ks-thanks-name"></span>! Sua solicitação já está com a nossa equipe de Expansão.
+        </h1>
+        <p class="ks-lead" id="ks-thanks-subtitle">
+          Recebemos suas informações de perfil e região para avaliação inicial do modelo de franquia home based King Sports.
+        </p>
+
+        <div class="ks-tools" style="margin:32px 0;">
+          <div class="ks-tool" style="gap:14px;padding:22px;">
+            <span class="ks-idx">01.</span>
+            <div>
+              <h3>Análise de Perfil &amp; Região</h3>
+              <p>Verificamos seu perfil comercial/designer e a disponibilidade da sua cidade.</p>
+            </div>
+          </div>
+          <div class="ks-tool" style="gap:14px;padding:22px;">
+            <span class="ks-idx">02.</span>
+            <div>
+              <h3>Contato da Expansão</h3>
+              <p>Nossa equipe entrará em contato via WhatsApp ou e-mail para alinhar os 5 filtros iniciais.</p>
+            </div>
+          </div>
+          <div class="ks-tool" style="gap:14px;padding:22px;">
+            <span class="ks-idx">03.</span>
+            <div>
+              <h3>Apresentação &amp; COF</h3>
+              <p>Após o alinhamento e apresentação completa, entregamos a COF com prazo legal mínimo de 10 dias.</p>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex;flex-wrap:wrap;gap:14px;">
+          <a href="/blog" class="ks-btn ks-btn-primary">Ler Artigos sobre o Modelo</a>
+          <a href="/" class="ks-btn ks-btn-secondary">Voltar à Página Inicial</a>
+          <a href="#" id="ks-whatsapp-cta" class="ks-btn ks-btn-blue" style="display:none;" target="_blank" rel="noopener noreferrer">
+            Falar pelo WhatsApp Oficial
+          </a>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="/assets/js/tracking.js" defer></script>
+  <script>
+    (function () {
+      document.addEventListener('DOMContentLoaded', function () {
+        try {
+          var saved = JSON.parse(sessionStorage.getItem('ks_last_submission') || 'null');
+          if (saved && saved.first_name) {
+            document.getElementById('ks-thanks-name').textContent = ', ' + saved.first_name;
+            document.getElementById('ks-thanks-subtitle').textContent =
+              'Recebemos sua candidatura para a região de ' + saved.city + '/' + saved.state +
+              ' (Perfil ' + saved.track + '). Nossa equipe entrará em contato em breve.';
+          }
+        } catch {}
+      });
+
+      window.addEventListener('ks:config-loaded', function (ev) {
+        var phone = ev.detail && ev.detail.franchise && ev.detail.franchise.whatsapp_expansion;
+        if (phone) {
+          var clean = String(phone).replace(/\D/g, '');
+          if (clean.length >= 10) {
+            var btn = document.getElementById('ks-whatsapp-cta');
+            btn.href = 'https://wa.me/' + clean + '?text=' + encodeURIComponent('Olá! Acabei de enviar minha candidatura para a Franquia Home Based King Sports.');
+            btn.style.display = 'inline-flex';
+          }
+        }
+      });
+    })();
+  </script>
+</body>
+</html>

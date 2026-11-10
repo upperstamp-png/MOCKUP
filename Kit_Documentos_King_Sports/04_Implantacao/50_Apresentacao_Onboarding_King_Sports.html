@@ -1,0 +1,937 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Onboarding 100% Digital — Turma King Sports &amp; Hub Interno</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Montserrat:wght@700;800;900&display=swap');
+
+  :root {
+    --bg-dark: #070C18;
+    --bg-card: #0F172A;
+    --blue-primary: #2563EB;
+    --blue-bright: #38BDF8;
+    --border-dark: rgba(148, 163, 184, 0.22);
+    --text-white: #F8FAFC;
+    --text-muted: #94A3B8;
+    --text-light: #CBD5E1;
+    --ink-dark: #0F172A;
+    --ink-muted: #475569;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  @page {
+    size: 1280px 720px;
+    margin: 0;
+  }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: #020617;
+    color: var(--text-white);
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .slide {
+    width: 1280px;
+    height: 720px;
+    position: relative;
+    overflow: hidden;
+    padding: 44px 62px 48px 62px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    page-break-after: always;
+    break-after: page;
+    background: radial-gradient(circle at 86% 14%, rgba(37, 99, 235, 0.22) 0%, rgba(7, 12, 24, 0) 48%),
+                linear-gradient(145deg, #070C18 0%, #0B1325 100%);
+  }
+
+  .slide.light {
+    background: linear-gradient(155deg, #F8FAFC 0%, #E2E8F0 100%);
+    color: var(--ink-dark);
+  }
+
+  .topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 14px;
+  }
+
+  .tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--blue-bright);
+    background: rgba(37, 99, 235, 0.16);
+    border: 1px solid rgba(56, 189, 248, 0.35);
+    padding: 6px 14px;
+    border-radius: 999px;
+  }
+
+  .slide.light .tag {
+    color: #1D4ED8;
+    background: rgba(37, 99, 235, 0.10);
+    border-color: rgba(37, 99, 235, 0.28);
+  }
+
+  .slide-num {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    color: var(--text-muted);
+  }
+
+  .slide.light .slide-num { color: var(--ink-muted); }
+
+  h1, h2 {
+    font-family: 'Montserrat', 'Inter', sans-serif;
+    font-weight: 900;
+    letter-spacing: -0.02em;
+    line-height: 1.07;
+    text-transform: uppercase;
+  }
+
+  .hero-title { font-size: 50px; max-width: 1020px; margin-bottom: 16px; }
+  .slide-title { font-size: 34px; margin-bottom: 8px; }
+  .subtitle { font-size: 17px; line-height: 1.46; color: var(--text-light); max-width: 1020px; }
+  .slide.light .subtitle { color: var(--ink-muted); }
+
+  .accent { color: var(--blue-bright); }
+  .slide.light .accent { color: var(--blue-primary); }
+
+  .main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 18px; }
+  .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin-top: 18px; }
+  .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-top: 18px; }
+  .grid-5 { display: grid; grid-template-columns: repeat(5, 1fr); gap: 13px; margin-top: 18px; }
+  .grid-6 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-top: 16px; }
+
+  .card {
+    background: rgba(15, 23, 42, 0.88);
+    border: 1px solid var(--border-dark);
+    border-radius: 14px;
+    padding: 18px 20px;
+  }
+
+  .slide.light .card {
+    background: #FFFFFF;
+    border-color: #CBD5E1;
+    box-shadow: 0 6px 20px rgba(15, 23, 42, 0.06);
+  }
+
+  .card-accent {
+    border-color: rgba(56, 189, 248, 0.55);
+    background: linear-gradient(160deg, rgba(37, 99, 235, 0.20) 0%, rgba(15, 23, 42, 0.94) 100%);
+  }
+
+  .slide.light .card-accent {
+    background: linear-gradient(160deg, #EFF6FF 0%, #FFFFFF 100%);
+    border: 2px solid #2563EB;
+  }
+
+  .card h3 {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 15px;
+    font-weight: 800;
+    margin-bottom: 7px;
+    color: var(--blue-bright);
+    text-transform: uppercase;
+  }
+
+  .slide.light .card h3 { color: #1D4ED8; }
+
+  .card p, .card li {
+    font-size: 13.5px;
+    line-height: 1.45;
+    color: var(--text-light);
+  }
+
+  .slide.light .card p, .slide.light .card li { color: #334155; }
+
+  .num-badge {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 24px;
+    font-weight: 900;
+    color: var(--blue-bright);
+    margin-bottom: 5px;
+  }
+
+  .slide.light .num-badge { color: #2563EB; }
+
+  .big-stat {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 30px;
+    font-weight: 900;
+    color: #FFFFFF;
+    margin-bottom: 4px;
+  }
+
+  .slide.light .big-stat { color: #0F172A; }
+
+  ul.clean { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+  ul.clean li { position: relative; padding-left: 20px; font-size: 13.5px; line-height: 1.42; }
+  ul.clean li::before {
+    content: '▸';
+    position: absolute; left: 0; top: 0;
+    color: var(--blue-bright); font-weight: 800;
+  }
+  ul.check li::before { content: '✓'; color: #38BDF8; }
+  ul.cross li::before { content: '✕'; color: #94A3B8; }
+  .slide.light ul.check li::before { color: #2563EB; }
+
+  .flow-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+    margin-top: 16px;
+  }
+
+  .flow-step {
+    background: rgba(15, 23, 42, 0.92);
+    border: 1px solid rgba(56, 189, 248, 0.35);
+    border-radius: 12px;
+    padding: 15px 16px;
+  }
+
+  .flow-step .step-tag {
+    display: inline-block;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 11px;
+    font-weight: 800;
+    background: #2563EB;
+    color: #FFFFFF;
+    padding: 3px 10px;
+    border-radius: 999px;
+    margin-bottom: 8px;
+  }
+
+  .flow-step h4 {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 14px;
+    font-weight: 800;
+    color: #F8FAFC;
+    margin-bottom: 5px;
+    text-transform: uppercase;
+  }
+
+  .flow-step p {
+    font-size: 12.8px;
+    line-height: 1.4;
+    color: #CBD5E1;
+  }
+
+  table.comp {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 16px;
+    background: rgba(15, 23, 42, 0.9);
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid var(--border-dark);
+  }
+  table.comp th, table.comp td {
+    padding: 12px 16px;
+    text-align: left;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.15);
+    font-size: 13.5px;
+    line-height: 1.38;
+  }
+  table.comp th {
+    background: rgba(37, 99, 235, 0.25);
+    font-family: 'Montserrat', sans-serif;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #E2E8F0;
+  }
+  .slide.light table.comp { background: #FFFFFF; border-color: #CBD5E1; }
+  .slide.light table.comp th { background: #1E40AF; color: #FFFFFF; }
+  .slide.light table.comp td { color: #334155; border-bottom-color: #E2E8F0; }
+
+  .notice {
+    margin-top: 14px;
+    padding: 11px 16px;
+    border-radius: 10px;
+    background: rgba(56, 189, 248, 0.10);
+    border-left: 4px solid var(--blue-bright);
+    font-size: 12.8px;
+    line-height: 1.44;
+    color: #CBD5E1;
+  }
+
+  .slide.light .notice {
+    background: #EFF6FF;
+    border-left-color: #2563EB;
+    color: #1E3A8A;
+  }
+
+  .footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 10px;
+    border-top: 1px solid rgba(148, 163, 184, 0.16);
+    font-size: 11.5px;
+    color: var(--text-muted);
+  }
+
+  .slide.light .footer {
+    border-top-color: #CBD5E1;
+    color: var(--ink-muted);
+  }
+
+  .brand-foot { font-weight: 800; letter-spacing: 0.08em; color: var(--blue-bright); }
+  .slide.light .brand-foot { color: #2563EB; }
+</style>
+</head>
+<body>
+
+<!-- SLIDE 01 -->
+<section class="slide">
+  <div class="topbar">
+    <span class="tag">ONBOARDING OFICIAL KING SPORTS | TURMA 100% DIGITAL</span>
+    <span class="slide-num">01 / 16</span>
+  </div>
+  <div class="main">
+    <p style="font-size:14px; font-weight:700; letter-spacing:0.12em; color:#38BDF8; margin-bottom:12px;">IMPLANTAÇÃO DE NOVAS UNIDADES — ZERO DESLOCAMENTO FÍSICO</p>
+    <h1 class="hero-title">BEM-VINDOS AO <span class="accent">SISTEMA KING SPORTS</span></h1>
+    <p class="subtitle">Nos próximos 15 dias vamos alinhar seu dia a dia, conectar sua frente comercial diretamente à nossa fábrica em São Paulo, treinar você em cada setor e preparar sua unidade para receber a entrega final: o acesso ao <strong>Hub Digital Interno King Sports</strong>.</p>
+    <div class="grid-3" style="margin-top:30px;">
+      <div class="card card-accent">
+        <h3>100% Online e Digital</h3>
+        <div class="big-stat">Zero Viagem</div>
+        <p>Sem precisar ir à fábrica ou a qualquer sede física. Tudo ao vivo e digital.</p>
+      </div>
+      <div class="card">
+        <h3>Trilha por Setores</h3>
+        <div class="big-stat">7 Setores</div>
+        <p>Comercial, Produto/Mockup, Arte, PCP Fábrica, Financeiro/Fiscal e Pós-Venda.</p>
+      </div>
+      <div class="card card-accent">
+        <h3>Entrega Final</h3>
+        <div class="big-stat">Hub Interno</div>
+        <p>Liberado após aprovação na Apresentação de Venda + Apresentação de Arte.</p>
+      </div>
+    </div>
+  </div>
+  <div class="footer">
+    <span class="brand-foot">KING SPORTS FRANCHISING • UNIVERSIDADE CORPORATIVA</span>
+    <span>Onboarding de Coorte — Turma Inaugural</span>
+  </div>
+</section>
+
+<!-- SLIDE 02 -->
+<section class="slide light">
+  <div class="topbar">
+    <span class="tag">PROPÓSITO DO ONBOARDING</span>
+    <span class="slide-num">02 / 16</span>
+  </div>
+  <div class="main">
+    <h2 class="slide-title">COMO TRANSFORMAMOS VOCÊ EM <span class="accent">UNIDADE PRONTA</span></h2>
+    <p class="subtitle">Onboarding não é uma simples conversa de boas-vindas — é o processo obrigatório que garante que todas as 10 unidades da turma operem no mesmo padrão industrial.</p>
+    <div class="grid-3" style="margin-top:24px;">
+      <div class="card">
+        <div class="num-badge">01</div>
+        <h3>Por Que Tudo Online?</h3>
+        <p>Sua unidade é Home Based. Toda a troca entre você e a indústria acontece de forma digital. Você domina o ambiente online já durante a implantação, sem gastar com passagens ou hotel.</p>
+      </div>
+      <div class="card card-accent">
+        <div class="num-badge">02</div>
+        <h3>Por Que Treinar Todos os Setores?</h3>
+        <p>Quem vende sem entender de tecido, grade, arte e NF-e trava o pedido na fábrica. Quando cada franqueado domina os 7 setores, o pedido entra liso na calandra e gera lucro rápido.</p>
+      </div>
+      <div class="card">
+        <div class="num-badge">03</div>
+        <h3>Por Que Há Teste Final?</h3>
+        <p>Antes de abrir o <strong>Hub Digital Interno</strong> em produção, validamos na prática que você sabe apresentar uma venda real e apresentar uma arte dentro do padrão King Sports.</p>
+      </div>
+    </div>
+    <div class="notice"><strong>Entrega Final Garantida aos Aprovados:</strong> Acesso pleno ao Hub Digital Interno (Artes, Mockups, CRM, Pedidos/PCP, Financeiro/Split e Chamados) + Go-Live Assistido.</div>
+  </div>
+  <div class="footer">
+    <span class="brand-foot">KING SPORTS FRANCHISING</span>
+    <span>Padrão operacional unificado em toda a rede</span>
+  </div>
+</section>
+
+<!-- SLIDE 03 -->
+<section class="slide">
+  <div class="topbar">
+    <span class="tag">VISÃO GERAL DOS 15 DIAS DA TURMA</span>
+    <span class="slide-num">03 / 16</span>
+  </div>
+  <div class="main">
+    <h2 class="slide-title">OS 5 PASSOS DO NOSSO <span class="accent">ONBOARDING DIGITAL</span></h2>
+    <p class="subtitle">Do dia do fechamento até o momento em que você recebe a chave oficial do Hub Digital Interno:</p>
+    <div class="grid-5">
+      <div class="card">
+        <div class="num-badge">ETAPA 1</div>
+        <h3>Setup &amp; Sandbox</h3>
+        <p><strong>Dias 1–3:</strong> Abertura/ajuste ME ou SLU + IE, Split Asaas, despacho das Maletas e login no Sandbox.</p>
+      </div>
+      <div class="card card-accent">
+        <div class="num-badge">ETAPA 2</div>
+        <h3>Apresentação</h3>
+        <p><strong>Dia 4 (Hoje):</strong> Alinhamento ao vivo com a turma sobre dia a dia, conexão venda-fábrica e regras do Hub.</p>
+      </div>
+      <div class="card">
+        <div class="num-badge">ETAPA 3</div>
+        <h3>7 Setores</h3>
+        <p><strong>Dias 5–11:</strong> Treinamentos online de todos os setores + plantões práticos diários de dúvidas.</p>
+      </div>
+      <div class="card card-accent">
+        <div class="num-badge">ETAPA 4</div>
+        <h3>Teste Final</h3>
+        <p><strong>Dias 12–13:</strong> Banca individual ao vivo: Apresentação de 1 Venda + Apresentação de 1 Arte/Mockup.</p>
+      </div>
+      <div class="card">
+        <div class="num-badge">ETAPA 5</div>
+        <h3>Entrega do Hub</h3>
+        <p><strong>Dias 14–15:</strong> Checklist 11 pontos (Doc. 26) e liberação do <strong>Hub Digital Interno</strong> em produção.</p>
+      </div>
+    </div>
+    <div class="notice">Quem estiver abrindo o CNPJ do zero faz todas as etapas online nos Dias 4–13 normalmente e só ativa o faturamento do Hub ao concluir a IE/Split (até Dia 30).</div>
+  </div>
+  <div class="footer">
+    <span class="brand-foot">KING SPORTS FRANCHISING</span>
+    <span>Jornada estruturada para turma de 10 unidades</span>
+  </div>
+</section>
+
+<!-- SLIDE 04 -->
+<section class="slide">
+  <div class="topbar">
+    <span class="tag">ROTINA DO FRANQUEADO NA PRÁTICA</span>
+    <span class="slide-num">04 / 16</span>
+  </div>
+  <div class="main">
+    <h2 class="slide-title">COMO VAI FUNCIONAR O <span class="accent">SEU DIA A DIA</span></h2>
+    <p class="subtitle">Você comanda a frente comercial da sua região com disciplina diária — dividindo seu dia em 3 blocos claros dentro do Hub:</p>
+    <div class="grid-3" style="margin-top:24px;">
+      <div class="card card-accent">
+        <h3>Manhã: Prospecção &amp; CRM</h3>
+        <ul class="clean check" style="margin-top:10px;">
+          <li>Abre o <strong>CRM do Hub</strong> e trata leads novos da matriz (SLA 2h úteis);</li>
+          <li>Faz follow-ups datados de orçamentos abertos;</li>
+          <li>Prospecta capitães, escolinhas, arenas e RHs locais agendando reuniões.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Tarde: Maleta, Mockup &amp; Venda</h3>
+        <ul class="clean check" style="margin-top:10px;">
+          <li>Visita quadras/empresas com a Maleta Pro ou faz reunião online em vídeo;</li>
+          <li>Monta <strong>mockup / Simulador 3D no Hub</strong>;</li>
+          <li>Envia Proposta Padrão (Doc. 33) e captura pagamento pelo Link Split.</li>
+        </ul>
+      </div>
+      <div class="card card-accent">
+        <h3>Gestão: Fábrica, NF-e &amp; Entrega</h3>
+        <ul class="clean check" style="margin-top:10px;">
+          <li>Sobe grade (Doc. 34) e Termo de Aprovação (Doc. 35) no <strong>Operacional do Hub</strong>;</li>
+          <li>Acompanha Kanban fabril (SP) até despacho;</li>
+          <li>Emite NF-e nº 1 (5.120) no dia da expedição e colhe prova social na entrega.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="footer">
+    <span class="brand-foot">KING SPORTS FRANCHISING</span>
+    <span>Meta semanal de ritmo: 25–30 abordagens → 10–12 propostas → 3–5 pedidos</span>
+  </div>
+</section>
+
+<!-- SLIDE 05 -->
+<section class="slide light">
+  <div class="topbar">
+    <span class="tag">CONEXÃO COMERCIAL → INDUSTRIAL</span>
+    <span class="slide-num">05 / 16</span>
+  </div>
+  <div class="main">
+    <h2 class="slide-title">COMO A SUA VENDA SE CONECTA <span class="accent">À FÁBRICA EM SP</span></h2>
+    <p class="subtitle">O Hub elimina ruído de telefone e e-mail perdido: cada pedido percorre 8 passos exatos, rastreáveis e datados:</p>
+    <div class="flow-row">
+      <div class="flow-step">
+        <span class="step-tag">PASSO 1</span>
+        <h4>Lead no CRM</h4>
+        <p>Cliente entra no CRM do Hub (tráfego local, visita ou Lead Routing por CEP) com carimbo de data.</p>
+      </div>
+      <div class="flow-step">
+        <span class="step-tag">PASSO 2</span>
+        <h4>Mockup &amp; Maleta</h4>
+        <p>Prova de tamanho com a Grade Física e geração do Mockup oficial no Hub para validação visual.</p>
+      </div>
+      <div class="flow-step">
+        <span class="step-tag">PASSO 3</span>
+        <h4>Proposta &amp; Split</h4>
+        <p>Cliente paga no Link Split oficial dentro do pedido. Gateway já reserva fábrica, frete, 7% e margem.</p>
+      </div>
+      <div class="flow-step">
+        <span class="step-tag">PASSO 4</span>
+        <h4>Trava Doc. 34/35/36</h4>
+        <p>Upload no Hub da arte final (ou pedido à Central), Grade fechada, Autorização e Termo Doc. 35 datado.</p>
+      </div>
+      <div class="flow-step">
+        <span class="step-tag">PASSO 5</span>
+        <h4>Auditoria PCP SP</h4>
+        <p>Em até 24h úteis o PCP de SP confere tudo no Hub e dispara o relógio de 20–25 dias úteis.</p>
+      </div>
+      <div class="flow-step">
+        <span class="step-tag">PASSO 6</span>
+        <h4>Chão de Fábrica SP</h4>
+        <p>Você vê em tempo real no Kanban do Hub: Sublimação → Corte → Bordado/TPU → Costura → Qualidade.</p>
+      </div>
+      <div class="flow-step">
+        <span class="step-tag">PASSO 7</span>
+        <h4>3 NF-es no Hub</h4>
+        <p>Você sobe a NF-e nº 1 (5.120) no Hub; fábrica emite 5.118 e 5.923 de remessa por conta e ordem.</p>
+      </div>
+      <div class="flow-step">
+        <span class="step-tag">PASSO 8</span>
+        <h4>Envio &amp; Pós-Venda</h4>
+        <p>Caixa sai direto de SP para o cliente final com rastreio no Hub e lembrete de recompra em 150 dias.</p>
+      </div>
+    </div>
+  </div>
+  <div class="footer">
+    <span class="brand-foot">KING SPORTS FRANCHISING</span>
+    <span>Fluxo único integrado ponta a ponta sem planilhas paralelas</span>
+  </div>
+</section>
+
+<!-- SLIDE 06 -->
+<section class="slide">
+  <div class="topbar">
+    <span class="tag">A ENTREGA FINAL DO ONBOARDING</span>
+    <span class="slide-num">06 / 16</span>
+  </div>
+  <div class="main">
+    <h2 class="slide-title">POR DENTRO DO <span class="accent">HUB DIGITAL INTERNO KING SPORTS</span></h2>
+    <p class="subtitle">Todo o negócio da sua franquia vive dentro de uma única plataforma. Conheça os 6 pilares que você recebe ao ser aprovado:</p>
+    <div class="grid-6">
+      <div class="card card-accent">
+        <h3>1. CRM Comercial</h3>
+        <p>Gestão de leads, funil por etapas, registro de ligações/WhatsApp, propostas e alertas automáticos de recompra.</p>
+      </div>
+      <div class="card">
+        <h3>2. Mockups &amp; Simulador 3D</h3>
+        <p>Criação rápida de prévias 3D, histórico de versões (v1, v2, Final) e link de aprovação visual com o cliente.</p>
+      </div>
+      <div class="card card-accent">
+        <h3>3. Artes &amp; Design Pack</h3>
+        <p>Biblioteca de moldes graduados, paleta CMYK, selos oficiais e canal de envio/revisão técnica de arquivos RIP.</p>
+      </div>
+      <div class="card">
+        <h3>4. Operacional &amp; PCP</h3>
+        <p>Envio de Ordens de Produção para SP, upload de grades/termos e acompanhamento ao vivo de cada estágio fabril.</p>
+      </div>
+      <div class="card card-accent">
+        <h3>5. Financeiro, Split &amp; Fiscal</h3>
+        <p>Geração de links Asaas, extrato de repasses, depósito obrigatório dos XMLs/DANFEs das 3 NF-es e NFS-es.</p>
+      </div>
+      <div class="card">
+        <h3>6. Pós-Venda &amp; Universidade</h3>
+        <p>Chamados por setor com SLA, ocorrências/garantias (Doc. 40), manuais atualizados e certificados da unidade.</p>
+      </div>
+    </div>
+  </div>
+  <div class="footer">
+    <span class="brand-foot">KING SPORTS FRANCHISING</span>
+    <span>Um só login para comercial, arte, fábrica, financeiro e governança</span>
+  </div>
+</section>
+
+<!-- SLIDE 07 -->
+<section class="slide">
+  <div class="topbar">
+    <span class="tag">REGRA INEGOCIÁVEL DE GOVERNANÇA</span>
+    <span class="slide-num">07 / 16</span>
+  </div>
+  <div class="main">
+    <h2 class="slide-title">TUDO DENTRO DO HUB. <span class="accent">TUDO DATADO. NADA FORA.</span></h2>
+    <p class="subtitle">Para evitar erros de produção, prejuízos fiscais e conflito entre franqueados, a regra número 1 de operação na rede é absoluta:</p>
+    <div class="grid-2" style="margin-top:22px;">
+      <div class="card card-accent">
+        <h3>O Que Significa "Tudo Datado no Hub"</h3>
+        <ul class="clean check" style="margin-top:12px;">
+          <li><strong>Carimbo Imutável (DD/MM/AAAA HH:MM):</strong> Toda movimentação de lead, envio de proposta, versão de mockup, aceite do Doc. 35, pagamento e NF-e grava data, hora e usuário;</li>
+          <li><strong>Disparo Real do Prazo:</strong> Os 20–25 dias úteis da fábrica começam a contar na data/hora em que os 5 itens verdes travam no Hub;</li>
+          <li><strong>Proteção Territorial:</strong> Prioridade em orçamento no CEP protegido é provada pela data do atendimento no CRM do Hub.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3 style="color:#94A3B8;">O Que É Estritamente Proibido ("Fora do Hub")</h3>
+        <ul class="clean cross" style="margin-top:12px;">
+          <li>Aprovar arte, trocar tamanho ou alterar cor por áudio solto de WhatsApp sem registrar no card do pedido;</li>
+          <li>Usar planilha paralela ou CRM pessoal para esconder clientes da matriz;</li>
+          <li>Cobrar sinal ou parcela em Pix pessoal/conta externa fora do Link Split do Hub;</li>
+          <li>Enviar pedido por e-mail avulso esperando furar a fila do PCP.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="notice"><strong>Regra de Ouro:</strong> O que não foi registrado e datado dentro do Hub Digital Interno não existe para contagem de prazo fabril nem para garantia de território.</div>
+  </div>
+  <div class="footer">
+    <span class="brand-foot">KING SPORTS FRANCHISING</span>
+    <span>Segurança operacional para a sua unidade e para a indústria em SP</span>
+  </div>
+</section>
+
+<!-- SLIDE 08 -->
+<section class="slide light">
+  <div class="topbar">
+    <span class="tag">TREINAMENTOS OBRIGATÓRIOS — DIAS 5 A 11</span>
+    <span class="slide-num">08 / 16</span>
+  </div>
+  <div class="main">
+    <h2 class="slide-title">TREINAMENTO DE CADA SETOR <span class="accent">(BLOCO 1: SETORES 1 A 4)</span></h2>
+    <p class="subtitle">Antes de fazer o Teste Final, cada franqueado conclui online as aulas gravadas, quizzes e práticas no Sandbox dos 4 primeiros setores:</p>
+    <div class="grid-2" style="margin-top:20px;">
+      <div class="card">
+        <h3>Setor 1 — Institucional &amp; Dia a Dia</h3>
+        <p>Cultura industrial King Sports, limites de autonomia do franqueado, rotina semanal ideal e navegação completa no Hub Digital Único.</p>
+      </div>
+      <div class="card card-accent">
+        <h3>Setor 2 — Comercial, Vendas &amp; CRM</h3>
+        <p>Os 4 segmentos do mercado local, scripts de campo e WhatsApp, contorno de objeções e prática real de cadastrar leads e propostas datadas no CRM Sandbox.</p>
+      </div>
+      <div class="card card-accent">
+        <h3>Setor 3 — Produto, 6 Malhas &amp; Mockups</h3>
+        <p>Domínio das 6 malhas, acabamentos (retilínea, bordado, TPU 3D, Inmetro), Grade Física PP–EXG e geração de mockups versionados no Simulador/Hub.</p>
+      </div>
+      <div class="card">
+        <h3>Setor 4 — Arte, Design Pack &amp; Fechamento</h3>
+        <p>Regras visuais da marca e leitura da Bandeira CMYK para todos + módulo especialista (moldes graduados, 300 DPI, curvas, sangria +1,5 cm e macro RIP) para Perfil Designer.</p>
+      </div>
+    </div>
+  </div>
+  <div class="footer">
+    <span class="brand-foot">KING SPORTS FRANCHISING</span>
+    <span>Aulas curtas sob demanda + Plantões diários ao vivo em turma</span>
+  </div>
+</section>
+
+<!-- SLIDE 09 -->
+<section class="slide">
+  <div class="topbar">
+    <span class="tag">TREINAMENTOS OBRIGATÓRIOS — DIAS 5 A 11</span>
+    <span class="slide-num">09 / 16</span>
+  </div>
+  <div class="main">
+    <h2 class="slide-title">TREINAMENTO DE CADA SETOR <span class="accent">(BLOCO 2: SETORES 5 A 7)</span></h2>
+    <p class="subtitle">Dominando o lado industrial, tributário e jurídico dentro do Hub para não travar nenhum pedido na hora da venda:</p>
+    <div class="grid-3" style="margin-top:24px;">
+      <div class="card card-accent">
+        <div class="num-badge">SETOR 5</div>
+        <h3>Operacional, PCP &amp; Fábrica</h3>
+        <p>Tour virtual HD na produção em SP, os 5 bloqueios de entrada em máquina, leitura do Kanban fabril e envio correto do Termo de Aprovação (Doc. 35) e Grade (Doc. 34) no Hub.</p>
+      </div>
+      <div class="card">
+        <div class="num-badge">SETOR 6</div>
+        <h3>Financeiro, Fiscal &amp; Split</h3>
+        <p>Formação de preço sem destruir margem, geração do Link Split, execução do passo a passo da Operação Triangular (5.120 → 5.118 → 5.923) e rotina de reserva para o DAS.</p>
+      </div>
+      <div class="card card-accent">
+        <div class="num-badge">SETOR 7</div>
+        <h3>Marca, Jurídico &amp; Pós-Venda</h3>
+        <p>Padrão @kingsports.[regiao], Autorização de Escudos (Doc. 36), termos de garantia/CDC, abertura de ocorrências datadas no Hub (Doc. 40) e política "Nada Fora do Hub".</p>
+      </div>
+    </div>
+    <div class="notice"><strong>Critério de Avanço nos Setores:</strong> 100% dos vídeos assistidos + nota mínima de 80% nos quizzes + exercícios práticos salvos no Ambiente Sandbox até o Dia 10.</div>
+  </div>
+  <div class="footer">
+    <span class="brand-foot">KING SPORTS FRANCHISING</span>
+    <span>Treinamentos setoriais conduzidos diretamente pelos líderes de cada área em SP</span>
+  </div>
+</section>
+
+<!-- SLIDE 10 -->
+<section class="slide">
+  <div class="topbar">
+    <span class="tag">CONEXÃO FINANCEIRA E FISCAL NO HUB</span>
+    <span class="slide-num">10 / 16</span>
+  </div>
+  <div class="main">
+    <h2 class="slide-title">COMO O DINHEIRO E AS NOTAS <span class="accent">CIRCULAM NO HUB</span></h2>
+    <p class="subtitle">Tudo é transparente na liquidação e arquivado com data no módulo Financeiro — garantindo proteção fiscal para sua ME/SLU:</p>
+    <table class="comp">
+      <thead>
+        <tr>
+          <th style="width:22%;">Momento do Pedido</th>
+          <th style="width:42%;">O Que Acontece Dentro do Hub</th>
+          <th style="width:36%;">Documento / Registro Datado</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>1. Pagamento do Cliente</strong></td>
+          <td>Você gera o Link Asaas dentro do card do pedido no Hub. Cliente paga por Pix, Boleto ou Cartão.</td>
+          <td>Split automático separa: Fábrica + Frete, Royalties 5%, Fundo Mkt 2% e sua Margem.</td>
+        </tr>
+        <tr>
+          <td><strong>2. Produção Concluída</strong></td>
+          <td>Qualidade SP aprova o lote (Doc. 38) e muda status no Hub para "Pronto para Faturamento".</td>
+          <td>Notificação automática datada no Hub abre janela de 24h úteis para sua NF-e.</td>
+        </tr>
+        <tr>
+          <td><strong>3. Emissão NF-e nº 1</strong></td>
+          <td>Sua ME/SLU emite NF-e de venda ao cliente final (CFOP 5.120 ou 6.120) e sobe XML/PDF no Hub.</td>
+          <td>Arquivo validado e anexado ao histórico financeiro do pedido no Hub.</td>
+        </tr>
+        <tr>
+          <td><strong>4. Remessa SP &amp; Fechamento</strong></td>
+          <td>Fábrica SP emite NF-e nº 2 (5.118/6.118) p/ você e NF-e nº 3 (5.923/6.923) p/ o cliente e despacha.</td>
+          <td>XMLs disponíveis no Hub + NFS-e dos 7% para sua contabilidade mensal.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="footer">
+    <span class="brand-foot">KING SPORTS FRANCHISING</span>
+    <span>Operação Triangular (Art. 129 RICMS/SP) com 100% dos XMLs centralizados no Hub</span>
+  </div>
+</section>
+
+<!-- SLIDE 11 -->
+<section class="slide light">
+  <div class="topbar">
+    <span class="tag">DIFERENÇA OPERACIONAL POR PERFIL</span>
+    <span class="slide-num">11 / 16</span>
+  </div>
+  <div class="main">
+    <h2 class="slide-title">SUA TRILHA NO HUB: <span class="accent">COMERCIAL (58,5%) VS. DESIGNER (54,5%)</span></h2>
+    <p class="subtitle">Ambos operam no mesmo Hub Digital Interno, com diferença apenas na etapa de fechamento de arte:</p>
+    <div class="grid-2" style="margin-top:24px;">
+      <div class="card">
+        <h3>Perfil Comercial (Transferência Fabril 58,5%)</h3>
+        <ul class="clean check" style="margin-top:12px;">
+          <li>Usa <strong>Mockups e Simulador 3D</strong> direto no Hub para vender rápido na reunião;</li>
+          <li>Solicita a arte final à Central de Arte SP (ou contrata um Designer da rede pelo Hub);</li>
+          <li>No Teste Final (Prova B), apresenta o mockup com domínio de tecido, medida e aprovação Doc. 35.</li>
+        </ul>
+      </div>
+      <div class="card card-accent">
+        <h3>Perfil Designer / Studio (Transferência Fabril 54,5%)</h3>
+        <ul class="clean check" style="margin-top:12px;">
+          <li>Baixa os moldes graduados e macro no Design Pack do Hub e sobe o <strong>arquivo fechado para RIP</strong>;</li>
+          <li>Ganha <strong>-4 pontos percentuais</strong> de custo industrial por entregar pronto para calandra;</li>
+          <li>No Teste Final (Prova B), apresenta o mockup E demonstra o arquivo fechado em CMYK/300 DPI/curvas/sangria.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="notice"><strong>Flexibilidade:</strong> Se um franqueado Designer ainda precisar ajustar o padrão RIP na banca, pode começar na tabela de 58,5% e ativar 54,5% assim que homologar seu arquivo com o Líder de Arte SP.</div>
+  </div>
+  <div class="footer">
+    <span class="brand-foot">KING SPORTS FRANCHISING</span>
+    <span>O setor de Arte SP audita 100% dos arquivos recebidos no Hub antes da impressão</span>
+  </div>
+</section>
+
+<!-- SLIDE 12 -->
+<section class="slide">
+  <div class="topbar">
+    <span class="tag">PRÉ-REQUISITOS PARALELOS (DIAS 1 A 5)</span>
+    <span class="slide-num">12 / 16</span>
+  </div>
+  <div class="main">
+    <h2 class="slide-title">O QUE PRECISA CORRER EM PARALELO <span class="accent">PARA NÃO TRAVAR O HUB</span></h2>
+    <p class="subtitle">Enquanto você estuda os 7 Setores online, garanta estes 4 itens documentais com seu contador e nosso suporte:</p>
+    <div class="grid-4" style="margin-top:24px;">
+      <div class="card card-accent">
+        <div class="num-badge">01</div>
+        <h3>ME ou SLU (Sem MEI)</h3>
+        <p>CNPJ ativo no Simples Nacional com CNAE 4781-4/00 (e 7410-2/99 se Designer). MEI não comporta Operação Triangular nem o faturamento da rede.</p>
+      </div>
+      <div class="card">
+        <div class="num-badge">02</div>
+        <h3>IE + NF-e Teste</h3>
+        <p>Inscrição Estadual ativa na SEFAZ + certificado e-CNPJ A1 + 1 nota fiscal teste emitida com CFOP 5.120/6.120 validada pelo contador.</p>
+      </div>
+      <div class="card card-accent">
+        <div class="num-badge">03</div>
+        <h3>Split Asaas (R$ 1)</h3>
+        <p>Subconta (walletId) da sua ME/SLU homologada e aprovada no teste de R$ 1,00 comprovando divisão correta entre as 3 carteiras.</p>
+      </div>
+      <div class="card">
+        <div class="num-badge">04</div>
+        <h3>Maleta Conferida</h3>
+        <p>Assim que a transportadora entregar sua Maleta King Sports Pro em casa, conferir em 48h e assinar o Termo Doc. 24 no Hub.</p>
+      </div>
+    </div>
+  </div>
+  <div class="footer">
+    <span class="brand-foot">KING SPORTS FRANCHISING</span>
+    <span>Guia completo passo a passo para seu contador disponível no Doc. 17</span>
+  </div>
+</section>
+
+<!-- SLIDE 13 -->
+<section class="slide">
+  <div class="topbar">
+    <span class="tag">ETAPA DECISIVA — DIAS 12 E 13</span>
+    <span class="slide-num">13 / 16</span>
+  </div>
+  <div class="main">
+    <h2 class="slide-title">O TESTE PRÁTICO FINAL: <span class="accent">VENDA + ARTE PERANTE A BANCA</span></h2>
+    <p class="subtitle">No Dia 11 você recebe um Case Simulado padrão. Nos Dias 12 e 13, cada franqueado entra ao vivo em chamada de 25 minutos para ser avaliado em duas apresentações:</p>
+    <div class="grid-2" style="margin-top:22px;">
+      <div class="card card-accent">
+        <div class="num-badge">PROVA A — 12 MINUTOS</div>
+        <h3>Apresentação de uma Venda</h3>
+        <ul class="clean check" style="margin-top:10px;">
+          <li>A banca atua como o cliente (ex.: capitão/organizador);</li>
+          <li>Você conduz abertura, diagnóstico, defesa de tecidos/acabamentos e uso da Grade Física;</li>
+          <li>Contorna objeção de preço baixo e prazo sem prometer prazos impossíveis;</li>
+          <li>Apresenta a proposta (Doc. 33), explica o Link Split e registra tudo datado no CRM Sandbox.</li>
+        </ul>
+      </div>
+      <div class="card card-accent">
+        <div class="num-badge">PROVA B — 10 MINUTOS</div>
+        <h3>Apresentação de uma Arte / Mockup</h3>
+        <ul class="clean check" style="margin-top:10px;">
+          <li>Compartilha sua tela e apresenta o Mockup finalizado ao "cliente";</li>
+          <li>Explica cores (Bandeira CMYK), malha de cada parte, escudos e patrocinadores;</li>
+          <li>Demonstra conferência de grade (Doc. 34), Autorização de Escudo (Doc. 36) e Termo Doc. 35;</li>
+          <li><strong>Se Perfil Designer:</strong> exibe arquivo fechado para RIP (CMYK, 300 DPI, curvas, sangria e macro).</li>
+        </ul>
+      </div>
+    </div>
+    <div class="notice"><strong>+ 3 minutos finais de Arguição Rápida:</strong> Perguntas objetivas sobre Operação Triangular e a regra "Tudo datado dentro do Hub, nada fora".</div>
+  </div>
+  <div class="footer">
+    <span class="brand-foot">KING SPORTS FRANCHISING</span>
+    <span>Nenhuma unidade acessa o Hub de Produção sem aprovação prática nestas duas provas</span>
+  </div>
+</section>
+
+<!-- SLIDE 14 -->
+<section class="slide light">
+  <div class="topbar">
+    <span class="tag">CRITÉRIOS DA BANCA AVALIADORA</span>
+    <span class="slide-num">14 / 16</span>
+  </div>
+  <div class="main">
+    <h2 class="slide-title">COMO VOCÊ É AVALIADO <span class="accent">(NOTA DE CORTE E RETESTE)</span></h2>
+    <p class="subtitle">Avaliação transparente baseada no Scorecard oficial (Doc. 47) — desenhada para garantir segurança comercial na sua primeira semana real:</p>
+    <div class="grid-3" style="margin-top:22px;">
+      <div class="card card-accent">
+        <div class="big-stat" style="color:#1D4ED8;">&ge; 8,0</div>
+        <h3>Nota Mínima nas 2 Provas</h3>
+        <p>É obrigatório atingir no mínimo 8,0 na Apresentação de Venda e 8,0 na Apresentação de Arte/Mockup.</p>
+      </div>
+      <div class="card">
+        <h3 style="color:#0F172A;">Faltas Eliminatórias</h3>
+        <ul class="clean cross" style="margin-top:8px;">
+          <li>Prometer prazo fabril abaixo de 20–25 dias úteis;</li>
+          <li>Propor cobrança ou aprovação fora do Hub/Split;</li>
+          <li>Ignorar NF-e triangular ou uso ilícito de escudos.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Protocolo de Reteste (48h)</h3>
+        <p>Não passou em uma parte? Você recebe feedback exato do avaliador, corrige no setor correspondente e refaz a prova em até 48 horas. A chave do Hub é liberada logo após aprovação.</p>
+      </div>
+    </div>
+    <div class="notice"><strong>Proteção ao Perfil Designer:</strong> Se passar na venda e no mockup visual, mas ainda precisar corrigir detalhe técnico do RIP, pode operar provisoriamente na tabela 58,5% até aprovar o arquivo técnico.</div>
+  </div>
+  <div class="footer">
+    <span class="brand-foot">KING SPORTS FRANCHISING</span>
+    <span>Banca composta por Liderança Comercial, Arte/PCP e Coordenação de Implantação</span>
+  </div>
+</section>
+
+<!-- SLIDE 15 -->
+<section class="slide">
+  <div class="topbar">
+    <span class="tag">ENTREGA FINAL &amp; PRIMEIROS 90 DIAS</span>
+    <span class="slide-num">15 / 16</span>
+  </div>
+  <div class="main">
+    <h2 class="slide-title">DESBLOQUEIO DO HUB E <span class="accent">RAMPA DE 90 DIAS</span></h2>
+    <p class="subtitle">Banca aprovada + Checklist dos 11 itens verdes (Doc. 26) = você recebe seu login definitivo no <strong>Hub Digital Interno King Sports</strong>:</p>
+    <div class="grid-4" style="margin-top:22px;">
+      <div class="card card-accent">
+        <div class="num-badge">DIA 14–15</div>
+        <h3>Entrega Oficial do Hub</h3>
+        <p>Aceite do Termo do Hub (Doc. 48) e abertura integral de CRM, Artes, Mockups, PCP, Financeiro e Chamados.</p>
+      </div>
+      <div class="card">
+        <div class="num-badge">SEMANA 1–2</div>
+        <h3>Go-Live Assistido</h3>
+        <p>Execução das primeiras 10 abordagens reais e revisão acompanhada do 1º orçamento, 1º Split e 1º pedido no Hub.</p>
+      </div>
+      <div class="card">
+        <div class="num-badge">DIAS 16–60</div>
+        <h3>Check-ins Semanais</h3>
+        <p>Acompanhamento do funil datado no CRM + auditoria da 1ª NF-e triangular e rotina contábil do Simples Nacional.</p>
+      </div>
+      <div class="card card-accent">
+        <div class="num-badge">DIA 90</div>
+        <h3>Consolidação da Turma</h3>
+        <p>Fechamento do 1º trimestre rumo à meta de tração, validação de cota territorial (Doc. 11) e pesquisa NPS.</p>
+      </div>
+    </div>
+  </div>
+  <div class="footer">
+    <span class="brand-foot">KING SPORTS FRANCHISING</span>
+    <span>Da formação 100% digital à operação assistida com métricas reais no Hub</span>
+  </div>
+</section>
+
+<!-- SLIDE 16 -->
+<section class="slide">
+  <div class="topbar">
+    <span class="tag">PRÓXIMOS PASSOS IMEDIATOS DA TURMA</span>
+    <span class="slide-num">16 / 16</span>
+  </div>
+  <div class="main" style="align-items:flex-start;">
+    <h1 class="hero-title" style="font-size:44px; max-width:1050px;">TUDO PRONTO PARA COMEÇAR: <span class="accent">SEU ROTEIRO DE HOJE</span></h1>
+    <p class="subtitle" style="margin-top:6px;">Para garantir que os 10 franqueados desta turma sejam aprovados na banca e entrem no Hub Digital Interno no Dia 15, execute os 4 passos abaixo a partir de hoje:</p>
+    <div class="grid-4" style="width:100%; margin-top:24px;">
+      <div class="card">
+        <div class="num-badge">1</div>
+        <h3>Acessar Sandbox</h3>
+        <p>Fazer primeiro login na Universidade + Hub Sandbox usando o link enviado pela Implantação.</p>
+      </div>
+      <div class="card">
+        <div class="num-badge">2</div>
+        <h3>Acionar Contador</h3>
+        <p>Entregar o Guia Doc. 17 hoje para liberar ME/SLU, Inscrição Estadual e e-CNPJ A1 até o Dia 5.</p>
+      </div>
+      <div class="card card-accent">
+        <div class="num-badge">3</div>
+        <h3>Concluir 7 Setores</h3>
+        <p>Assistir aos módulos online nos Dias 5–10 e participar dos plantões diários de prática no Hub.</p>
+      </div>
+      <div class="card card-accent">
+        <div class="num-badge">4</div>
+        <h3>Vencer o Teste Final</h3>
+        <p>Preparar sua Apresentação de Venda e de Arte no Dia 11, apresentar nos Dias 12–13 e receber o Hub!</p>
+      </div>
+    </div>
+    <div style="margin-top:22px; padding:14px 24px; border-radius:12px; background:#2563EB; color:#FFFFFF; font-weight:700; font-size:15px;">
+      Canal Oficial da Turma &amp; Suporte de Implantação: [INSERIR LINK DO AMBIENTE SANDBOX / CANAL OFICIAL]
+    </div>
+  </div>
+  <div class="footer">
+    <span class="brand-foot">KING SPORTS — TUDO DENTRO DO HUB. TUDO DATADO. ZERO FRONTEIRAS.</span>
+    <span>Onboarding 100% Online • Brasil</span>
+  </div>
+</section>
+
+</body>
+</html>

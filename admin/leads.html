@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Leads | CRM King Sports</title>
+  <meta name="robots" content="noindex, nofollow" />
+  <meta name="theme-color" content="#02060E" />
+  <link rel="icon" href="/favicon.ico" sizes="any" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/assets/images/favicon-32x32.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/assets/images/apple-touch-icon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/admin/assets/css/admin.css" />
+</head>
+<body>
+  <div class="ad-shell">
+    <aside class="ad-sidebar" id="ad-sidebar"></aside>
+    <main class="ad-main">
+      <div class="ad-topbar">
+        <div>
+          <h1>Gestão de Leads</h1>
+          <p class="ad-topbar-sub">Candidatos à franquia captados pela landing page, blog e campanhas.</p>
+        </div>
+        <div class="ad-actions-row">
+          <a href="/api/admin/leads/export.csv" class="ad-btn ad-btn-secondary">Exportar CSV</a>
+          <a href="/admin/pipeline.html" class="ad-btn ad-btn-primary">Abrir Pipeline Kanban</a>
+        </div>
+      </div>
+
+      <div id="ad-global-alert"></div>
+
+      <section class="ad-card" style="margin-bottom:18px;">
+        <div class="ad-actions-row">
+          <input type="search" id="f-search" class="ad-input" style="max-width:280px;" placeholder="Buscar nome, e-mail, cidade..." />
+          <select id="f-status" class="ad-select" style="width:auto;">
+            <option value="">Todos os status</option>
+            <option value="pending">Pendente</option>
+            <option value="qualified">Qualificado</option>
+            <option value="nurture">Nutrição</option>
+            <option value="disqualified">Desqualificado</option>
+          </select>
+          <select id="f-priority" class="ad-select" style="width:auto;">
+            <option value="">Todas prioridades</option>
+            <option value="urgent">Urgente</option>
+            <option value="high">Alta</option>
+            <option value="normal">Normal</option>
+            <option value="low">Baixa</option>
+          </select>
+          <label style="display:flex;align-items:center;gap:6px;font-size:0.85rem;">
+            <input type="checkbox" id="f-unattended" /> Sem 1º atendimento
+          </label>
+          <button type="button" id="f-apply" class="ad-btn ad-btn-primary ad-btn-sm">Filtrar</button>
+        </div>
+      </section>
+
+      <section class="ad-card">
+        <div class="ad-table-wrap" id="leads-table-wrap">Carregando leads...</div>
+        <div id="leads-pagination" style="display:flex;justify-content:space-between;align-items:center;margin-top:16px;font-size:0.84rem;color:#94A3B8;"></div>
+      </section>
+    </main>
+  </div>
+
+  <script src="/admin/assets/js/admin-core.js"></script>
+  <script>
+    (function () {
+      var page = 1;
+
+      function badgeForStatus(status) {
+        if (status === 'qualified') return '<span class="ad-badge ad-badge-green">Qualificado</span>';
+        if (status === 'disqualified') return '<span class="ad-badge ad-badge-red">Desqualificado</span>';
+        if (status === 'nurture') return '<span class="ad-badge ad-badge-orange">Nutrição</span>';
+        return '<span class="ad-badge ad-badge-blue">Pendente</span>';
+      }
+
+      async function loadLeads() {
+        var qs = new URLSearchParams({
+          page: page,
+          limit: 25,
+          search: document.getElementById('f-search').value.trim(),
+          qualification_status: document.getElementById('f-status').value,
+          priority: document.getElementById('f-priority').value,
+          unattended: document.getElementById('f-unattended').checked ? 'true' : ''
+        });
+        try {
+          var data = await KingAdmin.apiFetch('/api/admin/leads?' + qs.toString());
+          var wrap = document.getElementById('leads-table-wrap');
+          if (!data.items || !data.items.length) {
+            wrap.innerHTML = '<p style="color:#94A3B8;">Nenhum lead encontrado para os filtros selecionados.</p>';
+            document.getElementById('leads-pagination').innerHTML = '';
+            return;
+          }
+          wrap.innerHTML =
+            '<table class="ad-table"><thead><tr><th>Candidato</th><th>Contato</th><th>Cidade / UF</th><th>Perfil</th><th>Score</th><th>Estágio</th><th>Status</th><th>Criado em</th><th>Ações</th></tr></thead><tbody>' +
+            data.items.map(function (l) {
+              var opp = (l.opportunities && l.opportunities[0]) || null;
+              var stageName = opp && opp.stage ? opp.stage.name : '—';
+              var track = l.qualification ? l.qualification.intended_track : '—';
+              var unattended = !l.first_contact_at ? '<span class="ad-badge ad-badge-orange" style="margin-left:6px;">Sem contato</span>' : '';
+              return (
+                '<tr>' +
+                '  <td><strong>' + KingAdmin.esc(l.full_name) + '</strong>' + unattended + '</td>' +
+                '  <td><div>' + KingAdmin.esc(l.whatsapp) + '</div><div style="font-size:0.78rem;color:#94A3B8;">' + KingAdmin.esc(l.email) + '</div></td>' +
+                '  <td>' + KingAdmin.esc(l.city + '/' + l.state) + '</td>' +
+                '  <td>' + KingAdmin.esc(track) + '</td>' +
+                '  <td><strong>' + l.lead_score + '</strong> (' + KingAdmin.esc(l.score_grade) + ')</td>' +
+                '  <td><span class="ad-badge ad-badge-gray">' + KingAdmin.esc(stageName) + '</span></td>' +
+                '  <td>' + badgeForStatus(l.qualification_status) + '</td>' +
+                '  <td>' + KingAdmin.esc(KingAdmin.formatDate(l.created_at)) + '</td>' +
+                '  <td><a href="/admin/lead-detalhes.html?id=' + encodeURIComponent(l.id) + '" class="ad-btn ad-btn-primary ad-btn-sm">Abrir 360°</a></td>' +
+                '</tr>'
+              );
+            }).join('') +
+            '</tbody></table>';
+
+          document.getElementById('leads-pagination').innerHTML =
+            '<span>Total: ' + data.total + ' leads • Página ' + data.page + ' de ' + data.total_pages + '</span>' +
+            '<div style="display:flex;gap:8px;">' +
+            '  <button type="button" id="pg-prev" class="ad-btn ad-btn-secondary ad-btn-sm" ' + (data.page <= 1 ? 'disabled' : '') + '>Anterior</button>' +
+            '  <button type="button" id="pg-next" class="ad-btn ad-btn-secondary ad-btn-sm" ' + (data.page >= data.total_pages ? 'disabled' : '') + '>Próxima</button>' +
+            '</div>';
+
+          var prev = document.getElementById('pg-prev');
+          var next = document.getElementById('pg-next');
+          if (prev) prev.onclick = function () { if (page > 1) { page--; loadLeads(); } };
+          if (next) next.onclick = function () { if (page < data.total_pages) { page++; loadLeads(); } };
+        } catch (err) {
+          KingAdmin.renderErrorState('ad-global-alert', err);
+        }
+      }
+
+      document.getElementById('f-apply').addEventListener('click', function () { page = 1; loadLeads(); });
+      document.addEventListener('DOMContentLoaded', async function () {
+        if (await KingAdmin.initProtectedPage('leads')) loadLeads();
+      });
+    })();
+  </script>
+</body>
+</html>

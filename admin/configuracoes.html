@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Configurações &amp; Integrações | CRM King Sports</title>
+  <meta name="robots" content="noindex, nofollow" />
+  <meta name="theme-color" content="#02060E" />
+  <link rel="icon" href="/favicon.ico" sizes="any" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/assets/images/favicon-32x32.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/assets/images/apple-touch-icon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/admin/assets/css/admin.css" />
+</head>
+<body>
+  <div class="ad-shell">
+    <aside class="ad-sidebar" id="ad-sidebar"></aside>
+
+    <main class="ad-main">
+      <div class="ad-topbar">
+        <div>
+          <h1>Configurações, Tracking, Metas &amp; Integrações</h1>
+          <p class="ad-topbar-sub">Credenciais criptografadas (AES-256-GCM no backend), testes reais de conectividade e controle de usuários.</p>
+        </div>
+      </div>
+
+      <div id="ad-global-alert"></div>
+
+      <!-- Status e Testes Reais de Integrações -->
+      <section class="ad-card" style="margin-bottom:18px;">
+        <div class="ad-card-title">
+          <span>Status de Integrações &amp; Diagnóstico em Tempo Real</span>
+          <button type="button" id="refresh-status-btn" class="ad-btn ad-btn-secondary ad-btn-sm">Reverificar</button>
+        </div>
+        <p style="font-size:0.84rem;color:#94A3B8;margin-bottom:14px;">
+          Cada botão executa uma chamada real de validação no servidor Node.js. Se as chaves não estiverem configuradas, o sistema informa explicitamente o status <strong>not_configured</strong>.
+        </p>
+        <div class="ad-table-wrap" id="integrations-status-wrap">Verificando...</div>
+      </section>
+
+      <div class="ad-grid-2" style="margin-bottom:18px;align-items:start;">
+        <!-- Credenciais Tracking & Ads -->
+        <section class="ad-card">
+          <div class="ad-card-title"><span>Tracking Híbrido &amp; Contas de Anúncios</span></div>
+          <form id="tracking-settings-form">
+            <div class="ad-field">
+              <label>Google Tag Manager Container ID (`tracking.gtm_id`)</label>
+              <input type="text" id="s-gtm-id" class="ad-input" placeholder="GTM-XXXXXXX" />
+            </div>
+            <div class="ad-grid-2">
+              <div class="ad-field">
+                <label>GA4 Measurement ID</label>
+                <input type="text" id="s-ga4-id" class="ad-input" placeholder="G-XXXXXXXXXX" />
+              </div>
+              <div class="ad-field">
+                <label>GA4 API Secret (criptografado)</label>
+                <input type="password" id="s-ga4-secret" class="ad-input" placeholder="Deixe mascarado para manter atual" autocomplete="off" />
+              </div>
+            </div>
+            <div class="ad-grid-2">
+              <div class="ad-field">
+                <label>Google Ads Conversion ID</label>
+                <input type="text" id="s-gads-conv-id" class="ad-input" placeholder="AW-XXXXXXXXX" />
+              </div>
+              <div class="ad-field">
+                <label>Google Ads Label (Lead)</label>
+                <input type="text" id="s-gads-label" class="ad-input" placeholder="AbCdEfGhIjK" />
+              </div>
+            </div>
+            <div class="ad-grid-2">
+              <div class="ad-field">
+                <label>Meta Pixel ID</label>
+                <input type="text" id="s-meta-pixel" class="ad-input" placeholder="123456789012345" />
+              </div>
+              <div class="ad-field">
+                <label>Meta Test Event Code (opcional)</label>
+                <input type="text" id="s-meta-test" class="ad-input" placeholder="TEST12345" />
+              </div>
+            </div>
+            <div class="ad-field">
+              <label>Meta Conversions API Access Token (criptografado)</label>
+              <input type="password" id="s-meta-capi" class="ad-input" placeholder="EAAG..." autocomplete="off" />
+            </div>
+            <div class="ad-grid-3">
+              <div class="ad-field">
+                <label>Meta Ad Account ID</label>
+                <input type="text" id="s-meta-ad-acct" class="ad-input" placeholder="act_123456789" />
+              </div>
+              <div class="ad-field">
+                <label>GA4 Property ID (Data API)</label>
+                <input type="text" id="s-ga4-prop" class="ad-input" placeholder="123456789" />
+              </div>
+              <div class="ad-field">
+                <label>Google Ads Customer ID</label>
+                <input type="text" id="s-gads-cust" class="ad-input" placeholder="1234567890" />
+              </div>
+            </div>
+            <p style="font-size:0.78rem;color:#94A3B8;margin-bottom:12px;">
+              Credenciais OAuth/Service Account (Google Ads Developer Token, Refresh Token e Service Account JSON) devem permanecer exclusivamente no arquivo <code>.env</code> do servidor VPS.
+            </p>
+            <button type="submit" class="ad-btn ad-btn-primary">Salvar Credenciais de Tracking</button>
+          </form>
+        </section>
+
+        <!-- Metas de KPIs & SLA -->
+        <section class="ad-card">
+          <div class="ad-card-title"><span>Metas Comerciais &amp; Faixas (Verde / Laranja / Vermelho)</span></div>
+          <form id="goals-settings-form">
+            <div class="ad-field">
+              <label>Prazo SLA para Lead sem 1º Atendimento (minutos)</label>
+              <input type="number" min="5" id="g-sla-min" class="ad-input" value="30" />
+            </div>
+            <div class="ad-grid-3">
+              <div class="ad-field"><label>CPL Meta (R$)</label><input type="number" step="1" id="g-cpl-target" class="ad-input" /></div>
+              <div class="ad-field"><label>CPL Atenção (R$)</label><input type="number" step="1" id="g-cpl-warn" class="ad-input" /></div>
+              <div class="ad-field"><label>CPL Crítico (R$)</label><input type="number" step="1" id="g-cpl-crit" class="ad-input" /></div>
+            </div>
+            <div class="ad-grid-3">
+              <div class="ad-field"><label>CPQL Meta (R$)</label><input type="number" step="1" id="g-cpql-target" class="ad-input" /></div>
+              <div class="ad-field"><label>CPQL Atenção (R$)</label><input type="number" step="1" id="g-cpql-warn" class="ad-input" /></div>
+              <div class="ad-field"><label>CPQL Crítico (R$)</label><input type="number" step="1" id="g-cpql-crit" class="ad-input" /></div>
+            </div>
+            <div class="ad-grid-3">
+              <div class="ad-field"><label>CAC Meta (R$)</label><input type="number" step="1" id="g-cac-target" class="ad-input" /></div>
+              <div class="ad-field"><label>CAC Atenção (R$)</label><input type="number" step="1" id="g-cac-warn" class="ad-input" /></div>
+              <div class="ad-field"><label>CAC Crítico (R$)</label><input type="number" step="1" id="g-cac-crit" class="ad-input" /></div>
+            </div>
+            <div class="ad-grid-3">
+              <div class="ad-field"><label>Qualificação Meta (%)</label><input type="number" step="1" id="g-qual-target" class="ad-input" /></div>
+              <div class="ad-field"><label>Qualificação Atenção (%)</label><input type="number" step="1" id="g-qual-warn" class="ad-input" /></div>
+              <div class="ad-field"><label>Qualificação Crítico (%)</label><input type="number" step="1" id="g-qual-crit" class="ad-input" /></div>
+            </div>
+            <div class="ad-grid-3">
+              <div class="ad-field"><label>ROAS Meta (x)</label><input type="number" step="0.1" id="g-roas-target" class="ad-input" /></div>
+              <div class="ad-field"><label>ROAS Atenção (x)</label><input type="number" step="0.1" id="g-roas-warn" class="ad-input" /></div>
+              <div class="ad-field"><label>ROAS Crítico (x)</label><input type="number" step="0.1" id="g-roas-crit" class="ad-input" /></div>
+            </div>
+            <button type="submit" class="ad-btn ad-btn-primary">Salvar Metas e SLA</button>
+          </form>
+        </section>
+      </div>
+
+      <!-- Conteúdo Editável da Landing Page & Dados Públicos -->
+      <section class="ad-card" style="margin-bottom:18px;">
+        <div class="ad-card-title"><span>Conteúdo Dinâmico da Landing Page &amp; Dados da Franquia</span></div>
+        <form id="landing-settings-form">
+          <div class="ad-grid-2">
+            <div class="ad-field">
+              <label>Tag Superior do Hero</label>
+              <input type="text" id="lc-tag" class="ad-input" />
+            </div>
+            <div class="ad-field">
+              <label>CTA Principal</label>
+              <input type="text" id="lc-cta" class="ad-input" />
+            </div>
+          </div>
+          <div class="ad-field">
+            <label>Headline Principal (H1)</label>
+            <input type="text" id="lc-headline" class="ad-input" />
+          </div>
+          <div class="ad-field">
+            <label>Subheadline</label>
+            <textarea id="lc-subheadline" class="ad-textarea" rows="2"></textarea>
+          </div>
+          <div class="ad-grid-3">
+            <div class="ad-field">
+              <label>Investimento de Referência (R$)</label>
+              <input type="number" id="fi-investment" class="ad-input" />
+            </div>
+            <div class="ad-field">
+              <label>WhatsApp Oficial Expansão (DDI+DDD+Num)</label>
+              <input type="text" id="fi-whatsapp" class="ad-input" placeholder="5511999999999" />
+            </div>
+            <div class="ad-field">
+              <label>E-mail Comercial Expansão</label>
+              <input type="email" id="fi-email" class="ad-input" />
+            </div>
+          </div>
+          <div class="ad-field">
+            <label>Nota Jurídica do Investimento</label>
+            <input type="text" id="fi-note" class="ad-input" />
+          </div>
+          <button type="submit" class="ad-btn ad-btn-primary">Atualizar Conteúdo Público</button>
+        </form>
+      </section>
+
+      <!-- Usuários & Auditoria -->
+      <div class="ad-grid-2" style="align-items:start;">
+        <section class="ad-card">
+          <div class="ad-card-title"><span>Administradores do CRM (`admin_users`)</span></div>
+          <div class="ad-table-wrap" id="users-table-wrap" style="margin-bottom:18px;">Carregando...</div>
+          <form id="new-user-form">
+            <h3 style="font-size:0.9rem;margin-bottom:10px;">Cadastrar Novo Usuário (Requer Super Admin)</h3>
+            <div class="ad-grid-2">
+              <div class="ad-field"><label>Nome completo</label><input type="text" id="u-name" class="ad-input" required /></div>
+              <div class="ad-field"><label>E-mail</label><input type="email" id="u-email" class="ad-input" required /></div>
+            </div>
+            <div class="ad-grid-2">
+              <div class="ad-field"><label>Papel</label><select id="u-role" class="ad-select"></select></div>
+              <div class="ad-field"><label>Senha inicial (mín. 8 dígitos)</label><input type="password" id="u-pass" class="ad-input" minlength="8" /></div>
+            </div>
+            <button type="submit" class="ad-btn ad-btn-secondary">Criar Administrador</button>
+          </form>
+        </section>
+
+        <section class="ad-card">
+          <div class="ad-card-title"><span>Logs de Auditoria Sensíveis (`audit_logs`)</span></div>
+          <div class="ad-table-wrap" id="audit-table-wrap">Carregando auditoria...</div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <script src="/admin/assets/js/admin-core.js"></script>
+  <script>
+    (function () {
+      var cachedThresholds = {};
+      var cachedLanding = {};
+      var cachedFranchise = {};
+
+      function statusBadge(st) {
+        if (st === 'connected' || st === 'configured') return '<span class="ad-badge ad-badge-green">' + KingAdmin.esc(st) + '</span>';
+        if (st && st.startsWith('partial')) return '<span class="ad-badge ad-badge-orange">' + KingAdmin.esc(st) + '</span>';
+        if (st === 'not_configured') return '<span class="ad-badge ad-badge-gray">not_configured</span>';
+        return '<span class="ad-badge ad-badge-red">' + KingAdmin.esc(st || 'error') + '</span>';
+      }
+
+      async function loadIntegrationStatuses() {
+        var wrap = document.getElementById('integrations-status-wrap');
+        try {
+          var data = await KingAdmin.apiFetch('/api/admin/integrations/status');
+          var s = data.statuses || {};
+          var rows = [
+            { key: 'supabase', label: 'Supabase PostgreSQL & Auth', info: s.supabase, target: 'supabase' },
+            { key: 'redis', label: 'Redis / BullMQ Queues', info: s.redis, target: 'redis' },
+            { key: 'gtm', label: 'Google Tag Manager (Client)', info: s.gtm, target: null },
+            { key: 'ga4_measurement', label: 'GA4 Measurement Protocol (Server)', info: s.ga4_measurement, target: 'ga4_mp' },
+            { key: 'meta_capi', label: 'Meta Pixel & Conversions API', info: s.meta_capi, target: 'meta_capi' },
+            { key: 'meta_marketing_api', label: 'Meta Marketing API (Sync Métricas)', info: s.meta_marketing_api, target: 'meta_marketing_api' },
+            { key: 'ga4_data_api', label: 'GA4 Data API (Visitantes)', info: s.ga4_data_api, target: 'ga4_data_api' },
+            { key: 'google_ads_api', label: 'Google Ads API (Sync & Offline)', info: s.google_ads_api, target: 'google_ads_api' }
+          ];
+
+          wrap.innerHTML =
+            '<table class="ad-table"><thead><tr><th>Serviço</th><th>Status Atual</th><th>Detalhes</th><th>Teste Real</th></tr></thead><tbody>' +
+            rows.map(function (r) {
+              var info = r.info || {};
+              var st = info.status || (info.connected ? 'connected' : 'not_configured');
+              var detail = info.reason || info.error || (info.id ? 'ID: ' + info.id : '—');
+              return (
+                '<tr>' +
+                '  <td><strong>' + KingAdmin.esc(r.label) + '</strong></td>' +
+                '  <td>' + statusBadge(st) + '</td>' +
+                '  <td style="font-size:0.8rem;color:#94A3B8;" id="test-msg-' + r.key + '">' + KingAdmin.esc(detail) + '</td>' +
+                '  <td>' + (r.target ? '<button type="button" class="ad-btn ad-btn-secondary ad-btn-sm test-int-btn" data-key="' + r.key + '" data-target="' + r.target + '">Testar Conexão</button>' : 'Injeção em navegador') + '</td>' +
+                '</tr>'
+              );
+            }).join('') + '</tbody></table>';
+
+          document.querySelectorAll('.test-int-btn').forEach(function (btn) {
+            btn.addEventListener('click', async function () {
+              var msgCell = document.getElementById('test-msg-' + btn.dataset.key);
+              btn.disabled = true;
+              msgCell.textContent = 'Testando...';
+              try {
+                var res = await KingAdmin.apiFetch('/api/admin/integrations/' + encodeURIComponent(btn.dataset.target) + '/test', {
+                  method: 'POST',
+                  body: '{}'
+                });
+                msgCell.textContent = '[' + res.status + '] ' + (res.message || res.reason || (res.ok ? 'Conexão OK' : 'Falha'));
+                KingAdmin.showToast(res.ok ? 'Teste OK: ' + btn.dataset.target : 'Teste retornou: ' + res.status, !res.ok);
+              } catch (err) {
+                msgCell.textContent = err.message;
+                KingAdmin.showToast(err.message, true);
+              } finally {
+                btn.disabled = false;
+              }
+            });
+          });
+        } catch (err) {
+          wrap.innerHTML = '<div class="ad-alert ad-alert-error">' + KingAdmin.esc(err.message) + '</div>';
+        }
+      }
+
+      async function loadAllSettings() {
+        try {
+          var results = await Promise.all([
+            KingAdmin.apiFetch('/api/admin/settings'),
+            KingAdmin.apiFetch('/api/admin/users').catch(function () { return { users: [], roles: [] }; }),
+            KingAdmin.apiFetch('/api/admin/audit-logs').catch(function () { return { logs: [] }; })
+          ]);
+
+          var list = results[0].settings || [];
+          var map = {};
+          list.forEach(function (item) { map[item.setting_key] = item.value_json; });
+
+          document.getElementById('s-gtm-id').value = map['tracking.gtm_id'] || '';
+          document.getElementById('s-ga4-id').value = map['tracking.ga4_measurement_id'] || '';
+          document.getElementById('s-ga4-secret').value = map['tracking.ga4_api_secret'] || '';
+          document.getElementById('s-gads-conv-id').value = map['tracking.google_ads_conversion_id'] || '';
+          document.getElementById('s-gads-label').value = map['tracking.google_ads_label_lead'] || '';
+          document.getElementById('s-meta-pixel').value = map['tracking.meta_pixel_id'] || '';
+          document.getElementById('s-meta-capi').value = map['tracking.meta_capi_token'] || '';
+          document.getElementById('s-meta-test').value = map['tracking.meta_test_event_code'] || '';
+          document.getElementById('s-meta-ad-acct').value = map['ads.meta_ad_account_id'] || '';
+          document.getElementById('s-ga4-prop').value = map['ads.ga4_property_id'] || '';
+          document.getElementById('s-gads-cust').value = map['ads.google_ads_customer_id'] || '';
+
+          document.getElementById('g-sla-min').value = map['automation.unattended_sla_minutes'] || 30;
+          cachedThresholds = map['goals.kpi_thresholds'] || {};
+          var th = cachedThresholds;
+          if (th.cpl_brl) {
+            document.getElementById('g-cpl-target').value = th.cpl_brl.target || 35;
+            document.getElementById('g-cpl-warn').value = th.cpl_brl.warning || 60;
+            document.getElementById('g-cpl-crit').value = th.cpl_brl.critical || 90;
+          }
+          if (th.cpql_brl) {
+            document.getElementById('g-cpql-target').value = th.cpql_brl.target || 90;
+            document.getElementById('g-cpql-warn').value = th.cpql_brl.warning || 150;
+            document.getElementById('g-cpql-crit').value = th.cpql_brl.critical || 220;
+          }
+          if (th.cac_brl) {
+            document.getElementById('g-cac-target').value = th.cac_brl.target || 2500;
+            document.getElementById('g-cac-warn').value = th.cac_brl.warning || 4000;
+            document.getElementById('g-cac-crit').value = th.cac_brl.critical || 6000;
+          }
+          if (th.qualification_rate_pct) {
+            document.getElementById('g-qual-target').value = th.qualification_rate_pct.target || 40;
+            document.getElementById('g-qual-warn').value = th.qualification_rate_pct.warning || 25;
+            document.getElementById('g-qual-crit').value = th.qualification_rate_pct.critical || 15;
+          }
+          if (th.roas) {
+            document.getElementById('g-roas-target').value = th.roas.target || 5;
+            document.getElementById('g-roas-warn').value = th.roas.warning || 3;
+            document.getElementById('g-roas-crit').value = th.roas.critical || 1.5;
+          }
+
+          cachedLanding = map['landing.content'] || {};
+          document.getElementById('lc-tag').value = cachedLanding.hero_tag || '';
+          document.getElementById('lc-cta').value = cachedLanding.hero_cta_text || '';
+          document.getElementById('lc-headline').value = cachedLanding.hero_headline || '';
+          document.getElementById('lc-subheadline').value = cachedLanding.hero_subheadline || '';
+
+          cachedFranchise = map['franchise.public_info'] || {};
+          document.getElementById('fi-investment').value = cachedFranchise.reference_investment_brl || 20000;
+          document.getElementById('fi-whatsapp').value = cachedFranchise.whatsapp_expansion || '';
+          document.getElementById('fi-email').value = cachedFranchise.email_expansion || '';
+          document.getElementById('fi-note').value = cachedFranchise.reference_investment_note || '';
+
+          var users = results[1].users || [];
+          var roles = results[1].roles || [];
+          document.getElementById('u-role').innerHTML = roles.map(function (r) {
+            return '<option value="' + KingAdmin.esc(r.slug) + '">' + KingAdmin.esc(r.name) + '</option>';
+          }).join('');
+          document.getElementById('users-table-wrap').innerHTML = users.length
+            ? '<table class="ad-table"><thead><tr><th>Nome</th><th>E-mail</th><th>Papel</th><th>Ativo</th></tr></thead><tbody>' +
+              users.map(function (u) {
+                return '<tr><td><strong>' + KingAdmin.esc(u.full_name) + '</strong></td><td>' + KingAdmin.esc(u.email) + '</td><td>' + KingAdmin.esc(u.role ? u.role.name : '—') + '</td><td>' + (u.is_active ? 'Sim' : 'Não') + '</td></tr>';
+              }).join('') + '</tbody></table>'
+            : '<p style="color:#94A3B8;">Sem permissão ou nenhum usuário listado.</p>';
+
+          var logs = results[2].logs || [];
+          document.getElementById('audit-table-wrap').innerHTML = logs.length
+            ? '<table class="ad-table"><thead><tr><th>Data</th><th>Ator</th><th>Ação</th><th>Entidade</th></tr></thead><tbody>' +
+              logs.slice(0, 30).map(function (l) {
+                return '<tr><td>' + KingAdmin.esc(KingAdmin.formatDate(l.created_at)) + '</td><td>' + KingAdmin.esc(l.actor_email || 'sistema') + '</td><td><code>' + KingAdmin.esc(l.action) + '</code></td><td>' + KingAdmin.esc(l.entity_type) + '</td></tr>';
+              }).join('') + '</tbody></table>'
+            : '<p style="color:#94A3B8;">Nenhum log registrado.</p>';
+        } catch (err) {
+          KingAdmin.renderErrorState('ad-global-alert', err);
+        }
+      }
+
+      document.getElementById('tracking-settings-form').addEventListener('submit', async function (e) {
+        e.preventDefault();
+        try {
+          await KingAdmin.apiFetch('/api/admin/settings', {
+            method: 'PUT',
+            body: JSON.stringify({
+              settings: {
+                'tracking.gtm_id': document.getElementById('s-gtm-id').value.trim(),
+                'tracking.ga4_measurement_id': document.getElementById('s-ga4-id').value.trim(),
+                'tracking.ga4_api_secret': document.getElementById('s-ga4-secret').value.trim(),
+                'tracking.google_ads_conversion_id': document.getElementById('s-gads-conv-id').value.trim(),
+                'tracking.google_ads_label_lead': document.getElementById('s-gads-label').value.trim(),
+                'tracking.meta_pixel_id': document.getElementById('s-meta-pixel').value.trim(),
+                'tracking.meta_capi_token': document.getElementById('s-meta-capi').value.trim(),
+                'tracking.meta_test_event_code': document.getElementById('s-meta-test').value.trim(),
+                'ads.meta_ad_account_id': document.getElementById('s-meta-ad-acct').value.trim(),
+                'ads.ga4_property_id': document.getElementById('s-ga4-prop').value.trim(),
+                'ads.google_ads_customer_id': document.getElementById('s-gads-cust').value.trim()
+              }
+            })
+          });
+          KingAdmin.showToast('Credenciais salvas com criptografia no servidor.');
+          loadIntegrationStatuses();
+        } catch (err) {
+          KingAdmin.showToast(err.message, true);
+        }
+      });
+
+      document.getElementById('goals-settings-form').addEventListener('submit', async function (e) {
+        e.preventDefault();
+        var updatedThresholds = Object.assign({}, cachedThresholds, {
+          cpl_brl: { target: Number(document.getElementById('g-cpl-target').value), warning: Number(document.getElementById('g-cpl-warn').value), critical: Number(document.getElementById('g-cpl-crit').value), direction: 'lower_is_better' },
+          cpql_brl: { target: Number(document.getElementById('g-cpql-target').value), warning: Number(document.getElementById('g-cpql-warn').value), critical: Number(document.getElementById('g-cpql-crit').value), direction: 'lower_is_better' },
+          cac_brl: { target: Number(document.getElementById('g-cac-target').value), warning: Number(document.getElementById('g-cac-warn').value), critical: Number(document.getElementById('g-cac-crit').value), direction: 'lower_is_better' },
+          qualification_rate_pct: { target: Number(document.getElementById('g-qual-target').value), warning: Number(document.getElementById('g-qual-warn').value), critical: Number(document.getElementById('g-qual-crit').value), direction: 'higher_is_better' },
+          roas: { target: Number(document.getElementById('g-roas-target').value), warning: Number(document.getElementById('g-roas-warn').value), critical: Number(document.getElementById('g-roas-crit').value), direction: 'higher_is_better' }
+        });
+        try {
+          await KingAdmin.apiFetch('/api/admin/settings', {
+            method: 'PUT',
+            body: JSON.stringify({
+              settings: {
+                'automation.unattended_sla_minutes': Number(document.getElementById('g-sla-min').value || 30),
+                'goals.kpi_thresholds': updatedThresholds
+              }
+            })
+          });
+          KingAdmin.showToast('Metas e SLA atualizados.');
+        } catch (err) {
+          KingAdmin.showToast(err.message, true);
+        }
+      });
+
+      document.getElementById('landing-settings-form').addEventListener('submit', async function (e) {
+        e.preventDefault();
+        try {
+          await KingAdmin.apiFetch('/api/admin/settings', {
+            method: 'PUT',
+            body: JSON.stringify({
+              settings: {
+                'landing.content': Object.assign({}, cachedLanding, {
+                  hero_tag: document.getElementById('lc-tag').value.trim(),
+                  hero_cta_text: document.getElementById('lc-cta').value.trim(),
+                  sticky_cta_text: document.getElementById('lc-cta').value.trim(),
+                  hero_headline: document.getElementById('lc-headline').value.trim(),
+                  hero_subheadline: document.getElementById('lc-subheadline').value.trim()
+                }),
+                'franchise.public_info': Object.assign({}, cachedFranchise, {
+                  reference_investment_brl: Number(document.getElementById('fi-investment').value || 20000),
+                  whatsapp_expansion: document.getElementById('fi-whatsapp').value.trim(),
+                  email_expansion: document.getElementById('fi-email').value.trim(),
+                  reference_investment_note: document.getElementById('fi-note').value.trim()
+                })
+              }
+            })
+          });
+          KingAdmin.showToast('Conteúdo público atualizado.');
+        } catch (err) {
+          KingAdmin.showToast(err.message, true);
+        }
+      });
+
+      document.getElementById('new-user-form').addEventListener('submit', async function (e) {
+        e.preventDefault();
+        try {
+          await KingAdmin.apiFetch('/api/admin/users', {
+            method: 'POST',
+            body: JSON.stringify({
+              full_name: document.getElementById('u-name').value.trim(),
+              email: document.getElementById('u-email').value.trim(),
+              role_slug: document.getElementById('u-role').value,
+              password: document.getElementById('u-pass').value || undefined,
+              is_active: true
+            })
+          });
+          this.reset();
+          KingAdmin.showToast('Administrador cadastrado.');
+          loadAllSettings();
+        } catch (err) {
+          KingAdmin.showToast(err.message, true);
+        }
+      });
+
+      document.getElementById('refresh-status-btn').addEventListener('click', loadIntegrationStatuses);
+
+      document.addEventListener('DOMContentLoaded', async function () {
+        if (await KingAdmin.initProtectedPage('configuracoes')) {
+          loadIntegrationStatuses();
+          loadAllSettings();
+        }
+      });
+    })();
+  </script>
+</body>
+</html>

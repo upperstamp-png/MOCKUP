@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Campanhas &amp; Mídia | CRM King Sports</title>
+  <meta name="robots" content="noindex, nofollow" />
+  <meta name="theme-color" content="#02060E" />
+  <link rel="icon" href="/favicon.ico" sizes="any" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/assets/images/favicon-32x32.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/assets/images/apple-touch-icon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/admin/assets/css/admin.css" />
+</head>
+<body>
+  <div class="ad-shell">
+    <aside class="ad-sidebar" id="ad-sidebar"></aside>
+
+    <main class="ad-main">
+      <div class="ad-topbar">
+        <div>
+          <h1>Campanhas &amp; Performance de Mídia</h1>
+          <p class="ad-topbar-sub">Investimento, alcance, cliques, CPL, CPQL, CAC e ROAS por campanha.</p>
+        </div>
+
+        <div class="ad-actions-row">
+          <select id="period-preset" class="ad-select" style="width:auto;">
+            <option value="7">Últimos 7 dias</option>
+            <option value="30" selected>Últimos 30 dias</option>
+            <option value="90">Últimos 90 dias</option>
+            <option value="360">Últimos 360 dias</option>
+            <option value="custom">Período personalizado</option>
+          </select>
+          <input type="date" id="custom-start" class="ad-input" style="width:auto;display:none;" />
+          <input type="date" id="custom-end" class="ad-input" style="width:auto;display:none;" />
+          <button type="button" id="sync-ads-btn" class="ad-btn ad-btn-secondary">Sincronizar APIs Ads/GA4</button>
+          <button type="button" id="open-campaign-modal" class="ad-btn ad-btn-primary">+ Nova Campanha</button>
+        </div>
+      </div>
+
+      <div id="ad-global-alert"></div>
+      <div id="sync-status-box"></div>
+      <div id="camp-kpis" class="ad-kpi-grid"></div>
+
+      <div class="ad-grid-2" style="margin-bottom:18px;">
+        <section class="ad-card">
+          <div class="ad-card-title"><span>Faixas de Eficiência (Verde / Laranja / Vermelho)</span></div>
+          <div id="camp-health-bars" class="ad-health-list">Carregando...</div>
+        </section>
+
+        <section class="ad-card">
+          <div class="ad-card-title"><span>Registrar Métricas Diárias de Campanha</span></div>
+          <form id="metric-form">
+            <div class="ad-grid-2">
+              <div class="ad-field">
+                <label>Campanha</label>
+                <select id="m-campaign-id" class="ad-select" required></select>
+              </div>
+              <div class="ad-field">
+                <label>Data de Referência</label>
+                <input type="date" id="m-date" class="ad-input" required />
+              </div>
+            </div>
+            <div class="ad-grid-3">
+              <div class="ad-field">
+                <label>Investimento (R$)</label>
+                <input type="number" step="0.01" min="0" id="m-spend-brl" class="ad-input" value="0" required />
+              </div>
+              <div class="ad-field">
+                <label>Impressões</label>
+                <input type="number" min="0" id="m-impressions" class="ad-input" value="0" />
+              </div>
+              <div class="ad-field">
+                <label>Alcance</label>
+                <input type="number" min="0" id="m-reach" class="ad-input" value="0" />
+              </div>
+            </div>
+            <div class="ad-grid-3">
+              <div class="ad-field">
+                <label>Cliques</label>
+                <input type="number" min="0" id="m-clicks" class="ad-input" value="0" />
+              </div>
+              <div class="ad-field">
+                <label>Visitantes</label>
+                <input type="number" min="0" id="m-visitors" class="ad-input" value="0" />
+              </div>
+              <div class="ad-field">
+                <label>Leads na Plataforma</label>
+                <input type="number" min="0" id="m-platform-leads" class="ad-input" value="0" />
+              </div>
+            </div>
+            <button type="submit" class="ad-btn ad-btn-primary">Salvar Métrica Diária</button>
+          </form>
+        </section>
+      </div>
+
+      <section class="ad-card">
+        <div class="ad-card-title"><span>Tabela Consolidada de Campanhas</span></div>
+        <div class="ad-table-wrap" id="camp-table-wrap">Carregando campanhas...</div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Modal Nova Campanha -->
+  <div class="ad-modal-backdrop" id="campaign-modal">
+    <div class="ad-modal">
+      <div class="ad-card-title">
+        <span>Cadastrar Campanha de Expansão</span>
+        <button type="button" class="ad-btn ad-btn-secondary ad-btn-sm" id="close-campaign-modal">Fechar</button>
+      </div>
+      <form id="campaign-form">
+        <div class="ad-field">
+          <label>Nome da Campanha</label>
+          <input type="text" id="c-name" class="ad-input" required placeholder="Ex.: Meta Lead Franquia Brasil — Lookalike" />
+        </div>
+        <div class="ad-grid-2">
+          <div class="ad-field">
+            <label>Plataforma</label>
+            <select id="c-platform" class="ad-select" required>
+              <option value="meta_ads">Meta Ads</option>
+              <option value="google_ads">Google Ads</option>
+              <option value="organic">Orgânico</option>
+              <option value="blog">Blog</option>
+              <option value="direct">Direto</option>
+              <option value="referral">Indicação / Referral</option>
+              <option value="other">Outro</option>
+            </select>
+          </div>
+          <div class="ad-field">
+            <label>Status</label>
+            <select id="c-status" class="ad-select">
+              <option value="active">Ativa</option>
+              <option value="paused">Pausada</option>
+              <option value="draft">Rascunho</option>
+              <option value="ended">Encerrada</option>
+            </select>
+          </div>
+        </div>
+        <div class="ad-grid-3">
+          <div class="ad-field">
+            <label>utm_source</label>
+            <input type="text" id="c-utm-source" class="ad-input" placeholder="meta" />
+          </div>
+          <div class="ad-field">
+            <label>utm_medium</label>
+            <input type="text" id="c-utm-medium" class="ad-input" placeholder="cpc" />
+          </div>
+          <div class="ad-field">
+            <label>utm_campaign</label>
+            <input type="text" id="c-utm-campaign" class="ad-input" placeholder="franquia_sp_q4" />
+          </div>
+        </div>
+        <div class="ad-grid-2">
+          <div class="ad-field">
+            <label>Orçamento Diário (R$)</label>
+            <input type="number" step="0.01" min="0" id="c-budget" class="ad-input" value="150" />
+          </div>
+          <div class="ad-field">
+            <label>Meta de CPL (R$)</label>
+            <input type="number" step="0.01" min="0" id="c-target-cpl" class="ad-input" value="35" />
+          </div>
+        </div>
+        <div class="ad-field">
+          <label>ID Externo na Plataforma (opcional)</label>
+          <input type="text" id="c-external-id" class="ad-input" placeholder="ID da campanha no Meta/Google Ads" />
+        </div>
+        <button type="submit" class="ad-btn ad-btn-primary">Criar Campanha</button>
+      </form>
+    </div>
+  </div>
+
+  <script src="/admin/assets/js/admin-core.js"></script>
+  <script>
+    (function () {
+      function fmtInt(v) {
+        return v == null ? '—' : Number(v).toLocaleString('pt-BR');
+      }
+
+      function renderKpis(k) {
+        var items = [
+          { label: 'Investimento Total', val: KingAdmin.formatBrl(k.media_spend_brl), sub: 'CPM: ' + KingAdmin.formatBrl(k.cpm) },
+          { label: 'Impressões / Alcance', val: fmtInt(k.impressions), sub: 'Alcance: ' + fmtInt(k.reach) },
+          { label: 'Cliques / CTR', val: fmtInt(k.clicks), sub: 'CTR: ' + (k.ctr_pct != null ? k.ctr_pct + '%' : '—') + ' | CPC: ' + KingAdmin.formatBrl(k.cpc) },
+          { label: 'Leads / CPL', val: fmtInt(k.leads_count), sub: 'CPL: ' + KingAdmin.formatBrl(k.cpl_brl) },
+          { label: 'Qualificados / CPQL', val: fmtInt(k.qualified_leads_count), sub: 'CPQL: ' + KingAdmin.formatBrl(k.cpql_brl) },
+          { label: 'Vendas / CAC / ROAS', val: fmtInt(k.sales_count), sub: 'CAC: ' + KingAdmin.formatBrl(k.cac_brl) + ' | ROAS: ' + (k.roas != null ? k.roas + 'x' : '—') }
+        ];
+        document.getElementById('camp-kpis').innerHTML = items.map(function (c) {
+          return '<div class="ad-kpi-card"><div class="ad-kpi-label">' + KingAdmin.esc(c.label) + '</div><div class="ad-kpi-value">' + KingAdmin.esc(c.val) + '</div><div class="ad-kpi-sub">' + KingAdmin.esc(c.sub) + '</div></div>';
+        }).join('');
+      }
+
+      function renderHealthBars(bars) {
+        var el = document.getElementById('camp-health-bars');
+        if (!bars || !bars.length) {
+          el.innerHTML = '<p style="color:#94A3B8;font-size:0.88rem;">Sem metas avaliadas no período.</p>';
+          return;
+        }
+        el.innerHTML = bars.map(function (b) {
+          var formatted = b.value == null ? 'Sem dados' : (b.unit === 'R$' ? KingAdmin.formatBrl(b.value) : b.value + ' ' + b.unit);
+          return (
+            '<div>' +
+            '  <div class="ad-health-item-head"><span><strong>' + KingAdmin.esc(b.label) + '</strong></span><span>' + KingAdmin.esc(formatted) + ' (' + KingAdmin.esc(b.status_label || '') + ')</span></div>' +
+            '  <div class="ad-health-track"><div class="ad-health-fill ' + KingAdmin.esc(b.band) + '" style="width:' + Number(b.pct || 0) + '%"></div></div>' +
+            '</div>'
+          );
+        }).join('');
+      }
+
+      function renderCampaignsTable(rows) {
+        var wrap = document.getElementById('camp-table-wrap');
+        if (!rows || !rows.length) {
+          wrap.innerHTML = '<p style="color:#94A3B8;">Nenhuma campanha cadastrada ainda. Crie sua primeira campanha acima ou sincronize suas APIs em Configurações.</p>';
+          return;
+        }
+        wrap.innerHTML =
+          '<table class="ad-table"><thead><tr>' +
+          '<th>Campanha</th><th>Plataforma</th><th>UTM</th><th>Status</th><th>Spend</th><th>Impr.</th><th>Cliques</th><th>CTR</th><th>CPC</th><th>Leads</th><th>CPL</th><th>Qualif.</th><th>CPQL</th><th>Reuniões</th><th>Custo/Reunião</th><th>Vendas</th><th>CAC</th><th>ROAS</th>' +
+          '</tr></thead><tbody>' +
+          rows.map(function (c) {
+            return (
+              '<tr>' +
+              '  <td><strong>' + KingAdmin.esc(c.name) + '</strong></td>' +
+              '  <td>' + KingAdmin.esc(c.platform) + '</td>' +
+              '  <td><code>' + KingAdmin.esc(c.utm_campaign || '—') + '</code></td>' +
+              '  <td><span class="ad-badge ' + (c.status === 'active' ? 'ad-badge-green' : 'ad-badge-gray') + '">' + KingAdmin.esc(c.status) + '</span></td>' +
+              '  <td>' + KingAdmin.formatBrl(c.spend_brl) + '</td>' +
+              '  <td>' + fmtInt(c.impressions) + '</td>' +
+              '  <td>' + fmtInt(c.clicks) + '</td>' +
+              '  <td>' + (c.ctr_pct != null ? c.ctr_pct.toFixed(2) + '%' : '—') + '</td>' +
+              '  <td>' + KingAdmin.formatBrl(c.cpc) + '</td>' +
+              '  <td>' + fmtInt(c.leads) + '</td>' +
+              '  <td>' + KingAdmin.formatBrl(c.cpl) + '</td>' +
+              '  <td>' + fmtInt(c.qualified_leads) + '</td>' +
+              '  <td>' + KingAdmin.formatBrl(c.cpql) + '</td>' +
+              '  <td>' + fmtInt(c.meetings) + '</td>' +
+              '  <td>' + KingAdmin.formatBrl(c.cost_per_meeting) + '</td>' +
+              '  <td>' + fmtInt(c.sales) + '</td>' +
+              '  <td>' + KingAdmin.formatBrl(c.cac) + '</td>' +
+              '  <td>' + (c.roas != null ? c.roas.toFixed(2) + 'x' : '—') + '</td>' +
+              '</tr>'
+            );
+          }).join('') +
+          '</tbody></table>';
+      }
+
+      async function loadCampaigns() {
+        var preset = document.getElementById('period-preset').value;
+        var qs = preset === 'custom'
+          ? 'start_date=' + encodeURIComponent(document.getElementById('custom-start').value) + '&end_date=' + encodeURIComponent(document.getElementById('custom-end').value)
+          : 'days=' + encodeURIComponent(preset);
+        try {
+          var data = await KingAdmin.apiFetch('/api/admin/campaigns?' + qs);
+          renderKpis(data.kpis || {});
+          renderHealthBars(data.health_bars || []);
+          renderCampaignsTable(data.campaigns || []);
+
+          var select = document.getElementById('m-campaign-id');
+          var raw = data.raw_campaigns || [];
+          select.innerHTML = raw.length
+            ? raw.map(function (r) { return '<option value="' + KingAdmin.esc(r.id) + '">' + KingAdmin.esc(r.name + ' (' + r.platform + ')') + '</option>'; }).join('')
+            : '<option value="">Crie uma campanha primeiro</option>';
+        } catch (err) {
+          KingAdmin.renderErrorState('ad-global-alert', err);
+        }
+      }
+
+      document.getElementById('period-preset').addEventListener('change', function () {
+        var isCustom = this.value === 'custom';
+        document.getElementById('custom-start').style.display = isCustom ? 'inline-block' : 'none';
+        document.getElementById('custom-end').style.display = isCustom ? 'inline-block' : 'none';
+        if (!isCustom) loadCampaigns();
+      });
+
+      document.getElementById('custom-end').addEventListener('change', loadCampaigns);
+
+      document.getElementById('open-campaign-modal').addEventListener('click', function () {
+        document.getElementById('campaign-modal').classList.add('open');
+      });
+      document.getElementById('close-campaign-modal').addEventListener('click', function () {
+        document.getElementById('campaign-modal').classList.remove('open');
+      });
+
+      document.getElementById('campaign-form').addEventListener('submit', async function (e) {
+        e.preventDefault();
+        try {
+          await KingAdmin.apiFetch('/api/admin/campaigns', {
+            method: 'POST',
+            body: JSON.stringify({
+              name: document.getElementById('c-name').value.trim(),
+              platform: document.getElementById('c-platform').value,
+              status: document.getElementById('c-status').value,
+              utm_source: document.getElementById('c-utm-source').value.trim() || null,
+              utm_medium: document.getElementById('c-utm-medium').value.trim() || null,
+              utm_campaign: document.getElementById('c-utm-campaign').value.trim() || null,
+              daily_budget_cents: Math.round(Number(document.getElementById('c-budget').value || 0) * 100),
+              target_cpl_cents: Math.round(Number(document.getElementById('c-target-cpl').value || 0) * 100),
+              external_campaign_id: document.getElementById('c-external-id').value.trim() || null
+            })
+          });
+          document.getElementById('campaign-modal').classList.remove('open');
+          this.reset();
+          KingAdmin.showToast('Campanha criada com sucesso.');
+          loadCampaigns();
+        } catch (err) {
+          KingAdmin.showToast(err.message, true);
+        }
+      });
+
+      document.getElementById('metric-form').addEventListener('submit', async function (e) {
+        e.preventDefault();
+        var campId = document.getElementById('m-campaign-id').value;
+        if (!campId) {
+          KingAdmin.showToast('Cadastre e selecione uma campanha antes de lançar métricas.', true);
+          return;
+        }
+        try {
+          await KingAdmin.apiFetch('/api/admin/campaigns/' + encodeURIComponent(campId) + '/metrics', {
+            method: 'POST',
+            body: JSON.stringify({
+              metric_date: document.getElementById('m-date').value,
+              spend_cents: Math.round(Number(document.getElementById('m-spend-brl').value || 0) * 100),
+              impressions: Number(document.getElementById('m-impressions').value || 0),
+              reach: Number(document.getElementById('m-reach').value || 0),
+              clicks: Number(document.getElementById('m-clicks').value || 0),
+              visitors: Number(document.getElementById('m-visitors').value || 0),
+              platform_leads: Number(document.getElementById('m-platform-leads').value || 0)
+            })
+          });
+          KingAdmin.showToast('Métrica diária salva.');
+          loadCampaigns();
+        } catch (err) {
+          KingAdmin.showToast(err.message, true);
+        }
+      });
+
+      document.getElementById('sync-ads-btn').addEventListener('click', async function () {
+        try {
+          var res = await KingAdmin.apiFetch('/api/admin/campaigns/sync', { method: 'POST', body: '{}' });
+          var box = document.getElementById('sync-status-box');
+          if (!res.synced) {
+            box.innerHTML = '<div class="ad-alert ad-alert-warn">' + KingAdmin.esc(res.message) + ' <a href="/admin/configuracoes.html" style="text-decoration:underline;margin-left:6px;">Ir para Configurações →</a></div>';
+          } else {
+            box.innerHTML = '<div class="ad-alert ad-alert-info">Sincronização enfileirada para: ' + KingAdmin.esc((res.platforms || []).join(', ')) + '</div>';
+            KingAdmin.showToast('Sincronização agendada na fila BullMQ.');
+          }
+        } catch (err) {
+          KingAdmin.showToast(err.message, true);
+        }
+      });
+
+      document.addEventListener('DOMContentLoaded', async function () {
+        document.getElementById('m-date').value = new Date().toISOString().slice(0, 10);
+        if (await KingAdmin.initProtectedPage('campanhas')) loadCampaigns();
+      });
+    })();
+  </script>
+</body>
+</html>
